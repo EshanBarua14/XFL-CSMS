@@ -1,0 +1,116 @@
+@model XFLCSMS.Models.Admin.TicketCountsView
+@{
+    Layout = Model.Layout;
+    string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    var periods = new[] { ("today", "Today"), ("week", "Last 7 days"), ("30", "Last 30 days"), ("month", "This month"), ("year", "This year"), ("all", "All time") };
+}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-7">
+                <h1>Ticket Counts</h1>
+                <p class="text-muted mb-0">Tickets raised: @Model.PeriodText. All time: @Model.AllTime tickets, @Model.AllTimeNotClosed not closed.</p>
+            </div>
+            <div class="col-sm-5 text-sm-right d-print-none">
+                <a class="btn btn-default btn-sm" asp-controller="@Model.Controller" asp-action="TicketCounts" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)" asp-route-period="@(Model.From == null && Model.To == null ? "all" : null)" asp-route-export="csv"><i class="fas fa-file-csv"></i> Download (CSV)</a>
+                <button type="button" class="btn btn-default btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="card d-print-none">
+        <div class="card-body py-2">
+            <form asp-controller="@Model.Controller" asp-action="TicketCounts" method="get" class="form-inline">
+                <label class="mr-2" for="countFrom">From</label>
+                <input type="date" id="countFrom" name="from" value="@D(Model.From)" class="form-control form-control-sm mr-3" />
+                <label class="mr-2" for="countTo">To</label>
+                <input type="date" id="countTo" name="to" value="@D(Model.To)" class="form-control form-control-sm mr-3" />
+                <button type="submit" class="btn btn-primary btn-sm mr-4"><i class="fas fa-calculator"></i> Count</button>
+                @foreach (var (key, text) in periods)
+                {
+                    <a class="btn btn-outline-secondary btn-sm mr-1 my-1" asp-controller="@Model.Controller" asp-action="TicketCounts" asp-route-period="@key">@text</a>
+                }
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-primary"><div class="inner"><h3>@Model.Raised</h3><p>Raised</p></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-info"><div class="inner"><h3>@Model.Open</h3><p>Open</p></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-warning"><div class="inner"><h3>@Model.InQueue</h3><p>In Queue</p></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-secondary"><div class="inner"><h3>@Model.InProgress</h3><p>In Progress</p></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-success"><div class="inner"><h3>@Model.Closed</h3><p>Closed (@Model.ClosedPercent%)</p></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-danger"><div class="inner"><h3>@Model.Unassigned</h3><p>Not Assigned</p></div></div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-body py-2">
+            <span class="mr-4"><b>@Model.ClosedInPeriod</b> closed inside the period (whenever raised)</span>
+            <span class="mr-4"><b>@Model.HighNotClosed</b> high priority, not closed</span>
+            <span><b>@(Model.AverageHoursToClose.HasValue ? Model.AverageHoursToClose.Value.ToString("0.#") + " h" : "-")</b> average time from raised to closed</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h4 class="mb-0">By Brokerage House</h4></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-striped table-sm mb-0" id="countsByHouse">
+                <thead>
+                    <tr><th>Brokerage House</th><th class="text-right">Raised</th><th class="text-right">Open</th><th class="text-right">In Queue</th><th class="text-right">In Progress</th><th class="text-right">Closed</th><th class="text-right">Not Assigned</th><th class="text-right">High Priority</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.Houses)
+                    {
+                        <tr>
+                            <td>@h.Name <span class="text-muted">(@h.Acronym)</span></td>
+                            <td class="text-right"><b>@h.Raised</b></td><td class="text-right">@h.Open</td><td class="text-right">@h.InQueue</td><td class="text-right">@h.InProgress</td>
+                            <td class="text-right">@h.Closed</td><td class="text-right">@h.Unassigned</td><td class="text-right">@h.High</td>
+                        </tr>
+                    }
+                    @if (Model.Houses.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-muted">No brokerage house yet.</td></tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-right">@Model.Houses.Sum(h => h.Raised)</th><th class="text-right">@Model.Houses.Sum(h => h.Open)</th><th class="text-right">@Model.Houses.Sum(h => h.InQueue)</th>
+                        <th class="text-right">@Model.Houses.Sum(h => h.InProgress)</th><th class="text-right">@Model.Houses.Sum(h => h.Closed)</th><th class="text-right">@Model.Houses.Sum(h => h.Unassigned)</th><th class="text-right">@Model.Houses.Sum(h => h.High)</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var (title, first, counts) in new[] {
+            ("By Engineer", "Engineer", Model.Engineers), ("By Support Type", "Support Type", Model.SupportTypes),
+            ("By Priority", "Priority", Model.Priorities), ("Raised By (top 15)", "User", Model.RaisedBy),
+            ("By " + Model.TimelineUnit, Model.TimelineUnit, Model.Timeline) })
+        {
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h4 class="mb-0">@title</h4></div>
+                    <div class="card-body p-0 table-responsive" style="max-height: 420px;">
+                        <table class="table table-striped table-sm mb-0">
+                            <thead><tr><th>@first</th><th class="text-right">Raised</th><th class="text-right">Not Closed</th><th class="text-right">Closed</th></tr></thead>
+                            <tbody>
+                                @foreach (var c in counts)
+                                {
+                                    <tr><td>@c.Name</td><td class="text-right"><b>@c.Raised</b></td><td class="text-right">@c.NotClosed</td><td class="text-right">@c.Closed</td></tr>
+                                }
+                                @if (counts.Count == 0)
+                                {
+                                    <tr><td colspan="4" class="text-muted">No ticket in this period.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

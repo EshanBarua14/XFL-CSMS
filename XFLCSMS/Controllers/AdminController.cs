@@ -2667,5 +2667,29 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>Ticket counts for a period: by house, engineer, support type, priority, user and day or month.</summary>
+        public async Task<IActionResult> TicketCounts(DateTime? from, DateTime? to, string? period, string? export, [FromServices] TicketCountService counts)
+        {
+            try
+            {
+                (from, to) = TicketCountService.Period(period, from, to);
+                var view = await counts.CountAsync(from, to);
+                view.Layout = "_Layout";
+                view.Controller = "Admin";
+
+                if (string.Equals(export, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    var name = "ticket-counts-" + (view.From?.ToString("yyyyMMdd") ?? "all") + "-" + (view.To?.ToString("yyyyMMdd") ?? "now") + ".csv";
+                    return File(TicketCountService.Csv(view), "text/csv", name);
+                }
+
+                return View("TicketCounts", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
     }
 }

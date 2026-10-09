@@ -45,6 +45,17 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="forBrokerageId">Raise For (Brokerage House)</label>
+                                <select name="issueFrom.ForBrokerageId" id="forBrokerageId" class="form-control">
+                                    <option value="">Own house (@Model.LoginInfo.BrocarageHouseName)</option>
+                                    @foreach (var house in Model.Brokerages)
+                                    {
+                                        <option value="@house.BrokerageId">@house.BrokerageHouseName (@house.BrokerageHouseAcronym)</option>
+                                    }
+                                </select>
+                                <small class="form-text text-muted">For a ticket taken by phone or e-mail: it gets that house's number and is counted for that house.</small>
+                            </div>
+                            <div class="form-group">
                                 <label for="exampleInputEmail1">Ticket ID</label>
                                 <input asp-for="@Model.issueFrom.TicketId" value="@Model.LoginInfo.TicketID" type="text" class="form-control" id="exampleInputEmail1" placeholder="Ticket ID" readonly>
                             </div>

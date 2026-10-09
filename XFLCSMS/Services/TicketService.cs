@@ -84,7 +84,16 @@ namespace XFLCSMS.Services
                 return (null, "Please select a priority.", rejected);
             }
 
-            var ticketNumber = NextTicketNumber(user.BrokerageHouseName);
+            // XFL staff may raise a ticket for a brokerage house (a call, an e-mail): it gets that house's number and
+            // is counted for that house. Everybody else raises for the own house, whatever the form says.
+            var houseId = user.BrokerageHouseName;
+            if ((user.UCatagory || user.UType) && form.ForBrokerageId.HasValue
+                && _context.Brokerages.Any(b => b.BrokerageId == form.ForBrokerageId.Value))
+            {
+                houseId = form.ForBrokerageId.Value;
+            }
+
+            var ticketNumber = NextTicketNumber(houseId);
             if (ticketNumber == null)
             {
                 return (null, "Your account is not linked to a valid brokerage house. Please contact the XFL team.", rejected);
@@ -99,7 +108,7 @@ namespace XFLCSMS.Services
                 Details = form.IssueDetails,
                 Comments = form.Commands,
                 UserId = user.Id,
-                BrokerageId = user.BrokerageHouseName,
+                BrokerageId = houseId,
                 SupportTypeId = Existing(form.SupportTypeId, id => _context.SupportTypes.Any(x => x.SupportTypeId == id)),
                 SupportCatagoryId = Existing(form.SupportCatagoryId, id => _context.SupportCatagories.Any(x => x.SupportCatagoryId == id)),
                 SupportSubCatagoryId = Existing(form.SupportSubCatagoryID, id => _context.SupportSubCatagories.Any(x => x.SupportSubCatagoryId == id)),

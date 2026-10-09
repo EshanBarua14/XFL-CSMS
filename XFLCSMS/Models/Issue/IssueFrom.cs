@@ -23,6 +23,9 @@ namespace XFLCSMS.Models.Issue
         public string? IssueDetails { get; set; } 
         public string? Commands { get; set; }
 
+        /// <summary>XFL staff only: the brokerage house the ticket is raised for (taken by phone or e-mail). Empty = the own house.</summary>
+        public int? ForBrokerageId { get; set; }
+
 
     }
 }
