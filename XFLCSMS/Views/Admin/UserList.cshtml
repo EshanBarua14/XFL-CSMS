@@ -32,10 +32,10 @@
                     <thead>
                         <tr>
                             <th style="width:5%">
-                                UserId
+                                User ID
                             </th>
                             <th style="width: 15%">
-                                FullName
+                                Full Name
                             </th>
                             <th style="width: 15%">
                                 User Name
@@ -147,7 +147,7 @@
     }
 
     // Set a timeout to call the preventback function immediately after the script is executed
-    setTimeout("preventback()", 0);
+    // back button allowed
 
     // When the window loads, assign a null function to the onload event to effectively do nothing
     window.onload = function () { null };
@@ -156,7 +156,7 @@
 @* @section scripts{
     <script>
         function preventback() { window.history.forward(); }
-        setTimeout("preventback()", 0);
+        // back button allowed
         window.onload = function () { null };
 
     </script>
