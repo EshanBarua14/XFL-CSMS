@@ -1,0 +1,101 @@
+@model XFLCSMS.Models.Admin.NewUserView
+<!-- Main content -->
+<section class="content">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Create User</h4>
+        </div>
+        <div class="card-body">
+            <form asp-controller="Admin" asp-action="CreateUser" method="post" autocomplete="off">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="FullName"></label>
+                            <input asp-for="FullName" class="form-control" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Email"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="PhonNumber"></label>
+                            <input asp-for="PhonNumber" class="form-control" />
+                            <span asp-validation-for="PhonNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Designation"></label>
+                            <input asp-for="Designation" class="form-control" />
+                            <span asp-validation-for="Designation" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Branch"></label>
+                            <select asp-for="Branch" class="form-control">
+                                <option value="0">Select...</option>
+                                @foreach (var item in Model.Branches)
+                                {
+                                    <option value="@item.BranchId">@item.Label</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Branch" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="EmployeeId"></label>
+                            <input asp-for="EmployeeId" class="form-control" />
+                            <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Role"></label>
+                            <select asp-for="Role" class="form-control">
+                                <option value="Maker">Brokerage House User (Maker)</option>
+                                <option value="Support Engineer">Support Engineer (XFL)</option>
+                                <option value="Support Maneger">Support Manager (XFL)</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                            <span asp-validation-for="Role" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="UserName"></label>
+                            <input asp-for="UserName" class="form-control" autocomplete="off" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Password"></label>
+                            <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ConfirmPassword"></label>
+                            <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted mb-3">The account is active at once. No registration token is needed.</p>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Create User</button>
+                <a asp-controller="Admin" asp-action="UserList" class="btn btn-default ml-2">Back to List</a>
+            </form>
+        </div>
+    </div>
+</section>
+<!-- /.content -->

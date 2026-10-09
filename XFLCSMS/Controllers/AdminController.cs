@@ -2502,6 +2502,170 @@ namespace XFLCSMS.Controllers
             return user.ASection;
         }
 
+        // ---- The administrator creates users and raises tickets ------------------------------------------------
+
+        private static readonly string[] NewUserRoles = { "Admin", "Support Maneger", "Support Engineer", "Maker" };
+
+        private NewUserView FillNewUser(NewUserView form)
+        {
+            var houses = _context.Brokerages.ToList().ToDictionary(b => b.BrokerageId, b => b.BrokerageHouseName);
+            form.Branches = _context.Branchhs.ToList()
+                .Select(b => (b.BranchId, Label: (houses.TryGetValue(b.BrokerageId ?? 0, out var house) ? house : "?") + " - " + b.BranchName))
+                .OrderBy(b => b.Label)
+                .ToList();
+            return form;
+        }
+
+        public IActionResult CreateUser()
+        {
+            try
+            {
+                return View(FillNewUser(new NewUserView()));
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateUser(NewUserView form)
+        {
+            try
+            {
+                form.UserName = (form.UserName ?? string.Empty).Trim();
+                form.Email = (form.Email ?? string.Empty).Trim();
+
+                var branch = await _context.Branchhs.FirstOrDefaultAsync(b => b.BranchId == form.Branch);
+                if (ModelState.IsValid)
+                {
+                    if (branch?.BrokerageId == null)
+                    {
+                        ModelState.AddModelError(nameof(form.Branch), "Please select the brokerage house and branch.");
+                    }
+
+                    if (!NewUserRoles.Contains(form.Role))
+                    {
+                        ModelState.AddModelError(nameof(form.Role), "Please select a role.");
+                    }
+
+                    if (await _context.Users.AnyAsync(u => u.Email == form.Email))
+                    {
+                        ModelState.AddModelError(nameof(form.Email), "This email is already registered.");
+                    }
+
+                    if (await _context.Users.AnyAsync(u => u.UserName == form.UserName))
+                    {
+                        ModelState.AddModelError(nameof(form.UserName), "This user name is already taken.");
+                    }
+                }
+
+                if (!ModelState.IsValid || branch?.BrokerageId == null)
+                {
+                    form.Password = string.Empty;
+                    form.ConfirmPassword = string.Empty;
+                    return View(FillNewUser(form));
+                }
+
+                PasswordHasher.Create(form.Password, out byte[] passwordHash, out byte[] passwordSalt);
+
+                var isAdmin = form.Role == "Admin";
+                var isStaff = isAdmin || form.Role == "Support Maneger" || form.Role == "Support Engineer";
+                var user = new User
+                {
+                    FullName = form.FullName.Trim(),
+                    Email = form.Email,
+                    PhonNumber = form.PhonNumber.Trim(),
+                    Designation = form.Designation?.Trim() ?? string.Empty,
+                    BrokerageHouseName = branch.BrokerageId.Value,
+                    BrokerageHouseAcronym = branch.BrokerageId.Value,
+                    Branch = branch.BranchId,
+                    EmployeeId = form.EmployeeId.Trim(),
+                    UserName = form.UserName,
+                    PasswordHash = passwordHash,
+                    PasswordSalt = passwordSalt,
+                    VerifiedAt = DateTime.Now, // created by the administrator: no token by e-mail needed
+                    Department = isAdmin ? "Maker" : form.Role,
+                    UCatagory = isAdmin,
+                    UType = isStaff,
+                    UStatus = true,
+                    Terms = true
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "User " + user.UserName + " was created and can sign in now.";
+                return RedirectToAction("UserList");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        public IActionResult IssueRaiseFrom()
+        {
+            try
+            {
+                var me = CurrentUser!;
+                var viewModel = new IssueViewModel
+                {
+                    SupportTypes = _context.SupportTypes.ToList(),
+                    SupportCatagories = _context.SupportCatagories.ToList(),
+                    SupportSubCatagories = _context.SupportSubCatagories.ToList(),
+                    AffectedSections = _context.AffectedSectionss.ToList(),
+                    Brokerages = _context.Brokerages.ToList(),
+                    Branchhs = _context.Branchhs.ToList(),
+                    LoginInfo = new IssueLoginInfo
+                    {
+                        UserId = me.Id,
+                        BrocarageHouseName = GetBrocarageHouseName(me.BrokerageHouseName) ?? string.Empty,
+                        BranchName = GetBranchName(me.Branch) ?? string.Empty,
+                        // shown on the form as a preview only; the real number is taken when the ticket is saved
+                        TicketID = Tickets.NextTicketNumber(me.BrokerageHouseName) ?? string.Empty
+                    }
+                };
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IssueRaiseFrom(IssueViewModel issueViewModel, List<IFormFile> files)
+        {
+            try
+            {
+                // Owner, brokerage house, ticket number and date are decided on the server (see TicketService).
+                var result = await Tickets.CreateAsync(CurrentUser!, issueViewModel?.issueFrom, files);
+                if (result.Issue == null)
+                {
+                    TempData["ErrorMessage"] = result.Error;
+                    return RedirectToAction("IssueRaiseFrom");
+                }
+
+                if (result.RejectedFiles.Count > 0)
+                {
+                    TempData["ErrorMessage"] = "Ticket " + result.Issue.TNumber + " was created, but these files were not attached (file type not allowed): "
+                        + string.Join(", ", result.RejectedFiles);
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Ticket " + result.Issue.TNumber + " was created.";
+                }
+
+                return RedirectToAction("AdminView");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
 
     }
 }

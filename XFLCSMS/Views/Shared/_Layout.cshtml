@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="~/css/all.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="~/css/adminlte.min.css">
+    <link rel="stylesheet" href="~/css/xfl-polish.css" asp-append-version="true">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <!-- CKEditor from CDN -->
     <script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
@@ -131,63 +132,75 @@
                             </a>
                             <ul class="nav nav-treeview ">
                                 <li class="nav-item">
+                                    <a asp-action="IssueRaiseFrom" class="nav-link">
+                                        <i class="fas fa-plus-circle nav-icon"></i>
+                                        <p>Create Ticket</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-action="CreateUser" class="nav-link">
+                                        <i class="fas fa-user-plus nav-icon"></i>
+                                        <p>Create User</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a asp-action="UserList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-users nav-icon"></i>
                                         <p>User List</p>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
                                     <a asp-action="AdminView" class="nav-link ">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-ticket-alt nav-icon"></i>
                                         <p>All Ticket List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="UnassignedTicketList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-inbox nav-icon"></i>
                                         <p>Unassigned Ticket List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="ClosedTicketList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-check-circle nav-icon"></i>
                                         <p>Closed Ticket List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="BrocarageHouseList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-building nav-icon"></i>
                                         <p>Brokerage House List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="BranchList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-code-branch nav-icon"></i>
                                         <p>Branch List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="SupportTypeList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-life-ring nav-icon"></i>
                                         <p>Support Type List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="SupportCatagoryList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-tags nav-icon"></i>
                                         <p> Category List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="SupportSubCatagoryList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-tag nav-icon"></i>
                                         <p>Sub-Category List</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a asp-action="AffectedSectionList" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
+                                        <i class="fas fa-puzzle-piece nav-icon"></i>
                                         <p>Affected Section List</p>
                                     </a>
                                 </li>
@@ -200,25 +213,25 @@
                                         <!-- Initially hidden -->
                                         <li class="nav-item">
                                             <a asp-action="ViewTodo" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-list-ul nav-icon"></i>
                                                 <p>To-Do List</p>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a asp-action="AllTodo" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-tasks nav-icon"></i>
                                                 <p>All To-Do</p>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a asp-action="CompletedTodo" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-check-double nav-icon"></i>
                                                 <p>Complete Task</p>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a asp-action="TodoReports" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-chart-bar nav-icon"></i>
                                                 <p>To-Do Report</p>
                                             </a>
                                         </li>
@@ -233,14 +246,14 @@
                                         <!-- Initially hidden -->
                                         <li class="nav-item">
                                             <a asp-action="ViewAllTodo" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-clipboard-list nav-icon"></i>
                                                 <p> All To-Do List</p>
                                             </a>
                                         </li>
 
                                         <li class="nav-item">
                                             <a asp-action="AllTodoReports" class="nav-link small">
-                                                <i class="far fa-circle nav-icon"></i>
+                                                <i class="fas fa-chart-line nav-icon"></i>
                                                 <p> All To-Do Report</p>
                                             </a>
                                         </li>

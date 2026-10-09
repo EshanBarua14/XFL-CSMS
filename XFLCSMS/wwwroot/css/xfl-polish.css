@@ -1,0 +1,69 @@
+/* XFL CSMS - a light polish on top of AdminLTE. Colours and spacing only; no layout is changed.
+   Loaded after adminlte.min.css by every layout and every page that brings its own head. */
+
+:root {
+    --xfl-navy: #0f2a47;
+    --xfl-navy-2: #16385d;
+    --xfl-blue: #1769c2;
+    --xfl-blue-dark: #12559e;
+    --xfl-line: #e3e8ef;
+    --xfl-page: #f3f6fa;
+    --xfl-ink: #1f2d3d;
+}
+
+body { -webkit-font-smoothing: antialiased; color: var(--xfl-ink); }
+.content-wrapper { background: var(--xfl-page); }
+
+/* ---- side menu ---- */
+.main-sidebar, .main-sidebar.sidebar-dark-primary { background: linear-gradient(180deg, var(--xfl-navy) 0%, var(--xfl-navy-2) 100%); }
+.main-sidebar .brand-link { border-bottom: 1px solid rgba(255, 255, 255, .12); font-weight: 600; letter-spacing: .02em; }
+.main-sidebar .brand-link .brand-image { box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.nav-sidebar .nav-link { border-radius: 8px; transition: background-color .15s ease, color .15s ease; }
+.nav-sidebar .nav-link p { font-size: 15px; }
+.nav-sidebar .nav-treeview > .nav-item > .nav-link { color: #c9d6e6; }
+.nav-sidebar .nav-treeview > .nav-item > .nav-link:hover { background: rgba(255, 255, 255, .10); color: #fff; }
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active { background: var(--xfl-blue); box-shadow: 0 4px 12px rgba(23, 105, 194, .35); }
+.nav-sidebar .nav-icon { opacity: .9; }
+.sidebar .form-control-sidebar, .sidebar .btn-sidebar { border-radius: 8px; }
+.sidebar .input-group .form-control-sidebar { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.sidebar .input-group .btn-sidebar { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+
+/* ---- top bar and footer ---- */
+.main-header.navbar { border-bottom: 1px solid var(--xfl-line); box-shadow: 0 1px 6px rgba(16, 42, 71, .06); }
+.main-footer { border-top: 1px solid var(--xfl-line); font-size: 14px; color: #5b6b7d; }
+
+/* ---- cards ---- */
+.card { border: 1px solid var(--xfl-line); border-radius: 12px; box-shadow: 0 2px 10px rgba(16, 42, 71, .06); overflow: hidden; }
+.card > .card-header { border-bottom: 1px solid var(--xfl-line); }
+.card > .card-header h3, .card > .card-header h4, .card > .card-header .card-title { font-weight: 600; }
+.content > .card-header { background: #fff; border: 1px solid var(--xfl-line); border-radius: 12px 12px 0 0; }
+
+/* ---- the coloured number boxes of the dashboards ---- */
+.small-box { border-radius: 12px; overflow: hidden; box-shadow: 0 6px 16px rgba(16, 42, 71, .12); transition: transform .15s ease, box-shadow .15s ease; }
+.small-box:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(16, 42, 71, .18); }
+.small-box .inner h3 { font-weight: 700; }
+.small-box .small-box-footer { padding: 6px 0; }
+
+/* ---- tables ---- */
+.table thead th { border-top: 0; border-bottom: 2px solid var(--xfl-line); background: #f8fafc; color: #46586b; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; vertical-align: middle; }
+.table td { vertical-align: middle; }
+.table-striped tbody tr:nth-of-type(odd) { background-color: #fafcfe; }
+.table tbody tr:hover { background-color: #eef4fb; }
+
+/* ---- buttons and fields ---- */
+.btn { border-radius: 8px; }
+.btn-sm { border-radius: 6px; }
+.btn-primary { background-color: var(--xfl-blue); border-color: var(--xfl-blue); }
+.btn-primary:hover, .btn-primary:focus { background-color: var(--xfl-blue-dark); border-color: var(--xfl-blue-dark); }
+.form-control { border-radius: 8px; }
+.form-control:focus { border-color: var(--xfl-blue); box-shadow: 0 0 0 .2rem rgba(23, 105, 194, .15); }
+.input-group > .form-control:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.input-group > .form-control:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+label { font-weight: 600; color: #33465a; }
+.alert { border-radius: 10px; border: 0; box-shadow: 0 2px 8px rgba(16, 42, 71, .08); }
+.badge { border-radius: 6px; padding: .4em .6em; }
+
+/* ---- sign-in, registration and password pages ---- */
+.login-page, .register-page { background: linear-gradient(135deg, #e9f0f8 0%, #f6f9fc 60%, #e4eef9 100%); }
+.login-box .card, .register-box .card { border: 0; border-radius: 14px; box-shadow: 0 14px 40px rgba(16, 42, 71, .14); }
+.login-logo a, .register-logo a { color: var(--xfl-navy); font-weight: 600; }
