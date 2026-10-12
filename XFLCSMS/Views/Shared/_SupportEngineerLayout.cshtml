@@ -15,6 +15,7 @@
     <!-- Theme style -->
     <link rel="stylesheet" href="~/css/adminlte.min.css">
     <link rel="stylesheet" href="~/css/xfl-polish.css" asp-append-version="true">
+    <script src="~/js/xfl-ui.js" asp-append-version="true" defer></script>
     <!-- DataTables CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-x6D3f/jRqIR14+eGhETZq4JalZMZJKC4vEcBSxGr8Uk1HRYcVS8zI1uvzVzmzSdcI37jQoR6T+10YteDkbf6Gg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -118,7 +119,7 @@
                              with font-awesome or any other icon font library -->
 
                         <li class="nav-item menu-open">
-                            <a href="#" class="nav-link active">
+                            <a href="#" class="nav-link xfl-menu-head">
                                 <i class="nav-icon fas fa-book"></i>
                                 <p>
                                     Pages
@@ -126,6 +127,12 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a asp-action="Dashbord" class="nav-link">
+                                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                                        <p>Dashboard</p>
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a asp-action="IssueRaiseFrom" class="nav-link">
                                         <i class="fas fa-plus-circle nav-icon"></i>

@@ -67,3 +67,27 @@ label { font-weight: 600; color: #33465a; }
 .login-page, .register-page { background: linear-gradient(135deg, #e9f0f8 0%, #f6f9fc 60%, #e4eef9 100%); }
 .login-box .card, .register-box .card { border: 0; border-radius: 14px; box-shadow: 0 14px 40px rgba(16, 42, 71, .14); }
 .login-logo a, .register-logo a { color: var(--xfl-navy); font-weight: 600; }
+
+/* ---- tools that only distract: collapse and close on cards, the theme panel ---- */
+[data-card-widget="collapse"], [data-card-widget="remove"], [data-card-widget="maximize"],
+[data-widget="control-sidebar"], .control-sidebar { display: none !important; }
+
+/* ---- side menu: the group title is a quiet heading, the open page is the blue one ---- */
+.nav-sidebar > .nav-item > .nav-link.xfl-menu-head { background: transparent; box-shadow: none; color: #8fa6c0; text-transform: uppercase; letter-spacing: .08em; }
+.nav-sidebar > .nav-item > .nav-link.xfl-menu-head p { font-size: 12px; font-weight: 600; }
+.nav-sidebar > .nav-item > .nav-link.xfl-menu-head:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+.nav-sidebar .nav-treeview > .nav-item > .nav-link:hover,
+.nav-sidebar .nav-treeview .nav-treeview > .nav-item > .nav-link:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link.active,
+.sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link.active:hover,
+.nav-sidebar .nav-treeview .nav-link.active, .nav-sidebar .nav-treeview .nav-link.active:hover {
+    background: var(--xfl-blue); color: #fff; box-shadow: 0 4px 12px rgba(23, 105, 194, .35); font-weight: 600;
+}
+.nav-sidebar .nav-treeview .nav-link.active .nav-icon { opacity: 1; color: #fff; }
+.main-header .nav-link:hover { color: var(--xfl-blue); }
+
+/* ---- the XFL logo on the sign-in, registration and password pages ---- */
+.xfl-login-brand { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; color: var(--xfl-navy); text-decoration: none; }
+.xfl-login-brand:hover { color: var(--xfl-navy); text-decoration: none; }
+.xfl-login-brand img { width: 104px; height: 104px; border-radius: 50%; box-shadow: 0 6px 18px rgba(16, 42, 71, .18); background: #fff; }
+.xfl-login-brand .h1 { margin: 0; font-size: 1.9rem; letter-spacing: .02em; }
