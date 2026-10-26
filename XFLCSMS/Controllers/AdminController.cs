@@ -281,7 +281,7 @@ namespace XFLCSMS.Controllers
                     .Include(i => i.attachment)  // Include attachments in the query
                     .FirstOrDefault(i => i.IssueId == id);
                 //var SupportEng = _context.Users.Where(i => i.Designation == "Support Engineer").ToList();
-                var SupportEng = _context.Users.Where(user => user.Department == "Support Engineer").ToList();
+                var SupportEng = await Tickets.AssignableEngineersAsync();
 
                 if (issueWithAttachments == null || !CanAccessIssue(issueWithAttachments))
                 {
@@ -734,10 +734,13 @@ namespace XFLCSMS.Controllers
 
                 if (user != null)
                 {
-                    user.UType = userView.UType;
                     user.UStatus = userView.UStatus;
                     user.UCatagory = userView.UCatagory;
                     user.Department = userView.Department;
+                    // Sign-in picks the role from UCatagory, UType and Department together. Keep UType in line with the
+                    // chosen department (as Create User does): otherwise "Support Engineer" with "Outside User" signs in
+                    // as a Maker but is still offered as an engineer to assign tickets to.
+                    user.UType = userView.UCatagory || IsStaffDepartment(userView.Department);
                     _context.Update(user);
                     await _context.SaveChangesAsync();
                     return RedirectToAction("UserList");
@@ -748,6 +751,11 @@ namespace XFLCSMS.Controllers
             {
                 return HandleError(ex);
             }
+        }
+
+        private static bool IsStaffDepartment(string? department)
+        {
+            return department == "Support Maneger" || department == "Support Engineer";
         }
 
         public async Task<IActionResult> BrocarageHouseList()
