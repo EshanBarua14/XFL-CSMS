@@ -423,7 +423,7 @@ namespace XFLCSMS.Controllers
                 var issueWithAttachments = _context.Issues
                     .Include(i => i.attachment)  // Include attachments in the query
                     .FirstOrDefault(i => i.IssueId == id);
-                var SupportEng = _context.Users.Where(i => i.Department == "Support Engineer").ToList();
+                var SupportEng = await Tickets.AssignableEngineersAsync();
 
                 if (issueWithAttachments == null || !CanAccessIssue(issueWithAttachments))
                 {

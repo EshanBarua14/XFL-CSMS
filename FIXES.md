@@ -28,6 +28,9 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 - **Paging:** an empty list showed page 0 of 0 with serial -9; a page number past the end showed an empty table.
 - **Forgot password** with a user name tried to send the mail *to the user name*. **Registration** with a failing mail server ended in an error page and left an account that could never be verified; it is now rolled back with a message.
 
+- **Admin > Edit User: choosing Support Manager / Support Engineer did not change the role** unless "User Type" was also set to "XFL User"; the user kept signing in as a Maker but was offered as an engineer on Edit Ticket. User Type now follows the department (as in Create User).
+- **Edit Ticket offered disabled engineers** (and non-XFL accounts with department "Support Engineer") in the assign list. Only active XFL support engineers are listed now (`TicketService.AssignableEngineersAsync`).
+
 ## 3. Security
 
 - Many actions had no session check at all (report searches, attachment download/delete, and the old scaffolding controllers `Home`, `Issue`, `DataTable`, `ServerDT` - including file upload and ticket delete). All role controllers now inherit `CsmsController`, which requires the role's session; the old controllers are admin-only (`Infrastructure/SessionAuthorizeAttribute.cs`).
@@ -64,4 +67,4 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 
 `Controllers/CsmsController.cs`, `Infrastructure/SessionAuthorizeAttribute.cs`, `Services/TicketService.cs`,
 `Services/PasswordHasher.cs`, `Services/HtmlSanitizer.cs`, `Data/DbInitializer.cs`,
-`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`
+`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`, `Data/DemoDataSeeder.cs` (sample data, Development only)

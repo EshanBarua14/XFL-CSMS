@@ -250,6 +250,15 @@ namespace XFLCSMS.Services
             }
         }
 
+        /// <summary>Engineers a ticket can be assigned to: active XFL support engineers (not disabled accounts).</summary>
+        public Task<List<User>> AssignableEngineersAsync()
+        {
+            return _context.Users
+                .Where(u => u.Department == "Support Engineer" && u.UType && u.UStatus)
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
+        }
+
         /// <summary>Edit rules for the ticket owner (Maker): text fields and priority only.</summary>
         public void ApplyOwnerEdit(IssueTable issue, MakerView form, User editor)
         {

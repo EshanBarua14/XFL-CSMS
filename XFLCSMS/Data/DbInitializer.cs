@@ -10,7 +10,8 @@ namespace XFLCSMS.Data
     ///  1. applies pending EF Core migrations (creates the database on a fresh SQL Server);
     ///  2. on a database without any user, creates the first administrator from the "SeedAdmin" settings.
     ///     Without it a fresh database cannot be used at all: registering needs a brokerage house and a
-    ///     branch, and only an administrator can create those.
+    ///     branch, and only an administrator can create those;
+    ///  3. with "SeedDemoData": true and no tickets yet, adds sample data (see DemoDataSeeder).
     /// </summary>
     public static class DbInitializer
     {
@@ -28,6 +29,7 @@ namespace XFLCSMS.Data
 
                 if (db.Users.Any())
                 {
+                    DemoDataSeeder.Seed(db, configuration, logger);
                     return;
                 }
 
@@ -84,6 +86,8 @@ namespace XFLCSMS.Data
                 db.SaveChanges();
 
                 logger.LogWarning("Empty database: created the first administrator '{UserName}'. Sign in and change the password.", userName);
+
+                DemoDataSeeder.Seed(db, configuration, logger);
             }
             catch (Exception ex)
             {
