@@ -1,0 +1,38 @@
+@model List<XFLCSMS.Models.Feedback.SlaTarget>
+@{
+    Layout = "_Layout";
+}
+<section class="content-header">
+    <div class="container-fluid">
+        <h1>SLA Targets</h1>
+        <p class="text-muted mb-0">Used by the Engineer Scorecard. Hours are calendar hours from the time the ticket was raised (resolution) or assigned (first response).</p>
+    </div>
+</section>
+<section class="content">
+    <div class="container-fluid">
+        @if (ViewBag.message != null)
+        {
+            <div class="alert alert-danger">@ViewBag.message</div>
+        }
+        <div class="card" style="max-width: 720px;">
+            <div class="card-body">
+                <form asp-controller="Admin" asp-action="SlaTargets" method="post">
+                    <table class="table table-sm">
+                        <thead><tr><th>Priority</th><th>First response (hours)</th><th>Resolution (hours)</th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Count; i++)
+                            {
+                                <tr>
+                                    <td><input type="hidden" name="targets[@i].Priority" value="@Model[i].Priority" /><b>@Model[i].Priority</b></td>
+                                    <td><input type="number" step="0.25" min="0.25" max="2000" name="targets[@i].FirstResponseHours" value="@Model[i].FirstResponseHours.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm" required /></td>
+                                    <td><input type="number" step="0.25" min="0.25" max="5000" name="targets[@i].ResolutionHours" value="@Model[i].ResolutionHours.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm" required /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>

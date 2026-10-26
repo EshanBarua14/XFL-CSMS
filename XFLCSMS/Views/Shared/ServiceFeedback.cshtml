@@ -1,0 +1,139 @@
+@model XFLCSMS.Models.Feedback.ServiceFeedbackView
+@{
+    Layout = Model.Layout;
+    string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string Stars(int n) => new string('★', n) + new string('☆', 5 - n);
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-8">
+                <h1>Service Feedback</h1>
+                <p class="text-muted mb-0">Client ratings of closed tickets. Visible to Admin and Support Manager only; engineers and clients never see them.</p>
+            </div>
+            <div class="col-sm-4 text-sm-right d-print-none">
+                <a class="btn btn-default btn-sm" asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)"
+                   asp-route-engineerId="@Model.EngineerId" asp-route-stars="@Model.Stars" asp-route-houseId="@Model.HouseId" asp-route-followUp="@Model.FollowUp" asp-route-export="csv"><i class="fas fa-file-csv"></i> Download (CSV)</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="card d-print-none">
+        <div class="card-body py-2">
+            <form asp-controller="@Model.Controller" asp-action="ServiceFeedback" method="get" class="form-inline">
+                <label class="mr-2" for="fbFrom">Rated from</label>
+                <input type="date" id="fbFrom" name="from" value="@D(Model.From)" class="form-control form-control-sm mr-3 mb-1" />
+                <label class="mr-2" for="fbTo">to</label>
+                <input type="date" id="fbTo" name="to" value="@D(Model.To)" class="form-control form-control-sm mr-3 mb-1" />
+                <select name="engineerId" class="form-control form-control-sm mr-2 mb-1">
+                    <option value="">All engineers</option>
+                    @foreach (var (id, name) in Model.Engineers)
+                    {
+                        <option value="@id" selected="@(Model.EngineerId == id)">@name</option>
+                    }
+                </select>
+                <select name="houseId" class="form-control form-control-sm mr-2 mb-1">
+                    <option value="">All houses</option>
+                    @foreach (var (id, name) in Model.Houses)
+                    {
+                        <option value="@id" selected="@(Model.HouseId == id)">@name</option>
+                    }
+                </select>
+                <select name="stars" class="form-control form-control-sm mr-2 mb-1">
+                    <option value="">Any stars</option>
+                    @for (var i = 5; i >= 1; i--)
+                    {
+                        <option value="@i" selected="@(Model.Stars == i)">@i star@(i == 1 ? "" : "s")</option>
+                    }
+                </select>
+                <div class="form-check mr-3 mb-1">
+                    <input class="form-check-input" type="checkbox" id="fbFollow" name="followUp" value="true" @(Model.FollowUp ? "checked" : "") />
+                    <label class="form-check-label" for="fbFollow">Needs follow-up only</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm mb-1"><i class="fas fa-filter"></i> Show</button>
+                <a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-followUp="true" class="btn btn-outline-danger btn-sm ml-2 mb-1">
+                    Needs follow-up <span class="badge badge-danger">@Model.UnreviewedLow</span>
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h4 class="mb-0">By Engineer</h4></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-striped table-sm mb-0">
+                <thead>
+                    <tr><th>Engineer</th><th class="text-right">Ratings</th><th class="text-right">Average</th><th class="text-right">4-5 stars</th><th class="text-right">1-2 stars</th><th class="text-right">Closed tickets</th><th class="text-right">Rated</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Summary)
+                    {
+                        <tr>
+                            <td>@s.EngineerName</td>
+                            <td class="text-right">@s.Ratings</td>
+                            <td class="text-right"><b>@s.AverageStars.ToString("0.00")</b></td>
+                            <td class="text-right">@s.FourOrFive</td>
+                            <td class="text-right">@s.OneOrTwo</td>
+                            <td class="text-right">@s.ClosedTickets</td>
+                            <td class="text-right">@(s.ClosedTickets == 0 ? "-" : s.ResponseRate + "%")</td>
+                        </tr>
+                    }
+                    @if (Model.Summary.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-muted">No rating in this period.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h4 class="mb-0">Ratings (@Model.Rows.Count)</h4></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Rated</th><th>Ticket</th><th>House / client</th><th>Engineer</th><th>Stars</th><th>Solved</th><th style="min-width: 260px;">Feedback</th><th style="min-width: 220px;">Follow-up</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        var r = row.Rating;
+                        <tr class="@(r.Stars <= 2 && r.ReviewedOn == null ? "table-danger" : "")">
+                            <td class="text-nowrap">@r.CreatedOn.ToString("dd MMM yyyy")</td>
+                            <td><a asp-controller="@Model.Controller" asp-action="TicketView" asp-route-id="@r.IssueId">@row.TicketNumber</a><div class="small text-muted">@row.TicketTitle · @row.Priority</div></td>
+                            <td>@row.HouseName<div class="small text-muted">@row.RatedByName</div></td>
+                            <td>@r.EngineerName</td>
+                            <td class="text-nowrap" style="color: #f39c12;" title="@r.Stars of 5">@Stars(r.Stars)</td>
+                            <td>@(r.FullySolved ? "Yes" : "No")</td>
+                            <td style="white-space: pre-wrap;">@r.Comment</td>
+                            <td>
+                                @if (r.ReviewedOn != null)
+                                {
+                                    <span class="small"><i class="fas fa-check-circle text-success"></i> @r.ReviewedBy, @r.ReviewedOn.Value.ToString("dd MMM")@(string.IsNullOrWhiteSpace(r.ReviewNote) ? "" : ": " + r.ReviewNote)</span>
+                                }
+                                else
+                                {
+                                    <form asp-controller="@Model.Controller" asp-action="ReviewRating" method="post">
+                                        <input type="hidden" name="ratingId" value="@r.RatingId" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" name="note" maxlength="1000" class="form-control" placeholder="Note (optional)" />
+                                            <div class="input-group-append"><button type="submit" class="btn btn-outline-secondary" title="Mark as reviewed"><i class="fas fa-check"></i></button></div>
+                                        </div>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-muted">No rating matches the filters.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

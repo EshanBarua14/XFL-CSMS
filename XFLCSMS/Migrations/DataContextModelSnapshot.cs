@@ -114,6 +114,299 @@ namespace XFLCSMS.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.EngineerAward", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("DecidedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EngineerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("EngineerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Month")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NominatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double?>("Score")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TopRankedName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Month")
+                        .IsUnique();
+
+                    b.ToTable("EngineerAwards");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.MonthlyEngineerScore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<double?>("AdjustedRating")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("AverageStars")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("BacklogOverdueShare")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BacklogPoints")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("Eligible")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EngineerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("EngineerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("FirstResponsePoints")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("FrozenOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LowRatingsUnreviewed")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("MedianFirstResponseMinutes")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("MedianResolutionHours")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("Month")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Rank")
+                        .HasColumnType("int");
+
+                    b.Property<double>("RatingPoints")
+                        .HasColumnType("float");
+
+                    b.Property<int>("RatingsCount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("ReopenPoints")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ReopenRate")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResolutionPoints")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ResolutionRatio")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("SlaCompliance")
+                        .HasColumnType("float");
+
+                    b.Property<double>("SlaPoints")
+                        .HasColumnType("float");
+
+                    b.Property<int>("TicketsClosed")
+                        .HasColumnType("int");
+
+                    b.Property<double>("VolumePoints")
+                        .HasColumnType("float");
+
+                    b.Property<double>("WeightedVolume")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Month", "EngineerUserId")
+                        .IsUnique();
+
+                    b.ToTable("MonthlyEngineerScores");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.SlaTarget", b =>
+                {
+                    b.Property<string>("Priority")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<double>("FirstResponseHours")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResolutionHours")
+                        .HasColumnType("float");
+
+                    b.HasKey("Priority");
+
+                    b.ToTable("SlaTargets");
+
+                    b.HasData(
+                        new
+                        {
+                            Priority = "High",
+                            FirstResponseHours = 1.0,
+                            ResolutionHours = 8.0
+                        },
+                        new
+                        {
+                            Priority = "Medium",
+                            FirstResponseHours = 4.0,
+                            ResolutionHours = 48.0
+                        },
+                        new
+                        {
+                            Priority = "Low",
+                            FirstResponseHours = 24.0,
+                            ResolutionHours = 120.0
+                        });
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketRating", b =>
+                {
+                    b.Property<int>("RatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RatingId"), 1L, 1);
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<byte?>("CommunicationScore")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EngineerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("EngineerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("FullySolved")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("IssueId")
+                        .HasColumnType("int");
+
+                    b.Property<byte?>("QualityScore")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("RatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("ReviewedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte?>("SpeedScore")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte>("Stars")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RatingId");
+
+                    b.HasIndex("IssueId")
+                        .IsUnique();
+
+                    b.HasIndex("RatedByUserId");
+
+                    b.HasIndex("EngineerUserId", "CreatedOn");
+
+                    b.ToTable("TicketRatings");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("AssignedToUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ChangedByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ChangedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("IssueId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ToStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssueId", "ChangedOn");
+
+                    b.ToTable("TicketStatusHistories");
+                });
+
             modelBuilder.Entity("XFLCSMS.Models.Issue.Attachment", b =>
                 {
                     b.Property<int>("AttachmentId")
@@ -163,6 +456,9 @@ namespace XFLCSMS.Migrations
                     b.Property<DateTime?>("AssignOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("AssignedToUserId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("BranchhBranchId")
                         .HasColumnType("int");
 
@@ -180,6 +476,9 @@ namespace XFLCSMS.Migrations
 
                     b.Property<string>("Details")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FirstResponseOn")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("IStatus")
                         .HasColumnType("nvarchar(max)");
@@ -219,6 +518,8 @@ namespace XFLCSMS.Migrations
                     b.HasKey("IssueId");
 
                     b.HasIndex("AffectedSectionId");
+
+                    b.HasIndex("AssignedToUserId");
 
                     b.HasIndex("BranchhBranchId");
 
@@ -410,6 +711,39 @@ namespace XFLCSMS.Migrations
                     b.Navigation("Brokerage");
                 });
 
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketRating", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("EngineerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("XFLCSMS.Models.Issue.IssueTable", "Issue")
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("RatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Issue");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketStatusHistory", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Issue.IssueTable", "Issue")
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Issue");
+                });
+
             modelBuilder.Entity("XFLCSMS.Models.Issue.Attachment", b =>
                 {
                     b.HasOne("XFLCSMS.Models.Issue.IssueTable", "issue")
@@ -426,6 +760,11 @@ namespace XFLCSMS.Migrations
                     b.HasOne("XFLCSMS.Models.Affected.AffectedSection", "affecteds")
                         .WithMany("issue")
                         .HasForeignKey("AffectedSectionId");
+
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("XFLCSMS.Models.Branch.Branchh", null)
                         .WithMany("Issues")

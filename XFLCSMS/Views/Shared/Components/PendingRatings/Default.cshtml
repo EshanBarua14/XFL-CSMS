@@ -1,0 +1,13 @@
+@model List<XFLCSMS.Models.Issue.IssueTable>
+<div class="callout callout-warning">
+    <h5 class="mb-2"><i class="fas fa-star text-warning"></i> Please rate your closed tickets</h5>
+    <ul class="mb-0 pl-3">
+        @foreach (var i in Model)
+        {
+            <li>
+                <a asp-controller="Maker" asp-action="RateTicket" asp-route-id="@i.IssueId">@i.TNumber</a>
+                <span class="text-muted">@i.ITitle, closed @i.ClosedOn?.ToString("dd MMM yyyy")</span>
+            </li>
+        }
+    </ul>
+</div>

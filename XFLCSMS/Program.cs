@@ -27,6 +27,8 @@ builder.Services.AddSession(option =>
 builder.Services.AddScoped<IEmailServices, EmailService>();
 builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<TicketCountService>();
+builder.Services.AddScoped<FeedbackService>();
+builder.Services.AddScoped<ScorecardService>();
 
 // Connection string lives in appsettings.json -> ConnectionStrings:DefaultConnection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")

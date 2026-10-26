@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
+using XFLCSMS.Models.Feedback;
 using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Register;
 
@@ -119,6 +120,17 @@ namespace XFLCSMS.Services
             };
 
             _context.Issues.Add(issue);
+            await _context.SaveChangesAsync();
+
+            _context.TicketStatusHistories.Add(new TicketStatusHistory
+            {
+                IssueId = issue.IssueId,
+                FromStatus = null,
+                ToStatus = issue.IStatus,
+                ChangedByUserId = user.Id,
+                ChangedByName = user.FullName,
+                ChangedOn = issue.TDate
+            });
             await _context.SaveChangesAsync();
 
             rejected = await SaveAttachmentsAsync(issue.IssueId, files);
@@ -256,9 +268,14 @@ namespace XFLCSMS.Services
             ApplyCommonFields(issue, form, editor);
         }
 
-        /// <summary>Edit rules for XFL staff (Admin / Support Manager / Support Engineer): also assignment and status.</summary>
-        public void ApplyStaffEdit(IssueTable issue, MakerView form, User editor, bool canApprove)
+        /// <summary>
+        /// Edit rules for XFL staff (Admin / Support Manager / Support Engineer): also assignment and status.
+        /// Records status changes in TicketStatusHistory. Returns true when this edit closed the ticket.
+        /// </summary>
+        public bool ApplyStaffEdit(IssueTable issue, MakerView form, User editor, bool canApprove)
         {
+            var oldStatus = issue.IStatus;
+            var oldComments = issue.Comments;
             ApplyCommonFields(issue, form, editor);
 
             var now = DateTime.Now;
@@ -269,6 +286,7 @@ namespace XFLCSMS.Services
             {
                 issue.AssignBy = null;
                 issue.AssignOn = null;
+                issue.AssignedToUserId = null;
                 issue.ApproveBy = null;
                 issue.ApproveOn = null;
             }
@@ -279,6 +297,11 @@ namespace XFLCSMS.Services
                     // Stamp the assignment time once, when the engineer is actually (re)assigned.
                     issue.AssignBy = newAssignee;
                     issue.AssignOn = now;
+                }
+
+                if (assigneeChanged || issue.AssignedToUserId == null)
+                {
+                    issue.AssignedToUserId = FindStaffId(newAssignee);
                 }
 
                 if (canApprove && (assigneeChanged || issue.ApproveOn == null))
@@ -306,6 +329,52 @@ namespace XFLCSMS.Services
                 issue.ClosedOn = null;
                 issue.ClosedBy = null;
             }
+
+            var statusChanged = !string.Equals(oldStatus ?? string.Empty, newStatus ?? string.Empty, StringComparison.Ordinal);
+            var answered = !string.Equals(oldComments ?? string.Empty, issue.Comments ?? string.Empty, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(issue.Comments);
+
+            // First response: the first time staff move the ticket on from Open, or write an answer in Comments.
+            if (issue.FirstResponseOn == null && ((statusChanged && newStatus != "Open") || answered))
+            {
+                issue.FirstResponseOn = now;
+            }
+
+            if (statusChanged)
+            {
+                _context.TicketStatusHistories.Add(new TicketStatusHistory
+                {
+                    IssueId = issue.IssueId,
+                    FromStatus = oldStatus,
+                    ToStatus = newStatus,
+                    AssignedToUserId = issue.AssignedToUserId,
+                    ChangedByUserId = editor.Id,
+                    ChangedByName = editor.FullName,
+                    ChangedOn = now
+                });
+            }
+
+            return statusChanged && newStatus == "Close";
+        }
+
+        /// <summary>
+        /// The assignee drop-down posts the engineer's full name. Resolve it to a user id, preferring XFL staff
+        /// (Support Engineers first) when two users share the name.
+        /// </summary>
+        public int? FindStaffId(string? fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return null;
+            }
+
+            return _context.Users
+                .Where(u => u.FullName == fullName)
+                .OrderByDescending(u => u.Department == "Support Engineer")
+                .ThenByDescending(u => u.UType)
+                .ThenBy(u => u.Id)
+                .Select(u => (int?)u.Id)
+                .FirstOrDefault();
         }
 
         private static void ApplyCommonFields(IssueTable issue, MakerView form, User editor)

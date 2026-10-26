@@ -9,6 +9,7 @@ using XFLCSMS.Models.Support;
 using XFLCSMS.Models.Login;
 using XFLCSMS.Models.DataTable;
 using XFLCSMS.Models.Todos;
+using XFLCSMS.Models.Feedback;
 
 namespace XFLCSMS.Data
 {
@@ -31,6 +32,44 @@ namespace XFLCSMS.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<Todo> Todos { get; set; }
+
+        public DbSet<TicketStatusHistory> TicketStatusHistories => Set<TicketStatusHistory>();
+        public DbSet<SlaTarget> SlaTargets => Set<SlaTarget>();
+        public DbSet<TicketRating> TicketRatings => Set<TicketRating>();
+        public DbSet<MonthlyEngineerScore> MonthlyEngineerScores => Set<MonthlyEngineerScore>();
+        public DbSet<EngineerAward> EngineerAwards => Set<EngineerAward>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Users are never deleted through these links: DeleteUser refuses users that are referenced.
+            modelBuilder.Entity<IssueTable>()
+                .HasOne<User>().WithMany().HasForeignKey(i => i.AssignedToUserId).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TicketStatusHistory>(e =>
+            {
+                e.HasOne(h => h.Issue).WithMany().HasForeignKey(h => h.IssueId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(h => new { h.IssueId, h.ChangedOn });
+            });
+
+            modelBuilder.Entity<TicketRating>(e =>
+            {
+                e.HasOne(r => r.Issue).WithMany().HasForeignKey(r => r.IssueId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(r => r.IssueId).IsUnique();
+                e.HasOne<User>().WithMany().HasForeignKey(r => r.RatedByUserId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne<User>().WithMany().HasForeignKey(r => r.EngineerUserId).OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(r => new { r.EngineerUserId, r.CreatedOn });
+            });
+
+            modelBuilder.Entity<MonthlyEngineerScore>()
+                .HasIndex(s => new { s.Month, s.EngineerUserId }).IsUnique();
+
+            modelBuilder.Entity<EngineerAward>()
+                .HasIndex(a => a.Month).IsUnique();
+
+            modelBuilder.Entity<SlaTarget>().HasData(SlaTarget.Defaults);
+        }
 
 
     }

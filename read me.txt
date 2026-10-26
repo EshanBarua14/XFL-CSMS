@@ -43,3 +43,19 @@ in appsettings.json (Gmail SMTP, port 587). If the mail cannot be sent the user 
 of an error page, and a registration whose mail failed is rolled back.
 
 See FIXES.md for the list of what was changed.
+
+5. Client ratings and Engineer Scorecard
+----------------------------------------
+- When XFL staff close a ticket, the client who raised it gets an e-mail and can rate it (1-5 stars,
+  optional speed / communication / quality scores, "fully solved?" and a comment) for 14 days, change the
+  rating for 48 hours, and reopen the ticket if the problem is not solved (Maker > ticket page).
+- Ratings are visible ONLY to Admin and Support Manager: menu "Service Feedback" (filters, CSV, follow-up of
+  1-2 star ratings) and a "Client Rating" panel on their ticket page. Support Engineers never see them.
+- Menu "Engineer Scorecard" ranks Support Engineers per month (score 0-100 from client rating, SLA, resolution
+  time, volume, reopens, first response and overdue backlog). A month is frozen on the 3rd of the next month and
+  the top engineer who passes the award gates is nominated "Best Support Engineer of the Month"; a manager
+  confirms or picks another engineer with a reason (confirmed automatically after 5 days).
+- Weights, minimums and award gates: appsettings.json > "Scorecard". SLA targets per priority: Admin > SLA Targets.
+- The migration RatingsAndScorecard is applied at start-up like the others. It fills the new assignee id of
+  existing tickets from the stored engineer name. Reopens, first response and status history are recorded from
+  now on, so the first fully accurate scorecard is the first complete month after deployment.

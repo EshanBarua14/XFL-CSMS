@@ -1,0 +1,36 @@
+@model XFLCSMS.Models.Feedback.RatingState
+@{
+    int issueId = ViewBag.IssueId;
+    var r = Model.Rating;
+}
+<div class="card card-outline card-warning">
+    <div class="card-body py-3">
+        @if (r != null)
+        {
+            <span style="font-size: 1.3rem; color: #f39c12;">@(new string('★', r.Stars) + new string('☆', 5 - r.Stars))</span>
+            <span class="ml-2">You rated this ticket @r.Stars of 5. Thank you for your feedback.</span>
+            @if (Model.CanEdit)
+            {
+                <a asp-controller="Maker" asp-action="RateTicket" asp-route-id="@issueId" class="btn btn-sm btn-outline-secondary ml-2">Change rating</a>
+            }
+        }
+        else if (Model.CanRate)
+        {
+            <b>How did we do?</b>
+            <span class="ml-1">This ticket is closed. Please rate the support you received (until @Model.RateUntil?.ToString("dd MMM yyyy")).</span>
+            <a asp-controller="Maker" asp-action="RateTicket" asp-route-id="@issueId" class="btn btn-sm btn-warning ml-2"><i class="fas fa-star"></i> Rate this ticket</a>
+        }
+        else
+        {
+            <span class="text-muted">This ticket is closed. The rating period has ended.</span>
+        }
+
+        @if (Model.CanReopen)
+        {
+            <form asp-controller="Maker" asp-action="ReopenTicket" asp-route-id="@issueId" method="post" class="d-inline"
+                  onsubmit="return confirm('Reopen this ticket? The XFL team will continue working on it.');">
+                <button type="submit" class="btn btn-sm btn-outline-danger ml-2"><i class="fas fa-redo"></i> Problem not solved? Reopen ticket</button>
+            </form>
+        }
+    </div>
+</div>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 using XFLCSMS.Infrastructure;
 using XFLCSMS.Models.Admin;
+using XFLCSMS.Models.Email;
 using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Register;
 using XFLCSMS.Services;
@@ -83,6 +84,41 @@ namespace XFLCSMS.Controllers
             }
 
             return View("Error", new ErrorViewModel { RequestId = HttpContext.TraceIdentifier });
+        }
+
+        /// <summary>
+        /// Tells the client who raised the ticket that it was closed and asks for a rating. A mail failure is logged
+        /// and never stops the edit.
+        /// </summary>
+        protected void NotifyTicketClosed(IssueTable issue)
+        {
+            var logger = HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(GetType());
+            try
+            {
+                var owner = Db.Users.FirstOrDefault(u => u.Id == issue.UserId);
+                if (owner == null || string.IsNullOrWhiteSpace(owner.Email) || owner.UType || owner.UCatagory)
+                {
+                    return; // tickets raised by XFL staff on behalf of a house have no client account to ask
+                }
+
+                var link = Url.Action("RateTicket", "Maker", new { id = issue.IssueId }, Request.Scheme);
+                var title = System.Net.WebUtility.HtmlEncode(issue.ITitle ?? string.Empty);
+                HttpContext.RequestServices.GetRequiredService<IEmailServices>().SendEmail(new EmailDto
+                {
+                    To = owner.Email,
+                    Subject = "Ticket " + issue.TNumber + " is closed - how did we do?",
+                    Body = "Dear " + System.Net.WebUtility.HtmlEncode(owner.FullName) + ",<br/><br/>" +
+                           "Your ticket <b>" + issue.TNumber + "</b> (" + title + ") has been closed by the XFL support team.<br/><br/>" +
+                           "Please take a minute to rate the support you received: <a href=\"" + link + "\">rate this ticket</a>. " +
+                           "Your feedback is seen only by XFL support management.<br/><br/>" +
+                           "If the problem is not solved, you can reopen the ticket from the same page within " + FeedbackService.RatingWindowDays + " days.<br/><br/>" +
+                           "Thank you,<br/>Xpert Fintech Limited"
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not send the rating e-mail for ticket {Ticket}.", issue.TNumber);
+            }
         }
 
         public IActionResult Logout()

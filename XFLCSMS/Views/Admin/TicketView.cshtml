@@ -22,6 +22,7 @@
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
+        @await Component.InvokeAsync("RatingPanel", new { issueId = Model.IssueId })
         <div class="row">
             <!-- left column -->
             <div class="col-md-6">

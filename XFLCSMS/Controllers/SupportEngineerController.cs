@@ -548,8 +548,12 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: true);
+                var closedNow = Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: true);
                 await _context.SaveChangesAsync();
+                if (closedNow)
+                {
+                    NotifyTicketClosed(issue);
+                }
 
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)
