@@ -67,6 +67,9 @@ See FIXES.md for the list of what was changed.
   time, volume, reopens, first response and overdue backlog). A month is frozen on the 3rd of the next month and
   the top engineer who passes the award gates is nominated "Best Support Engineer of the Month"; a manager
   confirms or picks another engineer with a reason (confirmed automatically after 5 days).
+- An engineer is ranked with at least 5 closed tickets in the month (no rating needed: without ratings the
+  client-rating part counts as average). The award also needs 3 client ratings, adjusted rating 4.0+, SLA met
+  85%+ and no unreviewed 1-star rating. The scorecard opens on the latest month that has closed tickets.
 - Weights, minimums and award gates: appsettings.json > "Scorecard". SLA targets per priority: Admin > SLA Targets.
 - The migration RatingsAndScorecard is applied at start-up like the others. It fills the new assignee id of
   existing tickets from the stored engineer name. Reopens, first response and status history are recorded from

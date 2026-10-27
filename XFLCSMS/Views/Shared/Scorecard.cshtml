@@ -149,7 +149,7 @@
                         }
                         @if (ranked.Count == 0)
                         {
-                            <tr><td colspan="11" class="text-muted">No engineer met the minimum of @s.MinClosedTickets closed tickets and @s.MinRatings client ratings this month.</td></tr>
+                            <tr><td colspan="11" class="text-muted">No engineer closed at least @s.MinClosedTickets tickets this month. Pick another month above.</td></tr>
                         }
                     </tbody>
                 </table>
@@ -159,7 +159,7 @@
         @if (notRanked.Count > 0)
         {
             <div class="card">
-                <div class="card-header"><h4 class="mb-0">Not enough data to rank</h4><span class="small text-muted">Needs at least @s.MinClosedTickets closed tickets and @s.MinRatings ratings in the month.</span></div>
+                <div class="card-header"><h4 class="mb-0">Not enough data to rank</h4><span class="small text-muted">Needs at least @s.MinClosedTickets closed tickets in the month. The award also needs @s.MinRatings client ratings.</span></div>
                 <div class="card-body p-0 table-responsive">
                     <table class="table table-sm mb-0">
                         <thead><tr><th>Engineer</th><th class="text-right">Closed</th><th class="text-right">Ratings</th><th class="text-right">Average stars</th><th class="text-right">SLA met</th><th class="text-right">Reopens</th></tr></thead>
