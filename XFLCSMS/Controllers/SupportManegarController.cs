@@ -133,236 +133,17 @@ namespace XFLCSMS.Controllers
 
 
 
-        public async Task<IActionResult> AllTicketList(int page, int rowperpage, string? searchString = null, string?
-            sortField = null, bool sortAscending = true)
+        public Task<IActionResult> AllTicketList(TicketFilter filter)
         {
-            try
-            {
-                var jsonStringFromSession = HttpContext.Session.GetString("SMData");
-                User LogSesson = JsonConvert.DeserializeObject<User>(jsonStringFromSession);
-                ViewBag.Profile = LogSesson;
-                if (page <= 0) { page = 1; }
-
-                ViewBag.CurrentSortField = sortField;
-                ViewBag.CurrentSortAscending = sortAscending;
-
-                List<IssueTable> TicketList = _context.Issues.OrderByDescending(i => i.IssueId).ToList();
-
-                if (!string.IsNullOrEmpty(searchString))
-                {
-
-
-                    TicketList = TicketList.Where(e =>
-                                            e.TNumber.ToLower().Contains(searchString.ToLower()) ||
-                                            e.ITitle?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.Priority.ToLower().Contains(searchString.ToLower()) || // Convert Priority to string for searching
-                                            e.IStatus?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.AssignOn?.ToString().ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.TDate.ToString().ToLower().Contains(searchString.ToLower()) ||
-                                            e.AssignBy?.ToLower().Contains(searchString.ToLower()) == true).ToList();
-
-                }
-
-                switch (sortField)
-                {
-                    case "TNumber":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.TNumber).ToList() :
-                            TicketList.OrderByDescending(item => item.TNumber).ToList();
-                        break;
-                    case "Tickets":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.ITitle).ToList() :
-                            TicketList.OrderByDescending(item => item.ITitle).ToList();
-                        break;
-                    case "Approval Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.AssignBy).ToList() :
-                            TicketList.OrderByDescending(item => item.AssignBy).ToList();
-                        break;
-                    case "Priority":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.Priority).ToList() :
-                            TicketList.OrderByDescending(item => item.Priority).ToList();
-                        break;
-                    case "Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.IStatus).ToList() :
-                            TicketList.OrderByDescending(item => item.IStatus).ToList();
-                        break;
-
-                    // Add cases for other fields as needed
-                    default:
-                        // Default sorting if no valid sort field provided
-                        TicketList = TicketList.OrderByDescending(item => item.IssueId).ToList();
-                        break;
-                }
-
-                int tot_records = TicketList.Count;
-                int pagesize = rowperpage > 0 ? rowperpage : 10;
-                int number_of_button = 4;
-
-
-                Pager P = new Pager(tot_records, page, pagesize, number_of_button, searchString);
-                ViewBag.pager = P;
-                int skip_records = (Math.Max(P.CurrentPage, 1) - 1) * pagesize;
-                int take_records = pagesize;
-                List<IssueTable> IssueList = TicketList.Skip(skip_records).Take(take_records).ToList();
-                return View(IssueList);
-            }
-            catch (Exception ex)
-            {
-                return HandleError(ex);
-            }
+            return TicketExplorer("All Tickets", "Every ticket of every brokerage house.", "list", null, filter);
         }
-        public async Task<IActionResult> UnassignedTicketList(int page, int rowperpage, string? searchString = null, string?
-            sortField = null, bool sortAscending = true)
+        public Task<IActionResult> UnassignedTicketList(TicketFilter filter)
         {
-            try
-            {
-                var jsonStringFromSession = HttpContext.Session.GetString("SMData");
-                User LogSesson = JsonConvert.DeserializeObject<User>(jsonStringFromSession);
-                ViewBag.Profile = LogSesson;
-                if (page <= 0) { page = 1; }
-
-                ViewBag.CurrentSortField = sortField;
-                ViewBag.CurrentSortAscending = sortAscending;
-                List<IssueTable> TicketList = _context.Issues.OrderByDescending(i => i.IssueId)
-                    .Where(i => i.AssignOn == null && i.AssignBy == null).ToList();
-                if (!string.IsNullOrEmpty(searchString))
-                {
-
-
-                    TicketList = TicketList.Where(e =>
-                                            e.TNumber.ToLower().Contains(searchString.ToLower()) ||
-                                            e.ITitle?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.Priority.ToLower().Contains(searchString.ToLower()) || // Convert Priority to string for searching
-                                            e.IStatus?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.AssignOn?.ToString().ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.TDate.ToString().ToLower().Contains(searchString.ToLower()) ||
-                                            e.AssignBy?.ToLower().Contains(searchString.ToLower()) == true).ToList();
-
-                }
-
-                switch (sortField)
-                {
-                    case "TNumber":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.TNumber).ToList() :
-                            TicketList.OrderByDescending(item => item.TNumber).ToList();
-                        break;
-                    case "Tickets":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.ITitle).ToList() :
-                            TicketList.OrderByDescending(item => item.ITitle).ToList();
-                        break;
-                    case "Approval Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.AssignBy).ToList() :
-                            TicketList.OrderByDescending(item => item.AssignBy).ToList();
-                        break;
-                    case "Priority":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.Priority).ToList() :
-                            TicketList.OrderByDescending(item => item.Priority).ToList();
-                        break;
-                    case "Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.IStatus).ToList() :
-                            TicketList.OrderByDescending(item => item.IStatus).ToList();
-                        break;
-
-                    // Add cases for other fields as needed
-                    default:
-                        // Default sorting if no valid sort field provided
-                        TicketList = TicketList.OrderByDescending(item => item.IssueId).ToList();
-                        break;
-                }
-
-                int tot_records = TicketList.Count;
-                int pagesize = rowperpage > 0 ? rowperpage : 10;
-                int number_of_button = 4;
-
-
-                Pager P = new Pager(tot_records, page, pagesize, number_of_button, searchString);
-                ViewBag.pager = P;
-                int skip_records = (Math.Max(P.CurrentPage, 1) - 1) * pagesize;
-                int take_records = pagesize;
-                List<IssueTable> IssueList = TicketList.Skip(skip_records).Take(take_records).ToList();
-                return View(IssueList);
-            }
-            catch (Exception ex)
-            {
-                return HandleError(ex);
-            }
-
+            return TicketExplorer("Unassigned Tickets", "Open tickets nobody is working on yet.", "list", "unassigned", filter);
         }
-        public async Task<IActionResult> ClosedTicketList(int page, int rowperpage, string? searchString = null, string?
-            sortField = null, bool sortAscending = true)
+        public Task<IActionResult> ClosedTicketList(TicketFilter filter)
         {
-            try
-            {
-                var jsonStringFromSession = HttpContext.Session.GetString("SMData");
-                User LogSesson = JsonConvert.DeserializeObject<User>(jsonStringFromSession);
-                ViewBag.Profile = LogSesson;
-                if (page <= 0) { page = 1; }
-
-                ViewBag.CurrentSortField = sortField;
-                ViewBag.CurrentSortAscending = sortAscending;
-                List<IssueTable> TicketList = _context.Issues.OrderByDescending(i => i.IssueId).Where(i => i.IStatus == "Close").ToList();
-
-                if (!string.IsNullOrEmpty(searchString))
-                {
-
-
-                    TicketList = TicketList.Where(e =>
-                                            e.TNumber.ToLower().Contains(searchString.ToLower()) ||
-                                            e.ITitle?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.Priority.ToLower().Contains(searchString.ToLower()) || // Convert Priority to string for searching
-                                            e.IStatus?.ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.AssignOn?.ToString().ToLower().Contains(searchString.ToLower()) == true ||
-                                            e.TDate.ToString().ToLower().Contains(searchString.ToLower()) ||
-                                            e.AssignBy?.ToLower().Contains(searchString.ToLower()) == true).ToList();
-
-                }
-
-                switch (sortField)
-                {
-                    case "TNumber":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.TNumber).ToList() :
-                            TicketList.OrderByDescending(item => item.TNumber).ToList();
-                        break;
-                    case "Tickets":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.ITitle).ToList() :
-                            TicketList.OrderByDescending(item => item.ITitle).ToList();
-                        break;
-                    case "Approval Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.AssignBy).ToList() :
-                            TicketList.OrderByDescending(item => item.AssignBy).ToList();
-                        break;
-                    case "Priority":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.Priority).ToList() :
-                            TicketList.OrderByDescending(item => item.Priority).ToList();
-                        break;
-                    case "Status":
-                        TicketList = sortAscending ? TicketList.OrderBy(item => item.IStatus).ToList() :
-                            TicketList.OrderByDescending(item => item.IStatus).ToList();
-                        break;
-
-                    // Add cases for other fields as needed
-                    default:
-                        // Default sorting if no valid sort field provided
-                        TicketList = TicketList.OrderByDescending(item => item.IssueId).ToList();
-                        break;
-                }
-
-                int tot_records = TicketList.Count;
-                int pagesize = rowperpage > 0 ? rowperpage : 10;
-                int number_of_button = 4;
-
-
-                Pager P = new Pager(tot_records, page, pagesize, number_of_button, searchString);
-                ViewBag.pager = P;
-                int skip_records = (Math.Max(P.CurrentPage, 1) - 1) * pagesize;
-                int take_records = pagesize;
-                List<IssueTable> IssueList = TicketList.Skip(skip_records).Take(take_records).ToList();
-                return View(IssueList);
-            }
-            catch (Exception ex)
-            {
-                return HandleError(ex);
-            }
-
+            return TicketExplorer("Closed Tickets", "Resolved tickets with their response and resolution times.", "list", "closed", filter);
         }
 
         public async Task<IActionResult> TicketView(int? id)
@@ -491,7 +272,7 @@ namespace XFLCSMS.Controllers
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)
                 {
-                    TempData["ErrorMessage"] = "The ticket was saved, but these files were not attached (file type not allowed): "
+                    TempData["ErrorMessage"] = "The ticket was saved, but these files were not attached (file type not allowed or larger than 10 MB): "
                         + string.Join(", ", rejected);
                 }
 
@@ -568,7 +349,7 @@ namespace XFLCSMS.Controllers
 
                 if (result.RejectedFiles.Count > 0)
                 {
-                    TempData["ErrorMessage"] = "Ticket " + result.Issue.TNumber + " was created, but these files were not attached (file type not allowed): "
+                    TempData["ErrorMessage"] = "Ticket " + result.Issue.TNumber + " was created, but these files were not attached (file type not allowed or larger than 10 MB): "
                         + string.Join(", ", result.RejectedFiles);
                 }
                 else
@@ -1041,102 +822,12 @@ namespace XFLCSMS.Controllers
 
 
 
-        [HttpGet]
-        public async Task<IActionResult> Reports()
+        public Task<IActionResult> Reports(TicketFilter filter)
         {
-            try
-            {
-
-
-                var jsonStringFromSession = HttpContext.Session.GetString("SMData");
-                User LogSesson = JsonConvert.DeserializeObject<User>(jsonStringFromSession);
-                ViewBag.Profile = LogSesson;
-
-                var supportEngineer = _context.Users.Where(i => i.Department == "Support Engineer").Select(user => user.FullName).ToList();
-                var BrocarageHouse = _context.Brokerages.ToList();
-
-
-                var reportview = new ReportView
-                {
-                Products = Tickets.AllProducts(),
-                    EmployeeNames = supportEngineer,
-                    brocarages = BrocarageHouse,
-
-
-                };
-
-                return View(reportview);
-            }
-            catch (Exception ex)
-            {
-                return HandleError(ex);
-            }
+            return TicketExplorer("Ticket Reports", "Filter by period, house, branch, product, status, priority, category, engineer and SLA; charts, breakdowns and exports.", "report", null, filter);
         }
 
 
-        [HttpGet]
-        public async Task<IActionResult> Search(ReportView reportView)
-        {
-            // the report page can be opened/searched with an empty filter
-            reportView.search ??= new XFLCSMS.Models.Admin.Search();
-            if (reportView.search.ToDate >= DateTime.Now)
-            {
-                reportView.search.ToDate = DateTime.Now;
-            }
-
-            var searchResults = await _context.Issues.ToListAsync();
-
-            if (reportView.search.BrokerageId.HasValue)
-                searchResults = searchResults.Where(x => x.BrokerageId == reportView.search.BrokerageId).ToList();
-            if (reportView.search.ProductId.HasValue)
-                searchResults = searchResults.Where(x => x.ProductId == reportView.search.ProductId).ToList();
-            if (!String.IsNullOrEmpty(reportView.search.Priority))
-                searchResults = searchResults.Where(x => x.Priority.Contains(reportView.search.Priority)).ToList();
-            if (!String.IsNullOrEmpty(reportView.search.AStatus))
-                searchResults = searchResults.Where(x => x.IStatus != null && x.IStatus.Contains(reportView.search.AStatus)).ToList();
-            if (reportView.search.EmployeeName != null)
-                searchResults = searchResults.Where(x => x.ClosedBy == reportView.search.EmployeeName).ToList();
-            // both ends of the range are inclusive, and either end may be left empty
-            if (reportView.search.FromDate != null)
-                searchResults = searchResults.Where(x => x.TDate.Date >= reportView.search.FromDate.Value.Date).ToList();
-            if (reportView.search.ToDate != null)
-                searchResults = searchResults.Where(x => x.TDate.Date <= reportView.search.ToDate.Value.Date).ToList();
-
-            string Brocaragename = (reportView.search.BrokerageId > 0) ? GetBrocarageHouseName(reportView.search.BrokerageId) : "All";
-            string EmployeeNamee = (reportView.search.EmployeeName != null) ? reportView.search.EmployeeName : "All";
-
-
-
-            int TotalTickett = searchResults.Count();
-            int TotalOpenTickett = searchResults.Where(x => x.IStatus == "Open").Count();
-            int TotalCloseTickett = searchResults.Where(x => x.IStatus == "Close").Count();
-            int TotalInquee = TotalTickett - TotalOpenTickett - TotalCloseTickett;
-
-
-            HeaderInfo SectionInfo = new HeaderInfo
-            {
-                BrokerageHouseName = Brocaragename,
-                EmployeeName = EmployeeNamee,
-                TotalTicket = TotalTickett,
-                TotalOpenTicket = TotalOpenTickett,
-                TotalCloseTicket = TotalCloseTickett,
-                TotalInque = TotalInquee,
-                ReportName= "Support Manegar"
-
-
-            };
-
-            // Populate the Issues property of the ReportView model with search results
-            var reportViewWithSearchResults = new ReportView
-            {
-                Issues = searchResults,
-                HeaderInfo = SectionInfo,
-
-            };
-
-            // Return the partial view with the populated reportView model
-            return PartialView("_SearchResults", reportViewWithSearchResults);
-        }
 
 
 

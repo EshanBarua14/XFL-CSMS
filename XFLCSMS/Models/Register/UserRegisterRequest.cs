@@ -34,10 +34,8 @@ namespace XFLCSMS.Models.Register
         [StringLength(25, MinimumLength = 5, ErrorMessage = "Username must be 5 to 25 characters")]
         public string UserName { get; set; } = string.Empty;
         [Required(ErrorMessage = "Password is required")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
         [DataType(DataType.Password)]
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{4,}$",
-        ErrorMessage = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.")]
+        [RegularExpression(PasswordRules.Pattern, ErrorMessage = PasswordRules.Message)]
         public string Password { get; set; } = string.Empty;
 
         // Not stored: only compared with Password (the page checked this in JavaScript only).

@@ -1,4 +1,4 @@
-/* XFL CSMS - a polish on top of AdminLTE. Colours and spacing only; no layout is changed.
+﻿/* XFL CSMS - a polish on top of AdminLTE. Colours and spacing only; no layout is changed.
    Loaded after adminlte.min.css by every page (Views/Shared/_XflHead.cshtml).
    Light and dark: every colour below comes from the variables, which the dark theme
    (html[data-theme="dark"], set by xfl-theme.js; AdminLTE's own body.dark-mode) redefines. */
@@ -368,3 +368,63 @@ html[data-theme="dark"] .xfl-register-title { color: #e3e8ee; }
 .xfl-register-card .input-group-text:empty { display: none; }
 .xfl-register-card .input-group:has(.input-group-text:empty) > .form-control { border-radius: 8px; }
 @media (max-width: 767.98px) { .register-page:has(.xfl-register-box) { padding-top: 72px; align-items: flex-start; } }
+
+/* ---- Installable app (xfl-pwa.js) ---- */
+.xfl-install-btn { white-space: nowrap; }
+.xfl-install-floating { position: fixed; right: 16px; bottom: 16px; z-index: 1060; box-shadow: 0 4px 14px rgba(0, 0, 0, .2); }
+.xfl-ios-hint { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 1070; max-width: 420px; margin: 0 auto; }
+@media (display-mode: standalone) { .xfl-install-btn { display: none !important; } }
+
+/* ---- Ticket lists and reports (Views/Shared/TicketExplorer, js/xfl-explorer.js) ---- */
+.xfl-chips { gap: 4px; }
+.xfl-chip { background: var(--xfl-hover); color: var(--xfl-label); font-weight: 500; border: 1px solid var(--xfl-line); padding: .35em .7em; }
+.xfl-filter-card label { font-size: .78rem; font-weight: 600; color: var(--xfl-label); margin-bottom: .15rem; }
+.xfl-kpis > div { margin-bottom: 1rem; }
+.xfl-kpi { background: var(--xfl-surface); border: 1px solid var(--xfl-line); border-left: 4px solid var(--xfl-muted); border-radius: 12px; padding: .75rem .9rem; height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 10px var(--xfl-shadow); }
+.xfl-kpi-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--xfl-muted); font-weight: 600; }
+.xfl-kpi-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; color: var(--xfl-ink); }
+.xfl-kpi-note { font-size: .75rem; color: var(--xfl-muted); }
+.xfl-kpi-blue { border-left-color: #2f6fdb; } .xfl-kpi-green { border-left-color: #2e9e57; } .xfl-kpi-red { border-left-color: #d64545; }
+.xfl-kpi-amber { border-left-color: #d99a00; } .xfl-kpi-purple { border-left-color: #7a5af5; } .xfl-kpi-teal { border-left-color: #139e9e; }
+.xfl-chart { position: relative; height: 260px; }
+.xfl-chart-lg { height: 320px; }
+.xfl-chart-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--xfl-muted); gap: 6px; }
+.xfl-chart-empty i { font-size: 2rem; opacity: .4; }
+.xfl-heat { border-collapse: separate; border-spacing: 2px; font-size: .7rem; width: 100%; }
+.xfl-heat th { color: var(--xfl-muted); font-weight: 500; text-align: center; padding: 0 2px; }
+.xfl-heat tbody th { text-align: right; padding-right: 6px; }
+.xfl-heat td { height: 18px; min-width: 12px; border-radius: 3px; background: rgba(47, 111, 219, var(--a)); }
+.xfl-heat td.z { background: var(--xfl-surface-2); }
+.xfl-bar { height: 6px; border-radius: 3px; background: var(--xfl-surface-2); overflow: hidden; }
+.xfl-bar span { display: block; height: 100%; background: #2f6fdb; border-radius: 3px; }
+.xfl-tickets td, .xfl-breakdown td { vertical-align: middle; }
+.xfl-title-cell { display: inline-block; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.xfl-badge { font-weight: 600; padding: .35em .6em; }
+.badge-purple { background: #7a5af5; color: #fff; }
+.xfl-row-breached > td:first-child { box-shadow: inset 4px 0 0 #d64545; }
+.xfl-row-risk > td:first-child { box-shadow: inset 4px 0 0 #d99a00; }
+.xfl-col-filters th { padding: 4px !important; font-weight: normal; }
+.xfl-col-filters .form-control { min-width: 80px; font-size: .75rem; height: calc(1.5em + .5rem + 2px); }
+.xfl-stars { color: #e0a100; letter-spacing: 1px; white-space: nowrap; } .xfl-stars .o { color: var(--xfl-line); }
+.xfl-detail { padding: .5rem 1rem; background: var(--xfl-surface-2); border-radius: 8px; font-size: .85rem; }
+.xfl-detail dt { color: var(--xfl-muted); font-weight: 600; }
+.btn-xs { padding: .15rem .4rem; font-size: .75rem; line-height: 1.4; border-radius: .2rem; }
+div.dt-buttons { display: flex; flex-wrap: wrap; gap: 4px; }
+div.dt-buttons .btn { margin: 0 !important; border-radius: .2rem !important; }
+.dark-mode .select2-container--bootstrap4 .select2-selection { background: var(--xfl-field); border-color: var(--xfl-field-line); color: var(--xfl-ink); }
+.dark-mode .select2-container--bootstrap4 .select2-dropdown { background: var(--xfl-surface); border-color: var(--xfl-line); color: var(--xfl-ink); }
+.dark-mode .select2-container--bootstrap4 .select2-results__option--highlighted { background: var(--xfl-blue); }
+.dark-mode .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice { background: var(--xfl-hover); border-color: var(--xfl-line); color: var(--xfl-ink); }
+.dark-mode .select2-search__field { color: var(--xfl-ink); }
+.dark-mode div.dt-button-collection { background: var(--xfl-surface); }
+.dark-mode div.dt-button-collection .dt-button { color: var(--xfl-ink); }
+@media print {
+    .main-sidebar, .main-header, .xfl-filter-card, .dt-buttons, .dataTables_filter, .dataTables_length, .dataTables_paginate, .xfl-col-filters, .xfl-page-actions, .main-footer { display: none !important; }
+    .content-wrapper { margin-left: 0 !important; }
+    .xfl-chart { break-inside: avoid; }
+}
+.xfl-tickets td { white-space: nowrap; }
+.xfl-tickets td .xfl-title-cell { max-width: 280px; }
+.dt-buttons .btn-light { background: var(--xfl-surface); color: var(--xfl-ink); border-color: var(--xfl-line) !important; }
+.dt-buttons .btn-light:hover { background: var(--xfl-hover); }
+.dt-buttons .buttons-excel i { color: #2e9e57; } .dt-buttons .buttons-pdf i { color: #d64545; } .dt-buttons .buttons-csv i { color: #139e9e; }

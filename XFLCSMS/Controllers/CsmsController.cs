@@ -189,6 +189,46 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>Admin, SupportManager, SupportEngineer or Maker (from the session key of this controller).</summary>
+        protected string RoleName => SessionKey switch
+        {
+            SessionAuthorizeAttribute.Admin => "Admin",
+            SessionAuthorizeAttribute.SupportManager => "SupportManager",
+            SessionAuthorizeAttribute.SupportEngineer => "SupportEngineer",
+            _ => "Maker"
+        };
+
+        /// <summary>
+        /// The ticket lists and the ticket report of every role: one page (Views/Shared/TicketExplorer) with filters,
+        /// a detailed table (column choice, sorting, per-column search, row details, Excel / PDF / CSV / print)
+        /// and, for the report, KPIs, charts and breakdowns.
+        /// </summary>
+        protected async Task<IActionResult> TicketExplorer(string title, string? subtitle, string mode, string? preset, TicketFilter? filter)
+        {
+            try
+            {
+                var reports = HttpContext.RequestServices.GetRequiredService<TicketReportService>();
+                filter ??= new TicketFilter();
+
+                // the report opens on the last 30 days; the lists show everything until filtered
+                if (mode == "report" && filter.IsEmpty && !Request.Query.ContainsKey("filtered"))
+                {
+                    filter.Period = "30d";
+                }
+
+                var action = (string)RouteData.Values["action"]!;
+                var view = await reports.BuildAsync(CurrentUser!, RoleName, (string)RouteData.Values["controller"]!, action, mode, preset, filter);
+                view.Title = title;
+                view.Subtitle = subtitle;
+                view.CreateAction = "IssueRaiseFrom";
+                return View("TicketExplorer", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
@@ -264,7 +304,7 @@ namespace XFLCSMS.Controllers
 
                 if (string.IsNullOrEmpty(password.NewPassword) || ModelState[nameof(Password.NewPassword)]?.Errors.Count > 0)
                 {
-                    ViewBag.message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character";
+                    ViewBag.message = PasswordRules.Message;
                     return View(password);
                 }
 

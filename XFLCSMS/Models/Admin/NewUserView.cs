@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using XFLCSMS.Models.Branch;
 
 namespace XFLCSMS.Models.Admin
@@ -40,7 +40,7 @@ namespace XFLCSMS.Models.Admin
         public string UserName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please enter a password.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "At least 6 characters.")]
+        [RegularExpression(XFLCSMS.Models.Register.PasswordRules.Pattern, ErrorMessage = XFLCSMS.Models.Register.PasswordRules.Message)]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 

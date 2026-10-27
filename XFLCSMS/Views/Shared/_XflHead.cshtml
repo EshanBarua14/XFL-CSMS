@@ -1,6 +1,19 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
 @* Styles and scripts every page needs, all served from wwwroot (no CDN), in one place.
    Used by the four layouts and by every page with Layout = null. jQuery, Bootstrap 4 and DataTables
-   load here, in <head>, so scripts written inside the pages can use them anywhere. *@
+   load here, in <head>, so scripts written inside the pages can use them anywhere.
+   Also: the anti-forgery token for scripted POST / DELETE (xfl-csrf.js) and the installable-app (PWA) links. *@
+<meta name="csrf-token" content="@Xsrf.GetAndStoreTokens(Context).RequestToken">
+<link rel="manifest" href="~/manifest.webmanifest">
+<meta name="theme-color" content="#1f3b73" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+<meta name="application-name" content="XFL CSMS">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="XFL CSMS">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" sizes="32x32" href="~/icons/icon-32.png">
+<link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <link rel="stylesheet" href="~/css/all.min.css">
 <link rel="stylesheet" href="~/css/adminlte.min.css">
@@ -9,9 +22,11 @@
 <link rel="stylesheet" href="~/css/xfl-polish.css" asp-append-version="true">
 <script src="~/js/xfl-theme.js" asp-append-version="true"></script>
 <script src="~/plugins/jquery/jquery.min.js"></script>
+<script src="~/js/xfl-csrf.js" asp-append-version="true"></script>
 <script src="~/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="~/plugins/datatables/jquery.dataTables.min.js"></script>
 <script src="~/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
 <script src="~/lib/summernote/summernote-bs4.min.js"></script>
 <script src="~/js/adminlte.min.js"></script>
 <script src="~/js/xfl-ui.js" asp-append-version="true" defer></script>
+<script src="~/js/xfl-pwa.js" asp-append-version="true" defer></script>
