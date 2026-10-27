@@ -481,8 +481,12 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
+                var closedNow = Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
                 await _context.SaveChangesAsync();
+                if (closedNow)
+                {
+                    NotifyTicketClosed(issue);
+                }
 
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)
@@ -1273,5 +1277,109 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>Client ratings and feedback (management only).</summary>
+        public async Task<IActionResult> ServiceFeedback(DateTime? from, DateTime? to, int? engineerId, int? stars, int? houseId, bool followUp,
+            string? export, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                if (from == null && to == null && !followUp && Request.Query.Count == 0)
+                {
+                    from = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+                }
+
+                var view = await feedback.ListAsync(from, to, engineerId, stars, houseId, followUp);
+                view.Layout = "_SupportManegerLayout";
+                view.Controller = "SupportManegar";
+
+                if (string.Equals(export, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    return File(FeedbackService.Csv(view), "text/csv", "service-feedback-" + DateTime.Now.ToString("yyyyMMdd") + ".csv");
+                }
+
+                return View("ServiceFeedback", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Marks a (low) rating as followed up, with an internal note.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReviewRating(int ratingId, string? note, string? returnUrl, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                if (!await feedback.MarkReviewedAsync(ratingId, CurrentUser!, note))
+                {
+                    return NotFound();
+                }
+
+                TempData["SuccessMessage"] = "The rating was marked as reviewed.";
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction("ServiceFeedback");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Monthly Support Engineer ranking and Best Support Engineer of the Month.</summary>
+        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                DateTime? selected = DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
+                var view = await scorecard.ViewAsync(selected);
+                view.Layout = "_SupportManegerLayout";
+                view.Controller = "SupportManegar";
+                view.CanDecide = true;
+
+                if (string.Equals(export, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    return File(ScorecardService.Csv(view), "text/csv", "engineer-scorecard-" + view.Month.ToString("yyyy-MM") + ".csv");
+                }
+
+                return View("Scorecard", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Confirms the nominated Best Support Engineer of the Month, or names another engineer with a reason.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DecideAward(string month, int? engineerUserId, string? reason, [FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                if (!DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out var parsed))
+                {
+                    return BadRequest();
+                }
+
+                var error = await scorecard.DecideAsync(parsed, CurrentUser!, engineerUserId, reason);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Best Support Engineer of the Month saved.";
+                }
+
+                return RedirectToAction("Scorecard", new { month });
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
     }
 }

@@ -1,0 +1,53 @@
+@model XFLCSMS.Models.Feedback.AwardCardView
+@{
+    var a = Model.Award;
+}
+<div class="row">
+    <div class="col-lg-8 d-flex">
+        <div class="callout callout-warning flex-fill mb-3">
+            @if (a == null)
+            {
+                <h5 class="mb-1"><i class="fas fa-trophy text-warning"></i> Best Support Engineer of the Month</h5>
+                <p class="mb-0 text-muted">No month has been scored yet. The first award is named on the 3rd of the month after engineers have closed and rated tickets.
+                    <a asp-controller="@Model.Controller" asp-action="Scorecard">Open the scorecard</a></p>
+            }
+            else
+            {
+                <h5 class="mb-1"><i class="fas fa-trophy text-warning"></i> Best Support Engineer of @a.Month.ToString("MMMM yyyy")</h5>
+                <p class="mb-1" style="font-size: 1.4rem;"><b>@a.EngineerName</b>
+                    @if (a.Score != null)
+                    {
+                        <span class="badge badge-warning ml-2">Score @a.Score.Value.ToString("0.0")</span>
+                    }
+                    @if (a.Status == XFLCSMS.Models.Feedback.EngineerAward.Nominated)
+                    {
+                        <span class="badge badge-secondary ml-1">waiting for confirmation</span>
+                    }
+                </p>
+                @if (Model.Score != null)
+                {
+                    var s = Model.Score;
+                    <p class="mb-1 small text-muted">
+                        @s.TicketsClosed tickets closed · rating @(s.AverageStars?.ToString("0.0") ?? "-") from @s.RatingsCount clients · SLA met @(s.SlaCompliance.HasValue ? (s.SlaCompliance.Value * 100).ToString("0") + "%" : "-")
+                    </p>
+                }
+                <a asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@a.Month.ToString("yyyy-MM")">@(a.Status == XFLCSMS.Models.Feedback.EngineerAward.Nominated ? "Confirm or change" : "See the ranking")</a>
+            }
+        </div>
+    </div>
+    <div class="col-lg-4 d-flex">
+        <div class="callout @(Model.UnreviewedLowRatings > 0 ? "callout-danger" : "callout-success") flex-fill mb-3">
+            <h5 class="mb-1"><i class="fas fa-comment-dots"></i> Client feedback</h5>
+            @if (Model.UnreviewedLowRatings > 0)
+            {
+                <p class="mb-1"><b>@Model.UnreviewedLowRatings</b> low rating@(Model.UnreviewedLowRatings == 1 ? "" : "s") (1-2 stars) to follow up.</p>
+                <a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-followUp="true">Follow up</a>
+            }
+            else
+            {
+                <p class="mb-1">No low rating waiting for follow-up.</p>
+                <a asp-controller="@Model.Controller" asp-action="ServiceFeedback">All feedback</a>
+            }
+        </div>
+    </div>
+</div>

@@ -339,8 +339,12 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
+                var closedNow = Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
                 await _context.SaveChangesAsync();
+                if (closedNow)
+                {
+                    NotifyTicketClosed(issue);
+                }
 
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)
@@ -618,6 +622,13 @@ namespace XFLCSMS.Controllers
                 if (await _context.Issues.AnyAsync(i => i.UserId == id))
                 {
                     return Conflict("This user has raised tickets, so the account cannot be deleted. Disable the user instead (Edit > User Status).");
+                }
+
+                // Assignment, ratings and scorecards keep the user's id: deleting would lose that history.
+                if (await _context.Issues.AnyAsync(i => i.AssignedToUserId == id)
+                    || await _context.TicketRatings.AnyAsync(r => r.EngineerUserId == id || r.RatedByUserId == id))
+                {
+                    return Conflict("This user has assigned tickets or ratings, so the account cannot be deleted. Disable the user instead (Edit > User Status).");
                 }
 
                 _context.Users.Remove(user);
@@ -2877,5 +2888,164 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>Client ratings and feedback (management only).</summary>
+        public async Task<IActionResult> ServiceFeedback(DateTime? from, DateTime? to, int? engineerId, int? stars, int? houseId, bool followUp,
+            string? export, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                if (from == null && to == null && !followUp && Request.Query.Count == 0)
+                {
+                    from = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+                }
+
+                var view = await feedback.ListAsync(from, to, engineerId, stars, houseId, followUp);
+                view.Layout = "_Layout";
+                view.Controller = "Admin";
+
+                if (string.Equals(export, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    return File(FeedbackService.Csv(view), "text/csv", "service-feedback-" + DateTime.Now.ToString("yyyyMMdd") + ".csv");
+                }
+
+                return View("ServiceFeedback", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Marks a (low) rating as followed up, with an internal note.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReviewRating(int ratingId, string? note, string? returnUrl, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                if (!await feedback.MarkReviewedAsync(ratingId, CurrentUser!, note))
+                {
+                    return NotFound();
+                }
+
+                TempData["SuccessMessage"] = "The rating was marked as reviewed.";
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction("ServiceFeedback");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Monthly Support Engineer ranking and Best Support Engineer of the Month.</summary>
+        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                DateTime? selected = DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
+                var view = await scorecard.ViewAsync(selected);
+                view.Layout = "_Layout";
+                view.Controller = "Admin";
+                view.CanDecide = true;
+
+                if (string.Equals(export, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    return File(ScorecardService.Csv(view), "text/csv", "engineer-scorecard-" + view.Month.ToString("yyyy-MM") + ".csv");
+                }
+
+                return View("Scorecard", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Confirms the nominated Best Support Engineer of the Month, or names another engineer with a reason.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DecideAward(string month, int? engineerUserId, string? reason, [FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                if (!DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out var parsed))
+                {
+                    return BadRequest();
+                }
+
+                var error = await scorecard.DecideAsync(parsed, CurrentUser!, engineerUserId, reason);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Best Support Engineer of the Month saved.";
+                }
+
+                return RedirectToAction("Scorecard", new { month });
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>SLA targets per priority, used by the engineer scorecard.</summary>
+        [HttpGet]
+        public async Task<IActionResult> SlaTargets([FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                return View(await scorecard.SlaTargetsAsync());
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SlaTargets(List<XFLCSMS.Models.Feedback.SlaTarget> targets)
+        {
+            try
+            {
+                var known = XFLCSMS.Models.Feedback.SlaTarget.Defaults.Select(d => d.Priority).ToList();
+                targets = targets.Where(t => known.Contains(t.Priority)).ToList();
+                if (!ModelState.IsValid || targets.Count == 0)
+                {
+                    ViewBag.message = "Please enter hours between 0.25 and the allowed maximum for every priority.";
+                    return View(targets);
+                }
+
+                foreach (var target in targets)
+                {
+                    var row = await _context.SlaTargets.FirstOrDefaultAsync(t => t.Priority == target.Priority);
+                    if (row == null)
+                    {
+                        _context.SlaTargets.Add(new XFLCSMS.Models.Feedback.SlaTarget
+                        {
+                            Priority = target.Priority, FirstResponseHours = target.FirstResponseHours, ResolutionHours = target.ResolutionHours
+                        });
+                    }
+                    else
+                    {
+                        row.FirstResponseHours = target.FirstResponseHours;
+                        row.ResolutionHours = target.ResolutionHours;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "SLA targets saved. Months that are already closed keep their frozen scores.";
+                return RedirectToAction("SlaTargets");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
     }
 }

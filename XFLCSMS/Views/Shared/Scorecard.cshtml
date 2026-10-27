@@ -1,0 +1,226 @@
+@model XFLCSMS.Models.Feedback.ScorecardView
+@using XFLCSMS.Models.Feedback
+@{
+    Layout = Model.Layout;
+    var s = Model.Settings;
+    string P(double? v) => v.HasValue ? (v.Value * 100).ToString("0") + "%" : "-";
+    string N(double? v, string f) => v.HasValue ? v.Value.ToString(f) : "-";
+    string Pts(double v) => v.ToString("0");
+    var ranked = Model.Rows.Where(r => r.Rank != null).ToList();
+    var notRanked = Model.Rows.Where(r => r.Rank == null).ToList();
+    var a = Model.Award;
+    var monthKey = Model.Month.ToString("yyyy-MM");
+    ViewData["Title"] = "Engineer Scorecard";
+    ViewData["Subtitle"] = "Support Engineers ranked best to worst for " + Model.Month.ToString("MMMM yyyy") + ". "
+        + (Model.IsFrozen ? "Final: scores were frozen when the month closed." : "Provisional: scores change until the month is frozen on " + Model.FreezesOn.ToString("dd MMM yyyy") + ".");
+}
+@section PageActions {
+    <form asp-controller="@Model.Controller" asp-action="Scorecard" method="get" class="form-inline d-print-none">
+        <select name="month" class="form-control mr-2" onchange="this.form.submit()" aria-label="Month">
+            @foreach (var m in Model.Months)
+            {
+                <option value="@m.ToString("yyyy-MM")" selected="@(m == Model.Month)">@m.ToString("MMMM yyyy")</option>
+            }
+        </select>
+        <a class="btn btn-outline-secondary" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>CSV</a>
+    </form>
+}
+
+<section class="content">
+    <div class="container-fluid">
+        @if (a != null)
+        {
+            <div class="card card-outline card-warning">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="mb-1"><i class="fas fa-trophy text-warning"></i> Best Support Engineer of @Model.Month.ToString("MMMM yyyy")</h4>
+                            @if (a.EngineerName != null)
+                            {
+                                <p class="mb-1" style="font-size: 1.5rem;"><b>@a.EngineerName</b> <span class="badge badge-warning">Score @N(a.Score, "0.0")</span></p>
+                            }
+                            else
+                            {
+                                <p class="mb-1 text-muted">No winner this month.</p>
+                            }
+                            <p class="mb-0 small">
+                                Status: <b>@a.Status</b>@(a.DecidedBy != null ? " by " + a.DecidedBy + " on " + a.DecidedOn?.ToString("dd MMM yyyy") : "")
+                                @if (a.TopRankedName != null && a.TopRankedName != a.EngineerName)
+                                {
+                                    <span> · ranked first: @a.TopRankedName</span>
+                                }
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(a.Reason))
+                            {
+                                <p class="mb-0 small text-muted">@a.Reason</p>
+                            }
+                        </div>
+                        @if (Model.CanDecide && ranked.Count > 0)
+                        {
+                            <div class="col-md-6 d-print-none">
+                                @if (a.Status == EngineerAward.Nominated)
+                                {
+                                    <form asp-controller="@Model.Controller" asp-action="DecideAward" method="post" class="mb-2">
+                                        <input type="hidden" name="month" value="@monthKey" />
+                                        <button type="submit" class="btn btn-warning"><i class="fas fa-check"></i> Confirm @a.EngineerName</button>
+                                        <span class="small text-muted ml-2">Confirmed automatically @a.NominatedOn.AddDays(s.AutoConfirmDays).ToString("dd MMM") if nobody decides.</span>
+                                    </form>
+                                }
+                                <details>
+                                    <summary class="small">Choose another engineer</summary>
+                                    <form asp-controller="@Model.Controller" asp-action="DecideAward" method="post" class="mt-2">
+                                        <input type="hidden" name="month" value="@monthKey" />
+                                        <select name="engineerUserId" class="form-control form-control-sm mb-2" required>
+                                            @foreach (var r in ranked)
+                                            {
+                                                <option value="@r.EngineerUserId" selected="@(r.EngineerUserId == a.EngineerUserId)">#@r.Rank @r.EngineerName (@r.Score.ToString("0.0"))</option>
+                                            }
+                                        </select>
+                                        <textarea name="reason" class="form-control form-control-sm mb-2" rows="2" maxlength="1000" placeholder="Reason (required)" required></textarea>
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Save choice</button>
+                                    </form>
+                                </details>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header"><h4 class="mb-0">Ranking</h4></div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-striped table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>Engineer</th><th class="text-right">Score</th>
+                            <th class="text-right" title="Adjusted average stars (@s.RatingWeight%)">Client rating</th>
+                            <th class="text-right" title="Closed within the SLA resolution target (@s.SlaWeight%)">SLA met</th>
+                            <th class="text-right" title="Median hours from assignment to close (@s.ResolutionWeight%)">Resolution</th>
+                            <th class="text-right" title="Closed tickets, High 3 / Medium 2 / Low 1 points (@s.VolumeWeight%)">Volume</th>
+                            <th class="text-right" title="Reopened tickets per closed ticket (@s.ReopenWeight%)">Reopens</th>
+                            <th class="text-right" title="Median minutes from assignment to first response (@s.FirstResponseWeight%)">First response</th>
+                            <th class="text-right" title="Open tickets older than twice the SLA at month end (@s.BacklogWeight%)">Overdue backlog</th>
+                            <th class="text-right">vs last month</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in ranked)
+                        {
+                            Model.PreviousRanks.TryGetValue(r.EngineerUserId, out var prev);
+                            var isWinner = a?.EngineerUserId == r.EngineerUserId && a.Status != EngineerAward.NoWinner;
+                            <tr class="@(isWinner ? "table-warning" : "")">
+                                <td><b>@r.Rank</b></td>
+                                <td>
+                                    @r.EngineerName
+                                    @if (isWinner)
+                                    {
+                                        <i class="fas fa-trophy text-warning" title="Best Support Engineer of the Month"></i>
+                                    }
+                                    <div class="small"><a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-engineerId="@r.EngineerUserId" asp-route-from="@Model.Month.ToString("yyyy-MM-dd")" asp-route-to="@Model.Month.AddMonths(1).AddDays(-1).ToString("yyyy-MM-dd")">feedback</a></div>
+                                </td>
+                                <td class="text-right"><b style="font-size: 1.1rem;">@r.Score.ToString("0.0")</b></td>
+                                <td class="text-right">@N(r.AverageStars, "0.00") <span class="text-muted small">(@r.RatingsCount)</span><div class="small text-muted">@Pts(r.RatingPoints) pts</div></td>
+                                <td class="text-right">@P(r.SlaCompliance)<div class="small text-muted">@Pts(r.SlaPoints) pts</div></td>
+                                <td class="text-right">@N(r.MedianResolutionHours, "0.#") h<div class="small text-muted">@Pts(r.ResolutionPoints) pts</div></td>
+                                <td class="text-right">@r.TicketsClosed <span class="text-muted small">(@r.WeightedVolume.ToString("0"))</span><div class="small text-muted">@Pts(r.VolumePoints) pts</div></td>
+                                <td class="text-right">@P(r.ReopenRate)<div class="small text-muted">@Pts(r.ReopenPoints) pts</div></td>
+                                <td class="text-right">@N(r.MedianFirstResponseMinutes, "0") min<div class="small text-muted">@Pts(r.FirstResponsePoints) pts</div></td>
+                                <td class="text-right">@P(r.BacklogOverdueShare)<div class="small text-muted">@Pts(r.BacklogPoints) pts</div></td>
+                                <td class="text-right">
+                                    @if (prev == null)
+                                    {
+                                        <span class="text-muted">new</span>
+                                    }
+                                    else if (prev > r.Rank)
+                                    {
+                                        <span class="text-success"><i class="fas fa-arrow-up"></i> @(prev - r.Rank)</span>
+                                    }
+                                    else if (prev < r.Rank)
+                                    {
+                                        <span class="text-danger"><i class="fas fa-arrow-down"></i> @(r.Rank - prev)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">=</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (ranked.Count == 0)
+                        {
+                            <tr><td colspan="11" class="text-muted">No engineer met the minimum of @s.MinClosedTickets closed tickets and @s.MinRatings client ratings this month.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (notRanked.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h4 class="mb-0">Not enough data to rank</h4><span class="small text-muted">Needs at least @s.MinClosedTickets closed tickets and @s.MinRatings ratings in the month.</span></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Engineer</th><th class="text-right">Closed</th><th class="text-right">Ratings</th><th class="text-right">Average stars</th><th class="text-right">SLA met</th><th class="text-right">Reopens</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in notRanked)
+                            {
+                                <tr><td>@r.EngineerName</td><td class="text-right">@r.TicketsClosed</td><td class="text-right">@r.RatingsCount</td><td class="text-right">@N(r.AverageStars, "0.00")</td><td class="text-right">@P(r.SlaCompliance)</td><td class="text-right">@P(r.ReopenRate)</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h4 class="mb-0">How the score works</h4></div>
+                    <div class="card-body small">
+                        <p>Each measure is turned into 0 to 100 points by rank among the ranked engineers (best 100, worst 0), then weighted:
+                            client rating @s.RatingWeight%, SLA met @s.SlaWeight%, resolution time @s.ResolutionWeight%, volume @s.VolumeWeight%,
+                            reopens @s.ReopenWeight%, first response @s.FirstResponseWeight%, overdue backlog @s.BacklogWeight%.</p>
+                        <p>The client rating is adjusted toward the team average (@s.RatingConfidence ratings' worth) so a single 5-star rating does not beat many good ones.
+                            Resolution time is compared with each ticket's SLA, so High tickets are not penalised against Low ones.</p>
+                        <p class="mb-1">The award goes to the highest ranked engineer with an adjusted rating of at least @s.AwardMinRating.ToString("0.0"),
+                            SLA met on at least @((s.AwardMinSla * 100).ToString("0"))% of tickets and no unreviewed 1-star rating. A manager confirms or chooses another engineer with a reason.</p>
+                        <p class="mb-0 text-muted">SLA targets:
+                            @string.Join(" · ", Model.Sla.Select(t => t.Priority + " " + t.FirstResponseHours.ToString("0.##") + " h response / " + t.ResolutionHours.ToString("0.##") + " h resolution"))
+                            @if (Model.Controller == "Admin")
+                            {
+                                <a asp-controller="Admin" asp-action="SlaTargets" class="ml-1">change</a>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h4 class="mb-0">Award history</h4></div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Month</th><th>Best Support Engineer</th><th class="text-right">Score</th><th>Status</th></tr></thead>
+                            <tbody>
+                                @foreach (var h in Model.AwardHistory)
+                                {
+                                    <tr>
+                                        <td><a asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@h.Month.ToString("yyyy-MM")">@h.Month.ToString("MMM yyyy")</a></td>
+                                        <td>@(h.EngineerName ?? "-")</td>
+                                        <td class="text-right">@N(h.Score, "0.0")</td>
+                                        <td>@h.Status</td>
+                                    </tr>
+                                }
+                                @if (Model.AwardHistory.Count == 0)
+                                {
+                                    <tr><td colspan="4" class="text-muted">No month has been closed yet.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

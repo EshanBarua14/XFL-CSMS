@@ -28,6 +28,12 @@ namespace XFLCSMS.Models.Issue
 
         public DateTime? AssignOn { get; set; }
         public string? AssignBy { get; set; } = string.Empty;
+
+        /// <summary>Assigned engineer as a user id (AssignBy holds his name, which breaks when he is renamed).</summary>
+        public int? AssignedToUserId { get; set; }
+
+        /// <summary>First time XFL staff acted on the ticket: moved it out of Open or answered in Comments.</summary>
+        public DateTime? FirstResponseOn { get; set; }
         public DateTime? ApproveOn { get; set; }
         public string? ApproveBy { get; set; } = string.Empty;
 

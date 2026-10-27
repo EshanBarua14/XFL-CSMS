@@ -1,0 +1,78 @@
+@model XFLCSMS.Models.Feedback.RatingForm
+@{
+    Layout = "_MakerLayout";
+    ViewData["Title"] = (Model.IsEdit ? "Change your rating for " : "Rate the support for ") + Model.TicketNumber;
+    ViewData["Subtitle"] = Model.TicketTitle + (Model.EngineerName != null ? " · handled by " + Model.EngineerName : "") + (Model.ClosedOn != null ? " · closed " + Model.ClosedOn.Value.ToString("dd MMM yyyy") : "");
+    var subScores = new[] { ("SpeedScore", "Speed of support", Model.SpeedScore), ("CommunicationScore", "Communication", Model.CommunicationScore), ("QualityScore", "Quality of the solution", Model.QualityScore) };
+}
+@section Head {
+<style>
+    .star-pick { display: inline-flex; flex-direction: row-reverse; }
+    .star-pick input { display: none; }
+    .star-pick label { font-size: 2rem; color: #ccc; cursor: pointer; padding: 0 2px; margin: 0; }
+    .star-pick.small label { font-size: 1.3rem; }
+    .star-pick input:checked ~ label, .star-pick label:hover, .star-pick label:hover ~ label { color: #f39c12; }
+</style>
+}
+
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-warning">
+            <div class="card-body">
+                <form asp-controller="Maker" asp-action="RateTicket" method="post">
+                    <input type="hidden" asp-for="IssueId" />
+                    <div asp-validation-summary="All" class="text-danger"></div>
+
+                    <div class="form-group">
+                        <label class="d-block">Overall, how satisfied are you with the support? <span class="text-danger">*</span></label>
+                        <div class="star-pick">
+                            @for (var i = 5; i >= 1; i--)
+                            {
+                                <input type="radio" id="stars@(i)" name="Stars" value="@i" @(Model.Stars == i ? "checked" : "") required />
+                                <label for="stars@(i)" title="@i of 5">★</label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        @foreach (var (name, label, value) in subScores)
+                        {
+                            <div class="col-md-4 form-group">
+                                <label class="d-block">@label <span class="text-muted small">(optional)</span></label>
+                                <div class="star-pick small">
+                                    @for (var i = 5; i >= 1; i--)
+                                    {
+                                        <input type="radio" id="@(name)@(i)" name="@name" value="@i" @(value == i ? "checked" : "") />
+                                        <label for="@(name)@(i)" title="@i of 5">★</label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label class="d-block">Was your issue fully solved?</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" id="solvedYes" name="FullySolved" value="true" @(Model.FullySolved ? "checked" : "") />
+                            <label class="form-check-label" for="solvedYes">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" id="solvedNo" name="FullySolved" value="false" @(!Model.FullySolved ? "checked" : "") />
+                            <label class="form-check-label" for="solvedNo">No</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Comment">Your feedback <span class="text-muted small">(optional)</span></label>
+                        <textarea asp-for="Comment" class="form-control" rows="4" maxlength="1000" placeholder="What went well, what could be better?"></textarea>
+                        <small class="text-muted">Your rating and feedback are seen only by XFL support management. You can change them for @XFLCSMS.Services.FeedbackService.EditHours hours.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-paper-plane"></i> Submit rating</button>
+                    <a asp-controller="Maker" asp-action="TicketView" asp-route-id="@Model.IssueId" class="btn btn-default ml-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>

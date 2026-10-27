@@ -1379,5 +1379,124 @@ namespace XFLCSMS.Controllers
             // Shown on the form as a preview only; the real number is taken when the ticket is saved.
             return Tickets.NextTicketNumber(id) ?? string.Empty;
         }
+
+        /// <summary>The client rates the support received on one of his closed tickets.</summary>
+        [HttpGet]
+        public async Task<IActionResult> RateTicket(int id, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                var issue = await _context.Issues.FirstOrDefaultAsync(i => i.IssueId == id);
+                if (issue == null || !CanAccessIssue(issue))
+                {
+                    return NotFound();
+                }
+
+                var state = await feedback.GetStateAsync(issue);
+                if (!state.CanRate && !state.CanEdit)
+                {
+                    TempData["ErrorMessage"] = state.Rating != null
+                        ? "You have already rated this ticket. Thank you for your feedback."
+                        : state.IsClosed
+                            ? "The rating period for this ticket (" + FeedbackService.RatingWindowDays + " days after closing) has ended."
+                            : "You can rate a ticket once the XFL team has closed it.";
+                    return RedirectToAction("TicketView", new { id });
+                }
+
+                return View(RatingFormFor(issue, state, feedback));
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RateTicket(XFLCSMS.Models.Feedback.RatingForm form, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                var issue = await _context.Issues.FirstOrDefaultAsync(i => i.IssueId == form.IssueId);
+                if (issue == null || !CanAccessIssue(issue))
+                {
+                    return NotFound();
+                }
+
+                var state = await feedback.GetStateAsync(issue);
+                if (!ModelState.IsValid)
+                {
+                    var again = RatingFormFor(issue, state, feedback);
+                    again.Stars = form.Stars;
+                    again.SpeedScore = form.SpeedScore;
+                    again.CommunicationScore = form.CommunicationScore;
+                    again.QualityScore = form.QualityScore;
+                    again.FullySolved = form.FullySolved;
+                    again.Comment = form.Comment;
+                    return View(again);
+                }
+
+                var error = await feedback.SaveAsync(issue, CurrentUser!, form);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = form.FullySolved
+                        ? "Thank you for rating ticket " + issue.TNumber + "."
+                        : "Thank you for your feedback. If the problem is still there, use Reopen Ticket below so the XFL team can continue.";
+                }
+
+                return RedirectToAction("TicketView", new { id = issue.IssueId });
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>The client reopens his ticket because the problem is not solved (within the rating period).</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReopenTicket(int id, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                var issue = await _context.Issues.FirstOrDefaultAsync(i => i.IssueId == id);
+                if (issue == null || !CanAccessIssue(issue))
+                {
+                    return NotFound();
+                }
+
+                var error = await feedback.ReopenAsync(issue, CurrentUser!);
+                TempData[error == null ? "SuccessMessage" : "ErrorMessage"] = error ?? "Ticket " + issue.TNumber + " was reopened. The XFL team will continue working on it.";
+                return RedirectToAction("TicketView", new { id });
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        private static XFLCSMS.Models.Feedback.RatingForm RatingFormFor(IssueTable issue, XFLCSMS.Models.Feedback.RatingState state, FeedbackService feedback)
+        {
+            var rating = state.Rating;
+            return new XFLCSMS.Models.Feedback.RatingForm
+            {
+                IssueId = issue.IssueId,
+                TicketNumber = issue.TNumber,
+                TicketTitle = issue.ITitle,
+                EngineerName = rating?.EngineerName ?? feedback.EngineerFor(issue).Name,
+                ClosedOn = issue.ClosedOn,
+                Stars = rating?.Stars ?? 0,
+                SpeedScore = rating?.SpeedScore,
+                CommunicationScore = rating?.CommunicationScore,
+                QualityScore = rating?.QualityScore,
+                FullySolved = rating?.FullySolved ?? true,
+                Comment = rating?.Comment,
+                IsEdit = rating != null
+            };
+        }
     }
 }
