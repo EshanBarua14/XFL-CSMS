@@ -15,72 +15,76 @@
 
     <!-- icheck bootstrap -->
     <link rel="stylesheet" href="~/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <link rel="stylesheet" href="~/css/xfl-story.css" asp-append-version="true">
 </head>
 
 
-<body class="hold-transition login-page">
-    <div class="login-box">
-        <!-- /.login-logo -->
-        <div class="card card-outline card-primary">
-            <div class="card-header text-center">
-                <a href="~/" class="xfl-login-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="104" height="104"><span class="h1"><b>XFL</b> CSMS</span></a>
-                <p class="login-box-msg">Sign in to start your session</p>
-            </div>
+<body class="hold-transition login-page xfl-login">
+    <main class="xl-shell">
+        <div class="xl-story-col">
+            <h1 class="xl-hero-title">Support that <span>moves</span>, from ticket to five stars.</h1>
+            <p class="xl-hero-sub">Brokerage houses raise it, XFL assigns it, engineers solve it, and makers rate it.</p>
+            <partial name="_LoginStory" />
+        </div>
 
-            <div class="card-body">
-                @if (ViewBag.Message != null)
-                {
-                    <div class="alert alert-danger" role="alert">@ViewBag.Message</div>
-                }
-                @if (TempData["Message"] != null)
-                {
-                    <div class="alert alert-success" role="alert">@TempData["Message"]</div>
-                }
-                <form asp-controller="RegisterLogin" asp-action="Login" method="post">
-                    <div class="card">
-                        <div class="card-body login-card-body">
-                                <div class="input-group mb-3">
-                                    <input type="text" asp-for="UserId" class="form-control" placeholder="User Name or Email">
-                                    <div class="input-group-append">
-                                        <div class="input-group-text">
-                                            <span class="fas fa-user"></span>
+        <div class="xl-form-col">
+            <div class="login-box">
+                <div class="card card-outline card-primary">
+                    <div class="card-header text-center">
+                        <a href="~/" class="xfl-login-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="104" height="104"><span class="h1"><b>XFL</b> CSMS</span></a>
+                        <p class="login-box-msg">Sign in to start your session</p>
+                    </div>
+
+                    <div class="card-body">
+                        @if (ViewBag.Message != null)
+                        {
+                            <div class="alert alert-danger" role="alert">@ViewBag.Message</div>
+                        }
+                        @if (TempData["Message"] != null)
+                        {
+                            <div class="alert alert-success" role="alert">@TempData["Message"]</div>
+                        }
+                        <form asp-controller="RegisterLogin" asp-action="Login" method="post">
+                            <div class="card">
+                                <div class="card-body login-card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" asp-for="UserId" class="form-control" placeholder="User Name or Email">
+                                        <div class="input-group-append">
+                                            <div class="input-group-text">
+                                                <span class="fas fa-user"></span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="input-group mb-3">
-                                    <input type="password" asp-for="Password" class="form-control" id="password" name="password" aria-describedby="passwordToggle" placeholder="Password">
-                                    <button class="btn btn-outline-secondary" type="button" id="passwordToggle" onclick="togglePassword()">Show</button>
-                                </div>
-                                <div class="input-group mb-3">
-                                    <div class="icheck-primary">
-                                        <input type="checkbox" id="remember">
-                                        <label for="remember">
-                                            Remember Me
-                                        </label>
-                                    </div>
-
-                                    <!-- /.col -->
                                     <div class="input-group mb-3">
-                                        <button type="submit" class="btn btn-outline-primary btn-block">Sign In</button>
+                                        <input type="password" asp-for="Password" class="form-control" id="password" name="password" aria-describedby="passwordToggle" placeholder="Password">
+                                        <button class="btn btn-outline-secondary" type="button" id="passwordToggle" onclick="togglePassword()">Show</button>
                                     </div>
-                                    <p class="mb-3">
-                                    <a asp-action="ForgotPassword">I forgot my password</a>
-                                    </p>
-                                    <p class="input-group mb-3">
-                                        <a asp-action="Register" class="text-center">Register a new membership</a>
-                                    </p>
-                                    <!-- /.col -->
+                                    <div class="input-group mb-3">
+                                        <div class="icheck-primary">
+                                            <input type="checkbox" id="remember">
+                                            <label for="remember">
+                                                Remember Me
+                                            </label>
+                                        </div>
+
+                                        <div class="input-group mb-3">
+                                            <button type="submit" class="btn btn-primary btn-block btn-signin"><i class="fas fa-sign-in-alt mr-1"></i>Sign In</button>
+                                        </div>
+                                        <p class="mb-3">
+                                            <a asp-action="ForgotPassword">I forgot my password</a>
+                                        </p>
+                                        <p class="input-group mb-3">
+                                            <a asp-action="Register" class="text-center">Register a new membership</a>
+                                        </p>
+                                    </div>
                                 </div>
-                            <!-- /.card-body -->
-                        </div>
-                        <!-- /.card -->
+                            </div>
+                        </form>
                     </div>
-                    <!-- /.login-box -->
-                </form>
+                </div>
             </div>
-            <!-- Password -->
         </div>
-    </div>
+    </main>
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -95,6 +99,6 @@
             }
         }
     </script>
-    </div>
+    <script src="~/js/xfl-story.js" asp-append-version="true"></script>
 </body>
 </html>

@@ -1,0 +1,43 @@
+@model XFLCSMS.Models.Admin.Dashboard
+@* The ticket workflow of a dashboard: raised -> in the queue -> being solved -> closed, with the counts of this dashboard.
+   Tickets (dots) travel along the line; the numbers count up and the bars fill when it comes into view (js/xfl-motion.js).
+   "Being solved" is what is neither waiting in the queue nor closed. *@
+@{
+    var total = Model.TotalTicket ?? 0;
+    var queue = Model.TotalQueue ?? 0;
+    var closed = Model.TotalClosed ?? 0;
+    var working = Math.Max(0, total - queue - closed);
+    string Share(int n) => total > 0 ? Math.Round(100.0 * n / total, 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%" : "0%";
+}
+<div class="card xfl-flow-card">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-project-diagram mr-2" aria-hidden="true"></i>Ticket workflow</h3></div>
+    <div class="card-body">
+        <div class="xfl-flow">
+            <div class="xfl-flow-node">
+                <span class="xfl-flow-icon"><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
+                <span class="xfl-flow-value">@total</span>
+                <span class="xfl-flow-label">Raised</span>
+                <span class="xfl-flow-share" style="--share: 100%"><span></span></span>
+            </div>
+            <div class="xfl-flow-node">
+                <span class="xfl-flow-icon"><i class="fas fa-hourglass-half" aria-hidden="true"></i></span>
+                <span class="xfl-flow-value">@queue</span>
+                <span class="xfl-flow-label">In queue</span>
+                <span class="xfl-flow-share" style="--share: @Share(queue)"><span></span></span>
+            </div>
+            <div class="xfl-flow-node">
+                <span class="xfl-flow-icon"><i class="fas fa-cog" aria-hidden="true"></i></span>
+                <span class="xfl-flow-value">@working</span>
+                <span class="xfl-flow-label">Being solved</span>
+                <span class="xfl-flow-share" style="--share: @Share(working)"><span></span></span>
+            </div>
+            <div class="xfl-flow-node">
+                <span class="xfl-flow-icon"><i class="fas fa-check-double" aria-hidden="true"></i></span>
+                <span class="xfl-flow-value">@closed</span>
+                <span class="xfl-flow-label">Closed</span>
+                <span class="xfl-flow-share" style="--share: @Share(closed)"><span></span></span>
+            </div>
+            <div class="xfl-flow-track" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        </div>
+    </div>
+</div>

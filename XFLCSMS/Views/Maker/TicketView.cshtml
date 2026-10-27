@@ -15,6 +15,7 @@
             <section class="content">
                 <div class="container-fluid">
                     @await Component.InvokeAsync("MakerRating", new { issueId = Model.IssueId })
+                    <partial name="_TicketStepper" model="Model" />
                     <div class="row">
                         <!-- left column -->
                         <div class="col-md-6">
