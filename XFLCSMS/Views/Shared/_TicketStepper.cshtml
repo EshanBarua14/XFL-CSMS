@@ -1,0 +1,41 @@
+@model XFLCSMS.Models.Issue.MakerView
+@* Where a ticket is in its life: raised, assigned, being solved, closed. Shown on the four Ticket Details pages.
+   The line fills up to the current step and the current step pulses (css/xfl-glass.css). *@
+@{
+    var closed = Model.TicketStatus == "Close" || Model.CloseOn != null;
+    var assigned = Model.AssgnOn != null || !string.IsNullOrWhiteSpace(Model.AssgnBy);
+    // 1-based: the step that is happening now (5 = everything done)
+    var current = closed ? 5 : assigned ? 3 : 2;
+    var done = closed ? 1.0 : (current - 1) / 3.0;
+    string State(int step) => step < current ? "is-done" : step == current ? "is-current" : "";
+    string When(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy, h:mm tt") : "";
+    var assignedMeta = assigned
+        ? (string.IsNullOrWhiteSpace(Model.AssgnBy) ? "" : "To " + Model.AssgnBy) + (string.IsNullOrWhiteSpace(Model.ApproveBy) ? "" : " by " + Model.ApproveBy)
+        : "Waiting for the support manager";
+}
+<div class="card xfl-stepper-card">
+    <div class="card-body">
+        <ol class="xfl-stepper" style="--steps: 4; --done: @done.ToString(System.Globalization.CultureInfo.InvariantCulture)" aria-label="Ticket progress">
+            <li class="xfl-step @State(1)">
+                <span class="xfl-step-dot"><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
+                <span class="xfl-step-label">Raised</span>
+                <span class="xfl-step-meta">@When(Model.CreatedOn)@(string.IsNullOrWhiteSpace(Model.CreatedBy) ? "" : " · " + Model.CreatedBy)</span>
+            </li>
+            <li class="xfl-step @State(2)" aria-current="@(current == 2 ? "step" : null)">
+                <span class="xfl-step-dot"><i class="fas fa-user-check" aria-hidden="true"></i></span>
+                <span class="xfl-step-label">Assigned</span>
+                <span class="xfl-step-meta">@When(Model.AssgnOn) @assignedMeta</span>
+            </li>
+            <li class="xfl-step @State(3)" aria-current="@(current == 3 ? "step" : null)">
+                <span class="xfl-step-dot"><i class="fas fa-tools" aria-hidden="true"></i></span>
+                <span class="xfl-step-label">Being solved</span>
+                <span class="xfl-step-meta">@(closed ? "Solved" : assigned ? "Status: " + (Model.TicketStatus ?? "Open") : "")</span>
+            </li>
+            <li class="xfl-step @State(4)">
+                <span class="xfl-step-dot"><i class="fas fa-check" aria-hidden="true"></i></span>
+                <span class="xfl-step-label">Closed</span>
+                <span class="xfl-step-meta">@When(Model.CloseOn)@(string.IsNullOrWhiteSpace(Model.ClosedbyName) ? "" : " · " + Model.ClosedbyName)</span>
+            </li>
+        </ol>
+    </div>
+</div>

@@ -5,7 +5,7 @@
    - Only GET requests are touched: form posts, deletes and downloads always go to the server. */
 'use strict';
 
-var VERSION = 'xfl-csms-v1';
+var VERSION = 'xfl-csms-v2';
 var STATIC_CACHE = VERSION + '-static';
 var OFFLINE_URL = '/Home/Offline';
 
@@ -18,10 +18,14 @@ var PRECACHE = [
     '/css/all.min.css',
     '/css/adminlte.min.css',
     '/css/xfl-polish.css',
+    '/css/xfl-glass.css',
+    '/css/xfl-story.css',
     '/plugins/jquery/jquery.min.js',
     '/plugins/bootstrap/js/bootstrap.bundle.min.js',
     '/js/adminlte.min.js',
     '/js/xfl-theme.js',
+    '/js/xfl-motion.js',
+    '/js/xfl-story.js',
     '/js/xfl-csrf.js',
     '/js/xfl-ui.js',
     '/js/xfl-pwa.js'

@@ -1,0 +1,233 @@
+@* The animated story on the sign-in page: a maker at a brokerage house raises a ticket, the XFL support manager
+   reviews and assigns it, a support engineer solves it, and the maker gives five stars.
+   Drawn in SVG (no images, works offline); css/xfl-story.css animates it and js/xfl-story.js runs the timeline.
+   With "reduce motion" on, the finished story is shown still. *@
+<section class="xs-story" id="xsStory" data-phase="idle" data-ticket="new" aria-label="How XFL CSMS works">
+    <div class="xs-stage">
+<svg class="xs-svg" viewBox="0 0 960 430" role="img" aria-labelledby="xsTitle xsDesc" preserveAspectRatio="xMidYMid meet">
+      <title id="xsTitle">How a support ticket travels through XFL CSMS</title>
+      <desc id="xsDesc">A maker at a brokerage house raises a ticket; the XFL support manager reviews it and assigns it; a support engineer solves it; the maker is happy and gives five stars.</desc>
+      <defs>
+        <linearGradient id="xsSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="xs-sky-top"/><stop offset="1" class="xs-sky-bottom"/></linearGradient>
+        <linearGradient id="xsGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="xs-glass-a"/><stop offset="1" class="xs-glass-b"/></linearGradient>
+        <linearGradient id="xsDesk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="xs-desk-a"/><stop offset="1" class="xs-desk-b"/></linearGradient>
+        <clipPath id="xsTickerClip"><rect x="52" y="128" width="256" height="20" rx="4"/></clipPath>
+        <clipPath id="xsSceneClip"><rect x="0" y="0" width="960" height="430" rx="22"/></clipPath>
+        <path id="xsPath1" d="M118,292 Q290,120 452,316"/>
+        <path id="xsPath2" d="M452,316 Q620,130 772,316"/>
+        <path id="xsPath3" d="M772,316 Q450,-10 118,292"/>
+      </defs>
+      <g clip-path="url(#xsSceneClip)">
+      <rect width="960" height="430" fill="url(#xsSky)"/>
+      <g class="xs-sun"><circle cx="880" cy="66" r="44" class="xs-sun-halo"/><circle cx="880" cy="66" r="24" class="xs-sun-core"/><circle cx="890" cy="58" r="20" class="xs-moon-cut"/></g>
+      <g class="xs-twinkles"><circle cx="120" cy="40" r="1.6"/><circle cx="260" cy="70" r="1.2"/><circle cx="420" cy="30" r="1.4"/><circle cx="600" cy="56" r="1.2"/><circle cx="720" cy="26" r="1.6"/><circle cx="790" cy="90" r="1.1"/><circle cx="40" cy="96" r="1.2"/></g>
+      <g class="xs-clouds">
+        <g class="xs-cloud xs-cloud-1"><ellipse cx="140" cy="60" rx="36" ry="13"/><ellipse cx="164" cy="52" rx="24" ry="15"/><ellipse cx="118" cy="54" rx="18" ry="11"/></g>
+        <g class="xs-cloud xs-cloud-2"><ellipse cx="640" cy="44" rx="30" ry="11"/><ellipse cx="660" cy="36" rx="20" ry="13"/></g>
+        <g class="xs-cloud xs-cloud-3"><ellipse cx="380" cy="86" rx="26" ry="9"/><ellipse cx="398" cy="80" rx="16" ry="10"/></g>
+      </g>
+      <g class="xs-skyline"><rect x="0" y="230" width="40" height="110" rx="2"/><rect x="36" y="200" width="30" height="140" rx="2"/><rect x="330" y="180" width="34" height="160" rx="2"/><rect x="360" y="214" width="26" height="126" rx="2"/><rect x="612" y="196" width="30" height="144" rx="2"/><rect x="640" y="224" width="24" height="116" rx="2"/><rect x="930" y="190" width="30" height="150" rx="2"/><rect x="300" y="236" width="30" height="104" rx="2"/><rect x="590" y="160" width="22" height="180" rx="2"/></g>
+
+      <!-- brokerage house -->
+      <g class="xs-house">
+        <path class="xs-wall" d="M30,122 L330,122 L330,338 L30,338 Z"/>
+        <path class="xs-roof" d="M20,102 L180,52 L340,102 Z"/>
+        <rect class="xs-frieze" x="24" y="100" width="312" height="24" rx="3"/>
+        <text class="xs-sign" x="180" y="117" text-anchor="middle">BROKERAGE HOUSE</text>
+        <rect class="xs-ticker-bg" x="52" y="128" width="256" height="20" rx="4"/>
+        <g clip-path="url(#xsTickerClip)"><g class="xs-ticker"><text x="56" y="142">DSEX 6,214 <tspan class="up">&#9650; 0.8%</tspan>  DS30 2,145 <tspan class="up">&#9650; 0.4%</tspan>  DSES 1,342 <tspan class="dn">&#9660; 0.1%</tspan>  DSEX 6,214 <tspan class="up">&#9650; 0.8%</tspan>  DS30 2,145 <tspan class="up">&#9650; 0.4%</tspan>  DSES 1,342 <tspan class="dn">&#9660; 0.1%</tspan></text></g></g>
+        <rect class="xs-win" x="48" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="92" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="214" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="48" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="92" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="214" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="206" width="22" height="26" rx="3"/>
+        <rect class="xs-col" x="40" y="150" width="8" height="188"/><rect class="xs-col" x="174" y="150" width="12" height="188"/><rect class="xs-col" x="312" y="150" width="8" height="188"/>
+        <g class="xs-plant" transform="translate(316,338)"><rect x="-9" y="-16" width="18" height="16" rx="3" fill="#b5653b"/><path class="xs-leaf" d="M0,-16 Q-14,-34 -6,-48 Q2,-32 0,-16 Z M0,-16 Q14,-30 10,-44 Q0,-30 0,-16 Z" fill="#2fb36b"/></g>
+      </g>
+
+      <!-- XFL support tower -->
+      <g class="xs-tower">
+        <rect class="xs-tower-body" x="404" y="96" width="186" height="242" rx="6"/>
+        <rect class="xs-tower-glass" x="404" y="96" width="186" height="242" rx="6" fill="url(#xsGlass)"/>
+        <rect class="xs-win xs-win-t" x="418" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="446" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="474" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="502" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="530" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="558" y="110" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="418" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="446" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="474" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="502" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="530" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="558" y="134" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="418" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="446" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="474" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="502" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="530" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="558" y="158" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="418" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="446" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="474" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="502" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="530" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="558" y="182" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="418" y="206" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="446" y="206" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="474" y="206" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="502" y="206" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="530" y="206" width="20" height="14" rx="2"/><rect class="xs-win xs-win-t" x="558" y="206" width="20" height="14" rx="2"/>
+        <rect x="494" y="62" width="4" height="34" class="xs-antenna"/><circle cx="496" cy="60" r="4" class="xs-beacon"/>
+        <g transform="translate(497,82)"><rect x="-52" y="-12" width="104" height="24" rx="12" class="xs-xfl-plate"/><text class="xs-xfl" x="0" y="5" text-anchor="middle">XFL SUPPORT</text></g>
+      </g>
+
+      <!-- XFL engineering -->
+      <g class="xs-lab">
+        <rect class="xs-tower-body" x="660" y="146" width="276" height="192" rx="6"/>
+        <rect class="xs-tower-glass" x="660" y="146" width="276" height="192" rx="6" fill="url(#xsGlass)"/>
+        <rect class="xs-win" x="678" y="168" width="26" height="16" rx="3"/><rect class="xs-win" x="716" y="168" width="26" height="16" rx="3"/><rect class="xs-win" x="862" y="168" width="26" height="16" rx="3"/><rect class="xs-win" x="898" y="168" width="26" height="16" rx="3"/><rect class="xs-win" x="678" y="196" width="26" height="16" rx="3"/><rect class="xs-win" x="716" y="196" width="26" height="16" rx="3"/><rect class="xs-win" x="862" y="196" width="26" height="16" rx="3"/><rect class="xs-win" x="898" y="196" width="26" height="16" rx="3"/>
+        <g transform="translate(798,160)"><rect x="-70" y="-12" width="140" height="24" rx="12" class="xs-xfl-plate"/><text class="xs-xfl" x="0" y="5" text-anchor="middle">XFL ENGINEERING</text></g>
+        <g class="xs-gear-big" transform="translate(912,128)"><g class="xs-spin"><circle r="14" fill="none" stroke-width="7" stroke-dasharray="6 5" class="xs-gear-stroke"/><circle r="6" class="xs-gear-hub"/></g></g>
+      </g>
+
+      <rect class="xs-ground" x="0" y="338" width="960" height="92"/>
+
+      <!-- people (the desks are drawn after them, so only the upper body shows) -->
+      
+        <g class="xs-person xs-maker1" transform="translate(118,338)">
+          <g class="xs-body">
+            
+            <g class="xs-arm xs-arm-l"><path d="M-28,-58 Q-44,-30 -24,-8" stroke="#21a99a" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="-24" cy="-8" r="6.5" fill="#f2c49b"/></g>
+            <g class="xs-arm xs-arm-r"><path d="M28,-58 Q44,-30 24,-8" stroke="#21a99a" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="24" cy="-8" r="6.5" fill="#f2c49b"/></g>
+            <path d="M-34,4 L-34,-44 Q-34,-70 -10,-72 L10,-72 Q34,-70 34,-44 L34,4 Z" fill="#21a99a"/>
+            <rect x="-7" y="-84" width="14" height="14" rx="4" fill="#f2c49b"/>
+            <path d="M-10,-70 L0,-44 L10,-70" stroke="#ffd166" stroke-width="2.5" fill="none"/><rect x="-7" y="-46" width="14" height="18" rx="2" fill="#fff"/><rect x="-5" y="-43" width="10" height="3" fill="#1769c2"/>
+            <g class="xs-head">
+              <circle cx="0" cy="-102" r="23" fill="#f2c49b"/>
+              <circle cx="-23" cy="-100" r="4.5" fill="#f2c49b"/><circle cx="23" cy="-100" r="4.5" fill="#f2c49b"/>
+              <g fill="#3b2620"><path class="xs-hair" d="M-27,-98 Q-28,-132 0,-131 Q28,-132 27,-98 L29,-62 Q18,-56 14,-66 L16,-104 Q0,-116 -16,-104 L-14,-66 Q-18,-56 -29,-62 Z"/></g>
+              <g class="xs-eyes" fill="#1d2433"><ellipse cx="-8" cy="-101" rx="2.6" ry="3"/><ellipse cx="8" cy="-101" rx="2.6" ry="3"/></g>
+              <path class="xs-brows" d="M-12,-109 L-4,-110 M4,-110 L12,-109" stroke="#3b2620" stroke-width="2" stroke-linecap="round"/>
+              <g class="xs-blush" fill="#ff7a8a"><ellipse cx="-13" cy="-93" rx="4" ry="2.4"/><ellipse cx="13" cy="-93" rx="4" ry="2.4"/></g>
+              <path class="xs-mouth-n" d="M-6,-90 Q0,-88 6,-90" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-w" d="M-6,-88 Q0,-93 6,-88" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-s" d="M-9,-92 Q0,-80 9,-92 Z" fill="#7a3b2e"/>
+              
+            </g>
+          </g>
+        </g>
+        <g class="xs-person xs-maker2" transform="translate(236,338)">
+          <g class="xs-body">
+            
+            <g class="xs-arm xs-arm-l"><path d="M-28,-58 Q-44,-30 -24,-8" stroke="#f08c3a" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="-24" cy="-8" r="6.5" fill="#c98b5a"/></g>
+            <g class="xs-arm xs-arm-r"><path d="M28,-58 Q44,-30 24,-8" stroke="#f08c3a" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="24" cy="-8" r="6.5" fill="#c98b5a"/></g>
+            <path d="M-34,4 L-34,-44 Q-34,-70 -10,-72 L10,-72 Q34,-70 34,-44 L34,4 Z" fill="#f08c3a"/>
+            <rect x="-7" y="-84" width="14" height="14" rx="4" fill="#c98b5a"/>
+            <path d="M-10,-70 L0,-44 L10,-70" stroke="#ffd166" stroke-width="2.5" fill="none"/><rect x="-7" y="-46" width="14" height="18" rx="2" fill="#fff"/><rect x="-5" y="-43" width="10" height="3" fill="#1769c2"/>
+            <g class="xs-head">
+              <circle cx="0" cy="-102" r="23" fill="#c98b5a"/>
+              <circle cx="-23" cy="-100" r="4.5" fill="#c98b5a"/><circle cx="23" cy="-100" r="4.5" fill="#c98b5a"/>
+              <g fill="#20160f"><path class="xs-hair" d="M-25,-100 Q-27,-131 2,-129 Q27,-128 25,-102 Q14,-120 -6,-112 Q-16,-108 -25,-100 Z"/></g>
+              <g class="xs-eyes" fill="#1d2433"><ellipse cx="-8" cy="-101" rx="2.6" ry="3"/><ellipse cx="8" cy="-101" rx="2.6" ry="3"/></g>
+              <path class="xs-brows" d="M-12,-109 L-4,-110 M4,-110 L12,-109" stroke="#20160f" stroke-width="2" stroke-linecap="round"/>
+              <g class="xs-blush" fill="#ff7a8a"><ellipse cx="-13" cy="-93" rx="4" ry="2.4"/><ellipse cx="13" cy="-93" rx="4" ry="2.4"/></g>
+              <path class="xs-mouth-n" d="M-6,-90 Q0,-88 6,-90" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-w" d="M-6,-88 Q0,-93 6,-88" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-s" d="M-9,-92 Q0,-80 9,-92 Z" fill="#7a3b2e"/>
+              <g class="xs-glasses" stroke="#1d2433" stroke-width="1.6" fill="rgba(255,255,255,.25)"><circle cx="-8" cy="-101" r="6"/><circle cx="8" cy="-101" r="6"/><path d="M-2,-101 L2,-101" fill="none"/></g>
+            </g>
+          </g>
+        </g>
+        <g class="xs-person xs-manager" transform="translate(488,338)">
+          <g class="xs-body">
+            
+            <g class="xs-arm xs-arm-l"><path d="M-28,-58 Q-44,-30 -24,-8" stroke="#1f3b73" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="-24" cy="-8" r="6.5" fill="#e8b88a"/></g>
+            <g class="xs-arm xs-arm-r"><path d="M28,-58 Q44,-30 24,-8" stroke="#1f3b73" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="24" cy="-8" r="6.5" fill="#e8b88a"/></g>
+            <path d="M-34,4 L-34,-44 Q-34,-70 -10,-72 L10,-72 Q34,-70 34,-44 L34,4 Z" fill="#1f3b73"/>
+            <rect x="-7" y="-84" width="14" height="14" rx="4" fill="#e8b88a"/>
+            <path d="M-10,-71 L0,-62 L10,-71 Z" fill="#fff"/><path d="M0,-63 L-4,-58 L0,-34 L4,-58 Z" fill="#e5484d"/><text x="-26" y="-40" class="xs-chest">XFL</text>
+            <g class="xs-head">
+              <circle cx="0" cy="-102" r="23" fill="#e8b88a"/>
+              <circle cx="-23" cy="-100" r="4.5" fill="#e8b88a"/><circle cx="23" cy="-100" r="4.5" fill="#e8b88a"/>
+              <g fill="#5a4636"><path class="xs-hair" d="M-25,-104 Q-26,-130 0,-129 Q26,-130 25,-104 Q20,-118 0,-116 Q-20,-118 -25,-104 Z"/></g>
+              <g class="xs-eyes" fill="#1d2433"><ellipse cx="-8" cy="-101" rx="2.6" ry="3"/><ellipse cx="8" cy="-101" rx="2.6" ry="3"/></g>
+              <path class="xs-brows" d="M-12,-109 L-4,-110 M4,-110 L12,-109" stroke="#5a4636" stroke-width="2" stroke-linecap="round"/>
+              <g class="xs-blush" fill="#ff7a8a"><ellipse cx="-13" cy="-93" rx="4" ry="2.4"/><ellipse cx="13" cy="-93" rx="4" ry="2.4"/></g>
+              <path class="xs-mouth-n" d="M-6,-90 Q0,-88 6,-90" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-w" d="M-6,-88 Q0,-93 6,-88" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-s" d="M-9,-92 Q0,-80 9,-92 Z" fill="#7a3b2e"/>
+              <g class="xs-glasses" stroke="#1d2433" stroke-width="1.8" fill="rgba(255,255,255,.2)"><rect x="-15" y="-106" width="12" height="9" rx="2"/><rect x="3" y="-106" width="12" height="9" rx="2"/><path d="M-3,-102 L3,-102" fill="none"/></g>
+            </g>
+          </g>
+        </g>
+        <g class="xs-person xs-engineer" transform="translate(806,338)">
+          <g class="xs-body">
+            
+            <g class="xs-arm xs-arm-l"><path d="M-28,-58 Q-44,-30 -24,-8" stroke="#7a5af5" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="-24" cy="-8" r="6.5" fill="#8d5a3b"/></g>
+            <g class="xs-arm xs-arm-r"><path d="M28,-58 Q44,-30 24,-8" stroke="#7a5af5" stroke-width="13" stroke-linecap="round" fill="none"/><circle cx="24" cy="-8" r="6.5" fill="#8d5a3b"/></g>
+            <path d="M-34,4 L-34,-44 Q-34,-70 -10,-72 L10,-72 Q34,-70 34,-44 L34,4 Z" fill="#7a5af5"/>
+            <rect x="-7" y="-84" width="14" height="14" rx="4" fill="#8d5a3b"/>
+            <path d="M-14,-70 Q0,-56 14,-70" stroke="#5b3fd0" stroke-width="5" fill="none"/><path d="M-5,-62 L-6,-46 M5,-62 L6,-46" stroke="#e8e2ff" stroke-width="1.6"/><text x="-12" y="-24" class="xs-chest">&lt;/&gt;</text>
+            <g class="xs-head">
+              <circle cx="0" cy="-102" r="23" fill="#8d5a3b"/>
+              <circle cx="-23" cy="-100" r="4.5" fill="#8d5a3b"/><circle cx="23" cy="-100" r="4.5" fill="#8d5a3b"/>
+              <g fill="#16110d"><g class="xs-hair"><circle cx="-18" cy="-116" r="10"/><circle cx="-4" cy="-124" r="11"/><circle cx="11" cy="-122" r="11"/><circle cx="21" cy="-110" r="9"/><circle cx="-23" cy="-104" r="7"/><circle cx="24" cy="-100" r="6"/></g></g>
+              <g class="xs-eyes" fill="#1d2433"><ellipse cx="-8" cy="-101" rx="2.6" ry="3"/><ellipse cx="8" cy="-101" rx="2.6" ry="3"/></g>
+              <path class="xs-brows" d="M-12,-109 L-4,-110 M4,-110 L12,-109" stroke="#16110d" stroke-width="2" stroke-linecap="round"/>
+              <g class="xs-blush" fill="#ff7a8a"><ellipse cx="-13" cy="-93" rx="4" ry="2.4"/><ellipse cx="13" cy="-93" rx="4" ry="2.4"/></g>
+              <path class="xs-mouth-n" d="M-6,-90 Q0,-88 6,-90" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-w" d="M-6,-88 Q0,-93 6,-88" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="xs-mouth-s" d="M-9,-92 Q0,-80 9,-92 Z" fill="#7a3b2e"/>
+              <g class="xs-headset"><path d="M-25,-100 Q-26,-134 0,-134 Q26,-134 25,-100" stroke="#2a2f3a" stroke-width="4" fill="none"/><rect x="-30" y="-108" width="9" height="16" rx="4" fill="#2a2f3a"/><rect x="21" y="-108" width="9" height="16" rx="4" fill="#2a2f3a"/><path d="M-26,-94 Q-24,-84 -12,-86" stroke="#2a2f3a" stroke-width="2" fill="none"/><circle cx="-11" cy="-86" r="2.4" fill="#ff5b6e"/></g>
+            </g>
+          </g>
+        </g>
+
+      <!-- desks -->
+      <rect x="44" y="338" width="282" height="44" rx="6" fill="url(#xsDesk)"/><rect x="44" y="338" width="282" height="6" rx="3" class="xs-desk-top"/>
+      <rect x="394" y="338" width="212" height="44" rx="6" fill="url(#xsDesk)"/><rect x="394" y="338" width="212" height="6" rx="3" class="xs-desk-top"/>
+      <rect x="676" y="338" width="256" height="44" rx="6" fill="url(#xsDesk)"/><rect x="676" y="338" width="256" height="6" rx="3" class="xs-desk-top"/>
+      <g class="xs-laptop xs-laptop-1" transform="translate(118,338)"><path d="M-30,-2 L30,-2 L34,2 L-34,2 Z" fill="#9aa6b6"/><rect x="-28" y="-38" width="56" height="36" rx="4" fill="#c5ced9"/><circle cx="0" cy="-20" r="4" fill="#e9eef4"/><rect class="xs-laptop-glow" x="-28" y="-38" width="56" height="36" rx="4"/></g><g class="xs-laptop xs-laptop-2" transform="translate(236,338)"><path d="M-30,-2 L30,-2 L34,2 L-34,2 Z" fill="#9aa6b6"/><rect x="-28" y="-38" width="56" height="36" rx="4" fill="#c5ced9"/><circle cx="0" cy="-20" r="4" fill="#e9eef4"/><rect class="xs-laptop-glow" x="-28" y="-38" width="56" height="36" rx="4"/></g>
+
+      <!-- manager's queue screen -->
+      <g class="xs-monitor" transform="translate(566,338)">
+        <rect x="-4" y="-14" width="8" height="14" fill="#7d8796"/><rect x="-16" y="-3" width="32" height="4" rx="2" fill="#7d8796"/>
+        <rect x="-40" y="-70" width="80" height="58" rx="6" class="xs-screen"/>
+        <text x="-32" y="-58" class="xs-screen-title">QUEUE</text>
+        <g transform="translate(0,6)"><g class="xs-qrow xs-qrow-0"><rect x="-32" y="-44" width="64" height="8" rx="3"/><circle cx="-27" cy="-40" r="2.2" fill="#e5484d"/></g><g class="xs-qrow xs-qrow-1"><rect x="-32" y="-33" width="64" height="8" rx="3"/><circle cx="-27" cy="-29" r="2.2" fill="#f5a524"/></g><g class="xs-qrow xs-qrow-2"><rect x="-32" y="-22" width="64" height="8" rx="3"/><circle cx="-27" cy="-18" r="2.2" fill="#22a06b"/></g><g class="xs-qrow xs-qrow-3"><rect x="-32" y="-11" width="64" height="8" rx="3"/><circle cx="-27" cy="-7" r="2.2" fill="#1769c2"/></g></g>
+      </g>
+      <!-- engineer's screens -->
+      <g class="xs-monitor" transform="translate(722,338)">
+        <rect x="-4" y="-14" width="8" height="14" fill="#7d8796"/><rect x="-16" y="-3" width="32" height="4" rx="2" fill="#7d8796"/>
+        <rect x="-42" y="-72" width="84" height="60" rx="6" class="xs-screen"/>
+        <g transform="translate(0,-8)"><rect class="xs-code xs-code-0" x="-34" y="-46" width="40" height="4" rx="2" fill="#7ee0c3"/><rect class="xs-code xs-code-1" x="-34" y="-38" width="52" height="4" rx="2" fill="#9ab8ff"/><rect class="xs-code xs-code-2" x="-28" y="-30" width="34" height="4" rx="2" fill="#ffd479"/><rect class="xs-code xs-code-3" x="-28" y="-22" width="46" height="4" rx="2" fill="#ff9fb2"/><rect class="xs-code xs-code-4" x="-34" y="-14" width="28" height="4" rx="2" fill="#9ab8ff"/><rect class="xs-code xs-code-5" x="-34" y="-6" width="44" height="4" rx="2" fill="#7ee0c3"/></g>
+        <rect class="xs-caret" x="10" y="-30" width="2" height="7" fill="#fff"/>
+      </g>
+      <g class="xs-monitor" transform="translate(890,338)">
+        <rect x="-4" y="-14" width="8" height="14" fill="#7d8796"/><rect x="-16" y="-3" width="32" height="4" rx="2" fill="#7d8796"/>
+        <rect x="-38" y="-72" width="76" height="60" rx="6" class="xs-screen"/>
+        <text x="-30" y="-58" class="xs-screen-title">DEPLOY</text>
+        <rect x="-30" y="-46" width="60" height="8" rx="4" fill="rgba(255,255,255,.15)"/>
+        <rect class="xs-progress" x="-30" y="-46" width="60" height="8" rx="4" fill="#22c55e"/>
+        <g transform="translate(0,-24)"><g class="xs-screen-ok"><circle r="9" fill="#22c55e"/><path d="M-4,0 L-1,3 L5,-4" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></g>
+      </g>
+      <g class="xs-mug" transform="translate(860,338)"><rect x="-8" y="-16" width="16" height="16" rx="3" fill="#ff8a5b"/><path d="M8,-12 Q14,-10 8,-4" stroke="#ff8a5b" stroke-width="2.5" fill="none"/>
+        <path class="xs-steam xs-steam-1" d="M-3,-20 Q-7,-26 -3,-32 Q1,-38 -3,-44" stroke-width="2" fill="none"/><path class="xs-steam xs-steam-2" d="M4,-20 Q0,-26 4,-32 Q8,-38 4,-44" stroke-width="2" fill="none"/></g>
+
+      <!-- plaques -->
+      <g class="xs-plaque"><rect x="78" y="396" width="214" height="24" rx="12"/><text x="185" y="412" text-anchor="middle">Makers &#183; Brokerage House</text></g>
+      <g class="xs-plaque"><rect x="404" y="396" width="190" height="24" rx="12"/><text x="499" y="412" text-anchor="middle">Support Manager &#183; XFL</text></g>
+      <g class="xs-plaque"><rect x="700" y="396" width="208" height="24" rx="12"/><text x="804" y="412" text-anchor="middle">Support Engineer &#183; XFL</text></g>
+
+      <!-- the ticket's flight paths -->
+      <use href="#xsPath1" class="xs-trail xs-trail-1"/><use href="#xsPath2" class="xs-trail xs-trail-2"/><use href="#xsPath3" class="xs-trail xs-trail-3"/>
+
+      <!-- manager: magnifier and stamp -->
+      <g class="xs-magnifier"><g class="xs-mag-move"><circle cx="0" cy="0" r="13" class="xs-mag-glass"/><path d="M9,9 L22,22" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/></g></g>
+      <g class="xs-stamp" transform="translate(452,330) rotate(-12)"><g class="xs-stamp-in"><rect x="-38" y="-11" width="76" height="22" rx="4"/><text x="0" y="5" text-anchor="middle">ASSIGNED</text></g></g>
+
+      <!-- the ticket -->
+      <g id="xsTicket" class="xs-ticket" transform="translate(118,292)"><g transform="scale(1.35)">
+        <g class="xs-ticket-in">
+          <rect x="-26" y="-18" width="52" height="36" rx="6" class="xs-ticket-card"/>
+          <path d="M-26,-12 Q-26,-18 -20,-18 L20,-18 Q26,-18 26,-12 L26,-8 L-26,-8 Z" class="xs-ticket-head"/>
+          <text x="-21" y="-10.5" class="xs-ticket-no">#1042</text>
+          <rect x="-20" y="-3" width="30" height="3.5" rx="1.75" class="xs-ticket-line"/>
+          <rect x="-20" y="4" width="22" height="3.5" rx="1.75" class="xs-ticket-line"/>
+          <text x="-20" y="15" class="xs-ticket-state">NEW</text>
+          <g class="xs-ticket-ok" transform="translate(18,8)"><circle r="7" fill="#22c55e"/><path d="M-3,0 L-1,2.5 L3.5,-2.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></g>
+        </g>
+      </g></g>
+
+      <!-- speech bubbles -->
+      <g class="xs-bubble xs-b-raise"><g class="xs-pop"><rect x="150" y="150" width="186" height="50" rx="12"/><path d="M168,200 l-4,12 l16,-12"/><text x="162" y="172">Trade upload keeps failing.</text><text x="162" y="188">Raising a ticket!</text></g></g>
+      <g class="xs-bubble xs-b-review"><g class="xs-pop"><rect x="340" y="150" width="196" height="50" rx="12"/><path d="M506,200 l18,12 l-4,-12"/><text x="352" y="172">High priority. Assigning it</text><text x="352" y="188">to our support engineer.</text></g></g>
+      <g class="xs-bubble xs-b-solve"><g class="xs-pop"><rect x="640" y="120" width="176" height="50" rx="12"/><path d="M786,170 l18,12 l-4,-12"/><text x="652" y="142">Found the bug. Fix</text><text x="652" y="158">deployed!</text></g></g>
+      <g class="xs-bubble xs-b-rate"><g class="xs-pop"><rect x="150" y="132" width="170" height="50" rx="12"/><path d="M168,182 l-4,12 l16,-12"/><text x="162" y="154">Solved so fast!</text><text x="162" y="170">Five stars, XFL!</text></g></g>
+      <g class="xs-bubble xs-b-rate2"><g class="xs-pop"><rect x="262" y="196" width="96" height="34" rx="12"/><path d="M280,230 l-4,12 l16,-12"/><text x="274" y="218">Thank you!</text></g></g>
+
+      <!-- the review: stars, hearts, confetti -->
+      <g class="xs-stars"><g transform="translate(68,200)"><path class="xs-star xs-star-0" d="M0,-11 L3.2,-3.6 L11,-3.4 L4.8,1.6 L7,9.4 L0,4.8 L-7,9.4 L-4.8,1.6 L-11,-3.4 L-3.2,-3.6 Z"/></g><g transform="translate(94,200)"><path class="xs-star xs-star-1" d="M0,-11 L3.2,-3.6 L11,-3.4 L4.8,1.6 L7,9.4 L0,4.8 L-7,9.4 L-4.8,1.6 L-11,-3.4 L-3.2,-3.6 Z"/></g><g transform="translate(120,200)"><path class="xs-star xs-star-2" d="M0,-11 L3.2,-3.6 L11,-3.4 L4.8,1.6 L7,9.4 L0,4.8 L-7,9.4 L-4.8,1.6 L-11,-3.4 L-3.2,-3.6 Z"/></g><g transform="translate(146,200)"><path class="xs-star xs-star-3" d="M0,-11 L3.2,-3.6 L11,-3.4 L4.8,1.6 L7,9.4 L0,4.8 L-7,9.4 L-4.8,1.6 L-11,-3.4 L-3.2,-3.6 Z"/></g><g transform="translate(172,200)"><path class="xs-star xs-star-4" d="M0,-11 L3.2,-3.6 L11,-3.4 L4.8,1.6 L7,9.4 L0,4.8 L-7,9.4 L-4.8,1.6 L-11,-3.4 L-3.2,-3.6 Z"/></g></g>
+      <g class="xs-hearts"><g transform="translate(150,230)"><path class="xs-heart xs-h0" d="M0,4 C-8,-3 -6,-10 0,-6 C6,-10 8,-3 0,4 Z"/></g><g transform="translate(160,224)"><path class="xs-heart xs-h1" d="M0,4 C-8,-3 -6,-10 0,-6 C6,-10 8,-3 0,4 Z"/></g><g transform="translate(170,218)"><path class="xs-heart xs-h2" d="M0,4 C-8,-3 -6,-10 0,-6 C6,-10 8,-3 0,4 Z"/></g><g transform="translate(180,212)"><path class="xs-heart xs-h3" d="M0,4 C-8,-3 -6,-10 0,-6 C6,-10 8,-3 0,4 Z"/></g></g>
+      <g class="xs-confettis"><rect class="xs-confetti xs-c0" x="62" y="150" width="7" height="11" rx="1.5" fill="#ffd166"/><rect class="xs-confetti xs-c1" x="90" y="150" width="7" height="11" rx="1.5" fill="#ef476f"/><rect class="xs-confetti xs-c2" x="118" y="150" width="7" height="11" rx="1.5" fill="#06d6a0"/><rect class="xs-confetti xs-c3" x="150" y="150" width="7" height="11" rx="1.5" fill="#118ab2"/><rect class="xs-confetti xs-c4" x="176" y="150" width="7" height="11" rx="1.5" fill="#8f6bff"/><rect class="xs-confetti xs-c5" x="204" y="150" width="7" height="11" rx="1.5" fill="#ffd166"/><rect class="xs-confetti xs-c6" x="232" y="150" width="7" height="11" rx="1.5" fill="#ef476f"/><rect class="xs-confetti xs-c7" x="260" y="150" width="7" height="11" rx="1.5" fill="#06d6a0"/><rect class="xs-confetti xs-c8" x="284" y="150" width="7" height="11" rx="1.5" fill="#118ab2"/><rect class="xs-confetti xs-c9" x="74" y="150" width="7" height="11" rx="1.5" fill="#8f6bff"/><rect class="xs-confetti xs-c10" x="136" y="150" width="7" height="11" rx="1.5" fill="#06d6a0"/><rect class="xs-confetti xs-c11" x="192" y="150" width="7" height="11" rx="1.5" fill="#ffd166"/><rect class="xs-confetti xs-c12" x="248" y="150" width="7" height="11" rx="1.5" fill="#ef476f"/><rect class="xs-confetti xs-c13" x="300" y="150" width="7" height="11" rx="1.5" fill="#118ab2"/></g>
+      </g>
+    </svg>
+        <button type="button" class="xs-pause" id="xsPause" aria-pressed="false" title="Pause the animation"><i class="fas fa-pause" aria-hidden="true"></i><span class="sr-only">Pause the animation</span></button>
+    </div>
+    <ol class="xs-steps" aria-hidden="true">
+        <li data-step="1"><span class="xs-step-ico"><i class="fas fa-ticket-alt"></i></span><span class="xs-step-txt"><b>Raise</b><small>Maker at the brokerage house</small></span></li>
+        <li data-step="2"><span class="xs-step-ico"><i class="fas fa-user-tie"></i></span><span class="xs-step-txt"><b>Review &amp; assign</b><small>XFL support manager</small></span></li>
+        <li data-step="3"><span class="xs-step-ico"><i class="fas fa-tools"></i></span><span class="xs-step-txt"><b>Solve</b><small>XFL support engineer</small></span></li>
+        <li data-step="4"><span class="xs-step-ico"><i class="fas fa-star"></i></span><span class="xs-step-txt"><b>Rate</b><small>Happy maker reviews</small></span></li>
+    </ol>
+    <p class="xs-caption" id="xsCaption">Every ticket, from the first report to a five-star review, in one place.</p>
+</section>
