@@ -1,4 +1,5 @@
 @model XFLCSMS.Models.Feedback.ServiceFeedbackView
+@using XFLCSMS.Models.Feedback
 @{
     Layout = Model.Layout;
     string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
@@ -6,6 +7,51 @@
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
     ViewData["Title"] = "Service Feedback";
     ViewData["Subtitle"] = "Client ratings of closed tickets. Visible to Admin and Support Manager only; engineers and clients never see them.";
+    string P(double? v) => v.HasValue ? (v.Value * 100).ToString("0") + "%" : "-";
+    string N(double? v, string f) => v.HasValue ? v.Value.ToString(f) : "-";
+    string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+    double? Pct(double? v) => v.HasValue ? Math.Round(v.Value * 100, 1) : null;
+    string Tone(double? v, double good, double warn) => v == null ? "kpi-info" : v >= good ? "kpi-good" : v >= warn ? "kpi-warn" : "kpi-bad";
+    var k = Model.Kpis;
+    var trend = new
+    {
+        type = "line", unit = "%", min = 0, max = 100, unit2 = "", min2 = 0, max2 = 5,
+        labels = Model.Trend.Select(t => t.Month.ToString("MMM yy")).ToArray(),
+        datasets = new object[]
+        {
+            new { label = "CSAT", color = "amber", fill = true, data = Model.Trend.Select(t => Pct(t.Csat)).ToArray() },
+            new { label = "First-contact resolution", color = "green", data = Model.Trend.Select(t => Pct(t.Fcr)).ToArray() },
+            new { label = "Average stars", color = "blue", dashed = true, axis = "y2", data = Model.Trend.Select(t => t.AverageStars).ToArray() }
+        }
+    };
+    var starsChart = new
+    {
+        type = "bar", horizontal = true, unit = "", legend = false,
+        labels = new[] { "5★", "4★", "3★", "2★", "1★" },
+        datasets = new object[] { new { label = "Ratings", colors = new[] { "green", "teal", "amber", "orange", "red" }, data = k.StarCounts.Reverse().Select(c => (double)c).ToArray() } }
+    };
+    var dims = new
+    {
+        type = "radar", max = 5, step = 1, unit = "", legend = false,
+        labels = new[] { "Speed", "Communication", "Quality", "Professionalism", "Knowledge", "Ease (CES)" },
+        datasets = new object[] { new { label = "Average", color = "blue", data = new[] { k.Speed, k.Communication, k.Quality, k.Professionalism, k.Knowledge, k.Ces } } }
+    };
+    var nps = new
+    {
+        type = "doughnut", unit = "",
+        labels = new[] { "Promoters (9-10)", "Passives (7-8)", "Detractors (0-6)" },
+        datasets = new object[] { new { label = "NPS", colors = new[] { "green", "amber", "red" }, data = new double[] { k.Promoters, k.Passives, k.Detractors } } }
+    };
+    var topTags = k.Tags.Take(10).ToList();
+    var tags = new
+    {
+        type = "bar", horizontal = true, unit = "", legend = false,
+        labels = topTags.Select(t => t.Tag).ToArray(),
+        datasets = new object[] { new { label = "Mentions", colors = topTags.Select(t => t.Positive ? "green" : "red").ToArray(), data = topTags.Select(t => (double)t.Count).ToArray() } }
+    };
+}
+@section Head {
+<link rel="stylesheet" href="~/css/xfl-perf.css" asp-append-version="true" />
 }
 @section PageActions {
     <a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-followUp="true" class="btn btn-outline-danger d-print-none">
@@ -53,21 +99,81 @@
         </div>
     </div>
 
+    <div class="kpi-grid">
+        <div class="kpi-tile kpi-info"><div class="kpi-label">Ratings</div><div class="kpi-value">@k.Count</div><div class="kpi-sub">@(Model.ClosedInPeriod == 0 ? "-" : (100.0 * k.Count / Model.ClosedInPeriod).ToString("0") + "%") of @Model.ClosedInPeriod closed tickets rated</div></div>
+        <div class="kpi-tile @Tone(k.AverageStars, 4.2, 3.5)"><div class="kpi-label">Average rating</div><div class="kpi-value">@N(k.AverageStars, "0.00")<small class="text-muted"> ★</small></div><div class="kpi-bar"><span style="width:@((k.AverageStars ?? 0) * 20)%"></span></div></div>
+        <div class="kpi-tile @Tone(k.Csat, 0.8, 0.6)"><div class="kpi-label">CSAT (4-5★)</div><div class="kpi-value">@P(k.Csat)</div><div class="kpi-bar"><span style="width:@((k.Csat ?? 0) * 100)%"></span></div><div class="kpi-sub">target 80%+</div></div>
+        <div class="kpi-tile @Tone(k.Nps, 30, 0)"><div class="kpi-label">NPS</div><div class="kpi-value">@N(k.Nps, "+0;-0;0")</div><div class="kpi-sub">@k.NpsAnswers answers · -100 to +100</div></div>
+        <div class="kpi-tile @Tone(k.Ces, 4, 3)"><div class="kpi-label">Customer effort (CES)</div><div class="kpi-value">@N(k.Ces, "0.0")<small class="text-muted"> / 5</small></div><div class="kpi-sub">5 = very easy</div></div>
+        <div class="kpi-tile @Tone(k.Fcr, 0.75, 0.6)"><div class="kpi-label">First-contact resolution</div><div class="kpi-value">@P(k.Fcr)</div><div class="kpi-bar"><span style="width:@((k.Fcr ?? 0) * 100)%"></span></div></div>
+        <div class="kpi-tile @Tone(k.SolvedRate, 0.9, 0.75)"><div class="kpi-label">Fully solved</div><div class="kpi-value">@P(k.SolvedRate)</div><div class="kpi-sub">as the client says</div></div>
+        <div class="kpi-tile @(Model.UnreviewedLow == 0 ? "kpi-good" : "kpi-bad")"><div class="kpi-label">Waiting for follow-up</div><div class="kpi-value">@Model.UnreviewedLow</div><div class="kpi-sub">target: within @XFLCSMS.Services.FeedbackService.FollowUpHours h</div></div>
+    </div>
+
+    @if (k.Count > 0)
+    {
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Satisfaction trend</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(trend)" aria-label="CSAT, FCR and average stars by month"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Star distribution</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(starsChart)" aria-label="Ratings by stars"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Promoters vs detractors</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(nps)" aria-label="NPS breakdown"></canvas></div></div></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Service dimensions (1-5)</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(dims)" aria-label="Average score per service dimension"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">What clients mention most</h4></div>
+                    <div class="card-body">
+                        @if (topTags.Count > 0)
+                        {
+                            <div class="chart-box"><canvas data-chart="@J(tags)" aria-label="Most picked feedback tags"></canvas></div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No feedback tags picked in this period yet.</p>
+                        }
+                    </div></div>
+            </div>
+        </div>
+    }
+
     <div class="card">
         <div class="card-header"><h4 class="mb-0">By Engineer</h4></div>
         <div class="card-body p-0 table-responsive">
             <table class="table table-striped table-sm mb-0">
                 <thead>
-                    <tr><th>Engineer</th><th class="text-right">Ratings</th><th class="text-right">Average</th><th class="text-right">4-5 stars</th><th class="text-right">1-2 stars</th><th class="text-right">Closed tickets</th><th class="text-right">Rated</th></tr>
+                    <tr><th>Engineer</th><th class="text-right">Ratings</th><th class="text-right">Average</th><th class="text-right">CSAT</th><th class="text-right">NPS</th><th class="text-right">CES</th><th class="text-right">FCR</th><th class="text-right">1-2 stars</th><th class="text-right">Closed tickets</th><th class="text-right">Rated</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var s in Model.Summary)
                     {
                         <tr>
-                            <td>@s.EngineerName</td>
+                            <td>
+                                @if (s.EngineerUserId != null)
+                                {
+                                    <a asp-controller="@Model.Controller" asp-action="EngineerProfile" asp-route-id="@s.EngineerUserId">@s.EngineerName</a>
+                                }
+                                else
+                                {
+                                    @s.EngineerName
+                                }
+                            </td>
                             <td class="text-right">@s.Ratings</td>
                             <td class="text-right"><b>@s.AverageStars.ToString("0.00")</b></td>
-                            <td class="text-right">@s.FourOrFive</td>
+                            <td class="text-right">@P(s.Kpis.Csat)</td>
+                            <td class="text-right">@N(s.Kpis.Nps, "+0;-0;0")</td>
+                            <td class="text-right">@N(s.Kpis.Ces, "0.0")</td>
+                            <td class="text-right">@P(s.Kpis.Fcr)</td>
                             <td class="text-right">@s.OneOrTwo</td>
                             <td class="text-right">@s.ClosedTickets</td>
                             <td class="text-right">@(s.ClosedTickets == 0 ? "-" : s.ResponseRate + "%")</td>
@@ -75,7 +181,7 @@
                     }
                     @if (Model.Summary.Count == 0)
                     {
-                        <tr><td colspan="7" class="text-muted">No rating in this period. Clients rate a ticket from their own ticket list (Rate button) for 14 days after XFL closes it.</td></tr>
+                        <tr><td colspan="10" class="text-muted">No rating in this period. Clients rate a ticket from their own ticket list (Rate button) for 14 days after XFL closes it.</td></tr>
                     }
                 </tbody>
             </table>
@@ -93,14 +199,34 @@
                     @foreach (var row in Model.Rows)
                     {
                         var r = row.Rating;
-                        <tr class="@(r.Stars <= 2 && r.ReviewedOn == null ? "table-danger" : "")">
+                        <tr class="@(r.NeedsFollowUp && r.ReviewedOn == null ? "table-danger" : "")">
                             <td class="text-nowrap">@r.CreatedOn.ToString("dd MMM yyyy")</td>
                             <td><a asp-controller="@Model.Controller" asp-action="TicketView" asp-route-id="@r.IssueId">@row.TicketNumber</a><div class="small text-muted">@row.TicketTitle · @row.Priority</div></td>
                             <td>@row.HouseName<div class="small text-muted">@row.RatedByName</div></td>
                             <td>@r.EngineerName</td>
-                            <td class="text-nowrap" style="color: #f39c12;" title="@r.Stars of 5">@Stars(r.Stars)</td>
-                            <td>@(r.FullySolved ? "Yes" : "No")</td>
-                            <td style="white-space: pre-wrap;">@r.Comment</td>
+                            <td class="text-nowrap">
+                                <span style="color: #f39c12;" title="@r.Stars of 5">@Stars(r.Stars)</span>
+                                <div class="small text-muted">
+                                    @if (r.RecommendScore != null) { <span title="Likely to recommend, 0-10">NPS @r.RecommendScore</span> }
+                                    @if (r.EffortScore != null) { <span class="ml-1" title="Customer effort, 5 = very easy">CES @r.EffortScore</span> }
+                                </div>
+                                @if (r.ExcludedFromScore)
+                                {
+                                    <span class="badge badge-secondary" title="@r.ExcludeReason">not counted</span>
+                                }
+                            </td>
+                            <td>@(r.FullySolved ? "Yes" : "No")@(r.FirstContactResolved == false ? ", had to chase" : r.FirstContactResolved == true ? ", first time" : "")</td>
+                            <td>
+                                @foreach (var t in r.TagList)
+                                {
+                                    <span class="tag-chip @(FeedbackTags.IsPositive(t) ? "pos" : "neg")">@t</span>
+                                }
+                                <div style="white-space: pre-wrap;">@r.Comment</div>
+                                @if (!string.IsNullOrWhiteSpace(r.ClientReply))
+                                {
+                                    <div class="small text-info"><i class="fas fa-reply"></i> @r.ClientReply</div>
+                                }
+                            </td>
                             <td>
                                 @if (r.ReviewedOn != null)
                                 {
@@ -108,6 +234,10 @@
                                 }
                                 else
                                 {
+                                    @if (r.NeedsFollowUp && r.CreatedOn.AddHours(XFLCSMS.Services.FeedbackService.FollowUpHours) < DateTime.Now)
+                                    {
+                                        <span class="badge badge-danger mb-1">overdue</span>
+                                    }
                                     <form asp-controller="@Model.Controller" asp-action="ReviewRating" method="post">
                                         <input type="hidden" name="ratingId" value="@r.RatingId" />
                                         <input type="hidden" name="returnUrl" value="@returnUrl" />
@@ -117,6 +247,7 @@
                                         </div>
                                     </form>
                                 }
+                                <a class="small" asp-controller="@Model.Controller" asp-action="TicketView" asp-route-id="@r.IssueId">reply to client / details</a>
                             </td>
                         </tr>
                     }
@@ -129,3 +260,7 @@
         </div>
     </div>
 </section>
+@section Scripts {
+<script src="~/lib/chart.js/chart.umd.min.js"></script>
+<script src="~/js/xfl-perf-charts.js" asp-append-version="true"></script>
+}

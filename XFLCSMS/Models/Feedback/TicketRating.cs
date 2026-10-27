@@ -37,7 +37,28 @@ namespace XFLCSMS.Models.Feedback
         [Range(1, 5)]
         public byte? QualityScore { get; set; }
 
+        [Range(1, 5)]
+        public byte? ProfessionalismScore { get; set; }
+
+        [Range(1, 5)]
+        public byte? KnowledgeScore { get; set; }
+
+        /// <summary>Customer Effort Score: how easy it was to get the issue solved, 1 very difficult to 5 very easy.</summary>
+        [Range(1, 5)]
+        public byte? EffortScore { get; set; }
+
+        /// <summary>Net Promoter question: how likely the client is to recommend XFL support, 0 to 10.</summary>
+        [Range(0, 10)]
+        public byte? RecommendScore { get; set; }
+
         public bool FullySolved { get; set; } = true;
+
+        /// <summary>Client's view of first-contact resolution: solved the first time, without chasing or explaining again.</summary>
+        public bool? FirstContactResolved { get; set; }
+
+        /// <summary>Quick feedback tags picked by the client (FeedbackTags), separated by "|".</summary>
+        [MaxLength(400)]
+        public string? Tags { get; set; }
 
         [MaxLength(1000)]
         public string? Comment { get; set; }
@@ -52,5 +73,28 @@ namespace XFLCSMS.Models.Feedback
 
         [MaxLength(1000)]
         public string? ReviewNote { get; set; }
+
+        // Management's answer to the client, shown on the client's ticket page.
+        [MaxLength(1000)]
+        public string? ClientReply { get; set; }
+
+        [MaxLength(200)]
+        public string? ClientReplyBy { get; set; }
+        public DateTime? ClientReplyOn { get; set; }
+
+        // Fairness: a rating that is not about the engineer's work (e.g. about a product limitation or pricing)
+        // can be left out of the scorecard by management, with a reason that stays on record.
+        public bool ExcludedFromScore { get; set; }
+
+        [MaxLength(500)]
+        public string? ExcludeReason { get; set; }
+
+        [MaxLength(200)]
+        public string? ExcludedBy { get; set; }
+
+        public IEnumerable<string> TagList => string.IsNullOrWhiteSpace(Tags) ? Enumerable.Empty<string>() : Tags.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+        /// <summary>Needs a management follow-up: 1-2 stars, or the client says the problem is not solved.</summary>
+        public bool NeedsFollowUp => Stars <= 2 || !FullySolved;
     }
 }

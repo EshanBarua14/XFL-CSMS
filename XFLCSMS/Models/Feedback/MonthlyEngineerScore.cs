@@ -30,11 +30,26 @@ namespace XFLCSMS.Models.Feedback
         public double? AdjustedRating { get; set; }
         public double? SlaCompliance { get; set; }
         public double? ResolutionRatio { get; set; }
-        public double? MedianResolutionHours { get; set; }
+        public double? MedianResolutionMinutes { get; set; }
         public double? ReopenRate { get; set; }
         public double? MedianFirstResponseMinutes { get; set; }
+
+        /// <summary>Share of closed tickets whose first response met the SLA response target.</summary>
+        public double? ResponseSlaCompliance { get; set; }
         public double? BacklogOverdueShare { get; set; }
         public int LowRatingsUnreviewed { get; set; }
+
+        /// <summary>Share of ratings with 4 or 5 stars (CSAT).</summary>
+        public double? CsatPercent { get; set; }
+
+        /// <summary>Net Promoter Score, -100 to 100.</summary>
+        public double? Nps { get; set; }
+
+        /// <summary>Average Customer Effort Score, 1 (very difficult) to 5 (very easy).</summary>
+        public double? AverageEffort { get; set; }
+
+        /// <summary>Share of answering clients who say the ticket was solved the first time.</summary>
+        public double? FcrRate { get; set; }
 
         // Measures as 0-100 points
         public double RatingPoints { get; set; }
@@ -44,6 +59,7 @@ namespace XFLCSMS.Models.Feedback
         public double ReopenPoints { get; set; }
         public double FirstResponsePoints { get; set; }
         public double BacklogPoints { get; set; }
+        public double FcrPoints { get; set; }
 
         public DateTime FrozenOn { get; set; }
     }

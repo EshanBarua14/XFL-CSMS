@@ -1,0 +1,257 @@
+@model XFLCSMS.Models.Feedback.EngineerProfileView
+@using XFLCSMS.Models.Feedback
+@using XFLCSMS.Services
+@{
+    Layout = Model.Layout;
+    var s = Model.Settings;
+    var r = Model.Row;
+    var pr = Model.PreviousRow;
+    var k = Model.Kpis;
+    var tk = Model.TeamKpis;
+    var monthKey = Model.Month.ToString("yyyy-MM");
+    string P(double? v) => v.HasValue ? (v.Value * 100).ToString("0") + "%" : "-";
+    string N(double? v, string f) => v.HasValue ? v.Value.ToString(f) : "-";
+    string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+    double? Pct(double? v) => v.HasValue ? Math.Round(v.Value * 100, 1) : null;
+    string Stars(int n) => new string('★', n) + new string('☆', 5 - n);
+    string Tone(double? v, double good, double warn) => v == null ? "kpi-info" : v >= good ? "kpi-good" : v >= warn ? "kpi-warn" : "kpi-bad";
+    string Delta(double? now, double? before, bool percent, bool lowerIsBetter = false)
+    {
+        if (now == null || before == null) return "";
+        var d = (now.Value - before.Value) * (percent ? 100 : 1);
+        if (Math.Abs(d) < 0.05) return "<span class=\"text-muted\">= last month</span>";
+        var good = lowerIsBetter ? d < 0 : d > 0;
+        return "<span class=\"" + (good ? "delta-up" : "delta-down") + "\">" + (d > 0 ? "▲ " : "▼ ") + Math.Abs(d).ToString(percent ? "0" : "0.0") + (percent ? " pts" : "") + "</span> vs last month";
+    }
+    ViewData["Title"] = Model.EngineerName;
+    ViewData["Subtitle"] = "Support Engineer performance for " + Model.Month.ToString("MMMM yyyy") + (Model.IsFrozen ? " (final)" : " (provisional)") + ". Client feedback covers the six months up to this month.";
+
+    var labels = Model.Trend.Select(t => t.Month.ToString("MMM yy")).ToArray();
+    var scoreTrend = new
+    {
+        type = "line", unit = "pts", min = 0, max = 100,
+        labels,
+        datasets = new object[]
+        {
+            new { label = "Score", color = "blue", fill = true, data = Model.Trend.Select(t => t.Score).ToArray() },
+            new { label = "Team median", color = "slate", dashed = true, data = Model.Trend.Select(t => t.TeamMedianScore).ToArray() }
+        }
+    };
+    var rankTrend = new
+    {
+        type = "bar", unit = "", legend = true,
+        labels,
+        datasets = new object[]
+        {
+            new { label = "Tickets closed", color = "teal", data = Model.Trend.Select(t => (double)t.Closed).ToArray() },
+            new { label = "Ratings", color = "amber", data = Model.Trend.Select(t => (double)t.Ratings).ToArray() }
+        }
+    };
+    var qualityTrend = new
+    {
+        type = "line", unit = "%", min = 0, max = 100,
+        labels,
+        datasets = new object[]
+        {
+            new { label = "CSAT", color = "amber", data = Model.Trend.Select(t => Pct(t.Csat)).ToArray() },
+            new { label = "SLA met", color = "blue", data = Model.Trend.Select(t => Pct(t.Sla)).ToArray() },
+            new { label = "First-contact resolution", color = "green", data = Model.Trend.Select(t => Pct(t.Fcr)).ToArray() }
+        }
+    };
+    var radar = r?.Rank == null ? null : new
+    {
+        type = "radar", max = 100, unit = "pts",
+        labels = ScorecardService.Measures,
+        datasets = new object[]
+        {
+            new { label = Model.EngineerName, color = "blue", data = ScorecardService.PointsOf(r).Select(v => (double?)v).ToArray() },
+            new { label = "Team average", color = "slate", dashed = true, data = ScorecardService.Measures.Select(m => Model.TeamPoints.TryGetValue(m, out var v) ? (double?)v : null).ToArray() }
+        }
+    };
+    var dims = new
+    {
+        type = "bar", unit = "", min = 0, max = 5,
+        labels = new[] { "Speed", "Communication", "Quality", "Professionalism", "Knowledge", "Ease (CES)" },
+        datasets = new object[]
+        {
+            new { label = Model.EngineerName, color = "blue", data = new[] { k.Speed, k.Communication, k.Quality, k.Professionalism, k.Knowledge, k.Ces } },
+            new { label = "Team", color = "slate", data = new[] { tk.Speed, tk.Communication, tk.Quality, tk.Professionalism, tk.Knowledge, tk.Ces } }
+        }
+    };
+    var stars = new
+    {
+        type = "doughnut", unit = "",
+        labels = new[] { "5★", "4★", "3★", "2★", "1★" },
+        datasets = new object[] { new { label = "Ratings", colors = new[] { "green", "teal", "amber", "orange", "red" }, data = k.StarCounts.Reverse().Select(c => (double)c).ToArray() } }
+    };
+}
+@section Head {
+<link rel="stylesheet" href="~/css/xfl-perf.css" asp-append-version="true" />
+}
+@section PageActions {
+    <form asp-controller="@Model.Controller" asp-action="EngineerProfile" method="get" class="form-inline d-print-none">
+        <input type="hidden" name="id" value="@Model.EngineerUserId" />
+        <select name="month" class="form-control mr-2" onchange="this.form.submit()" aria-label="Month">
+            @foreach (var m in Model.Months)
+            {
+                <option value="@m.ToString("yyyy-MM")" selected="@(m == Model.Month)">@m.ToString("MMMM yyyy")</option>
+            }
+        </select>
+        <a class="btn btn-outline-secondary mr-1" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey"><i class="fas fa-list-ol mr-1"></i>Scorecard</a>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print mr-1"></i>Print</button>
+    </form>
+}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="kpi-grid">
+            <div class="kpi-tile kpi-purple">
+                <div class="kpi-label">Rank</div>
+                <div class="kpi-value">@(r?.Rank != null ? "#" + r.Rank : "-")<small class="text-muted">@(r?.Rank != null ? " of " + Model.RankedCount : "")</small></div>
+                <div class="kpi-sub">@(r?.Rank == null ? "needs " + s.MinClosedTickets + " closed tickets" : pr?.Rank == null ? "not ranked last month" : pr.Rank > r.Rank ? "▲ up " + (pr.Rank - r.Rank) : pr.Rank < r.Rank ? "▼ down " + (r.Rank - pr.Rank) : "= same as last month")</div>
+            </div>
+            <div class="kpi-tile @Tone(r?.Rank != null ? r.Score : null, 70, 45)"><div class="kpi-label">Score</div><div class="kpi-value">@(r?.Rank != null ? r.Score.ToString("0.0") : "-")</div><div class="kpi-bar"><span style="width:@(r?.Rank != null ? r.Score : 0)%"></span></div><div class="kpi-sub">@Html.Raw(Delta(r?.Rank != null ? r.Score : null, pr?.Rank != null ? pr.Score : null, false))</div></div>
+            <div class="kpi-tile kpi-info"><div class="kpi-label">Tickets closed</div><div class="kpi-value">@(r?.TicketsClosed ?? 0)</div><div class="kpi-sub">weighted volume @N(r?.WeightedVolume, "0")</div></div>
+            <div class="kpi-tile @Tone(r?.SlaCompliance, s.AwardMinSla, 0.7)"><div class="kpi-label">SLA met</div><div class="kpi-value">@P(r?.SlaCompliance)</div><div class="kpi-sub">response SLA @P(r?.ResponseSlaCompliance)</div></div>
+            <div class="kpi-tile kpi-info"><div class="kpi-label">Median resolution</div><div class="kpi-value" style="font-size: 1.35rem;">@Duration.Format(r?.MedianResolutionMinutes)</div><div class="kpi-sub">first response @Duration.Format(r?.MedianFirstResponseMinutes)</div></div>
+            <div class="kpi-tile @Tone(r?.CsatPercent, 0.8, 0.6)"><div class="kpi-label">CSAT this month</div><div class="kpi-value">@P(r?.CsatPercent)</div><div class="kpi-sub">@(r?.RatingsCount ?? 0) ratings · @N(r?.AverageStars, "0.0")★</div></div>
+            <div class="kpi-tile @Tone(r?.Nps, 30, 0)"><div class="kpi-label">NPS this month</div><div class="kpi-value">@N(r?.Nps, "+0;-0;0")</div><div class="kpi-sub">CES @N(r?.AverageEffort, "0.0") / 5</div></div>
+            <div class="kpi-tile @(r?.ReopenRate == null ? "kpi-info" : r.ReopenRate <= 0.05 ? "kpi-good" : r.ReopenRate <= 0.1 ? "kpi-warn" : "kpi-bad")"><div class="kpi-label">Reopen rate</div><div class="kpi-value">@P(r?.ReopenRate)</div><div class="kpi-sub">FCR @P(r?.FcrRate)</div></div>
+        </div>
+
+        @if (Model.Awards.Count > 0)
+        {
+            <div class="callout callout-warning">
+                <i class="fas fa-trophy text-warning mr-1"></i> <b>Best Support Engineer of the Month</b>:
+                @string.Join(", ", Model.Awards.Select(a => a.Month.ToString("MMM yyyy")))
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Score trend</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(scoreTrend)" aria-label="Monthly score against the team median"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Quality trend</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(qualityTrend)" aria-label="CSAT, SLA and FCR by month"></canvas></div></div></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-5">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Strengths and gaps vs team</h4></div>
+                    <div class="card-body">
+                        @if (radar != null)
+                        {
+                            <div class="chart-box tall"><canvas data-chart="@J(radar)" aria-label="Points per measure compared with the team average"></canvas></div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Not ranked in @Model.Month.ToString("MMMM yyyy") (needs @s.MinClosedTickets closed tickets).</p>
+                        }
+                    </div></div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Coaching summary</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-success"><i class="fas fa-arrow-up mr-1"></i>Strengths</h6>
+                                @if (Model.Strengths.Count == 0) { <p class="small text-muted">No measure clearly above the team this month.</p> }
+                                <ul class="pl-3 small">
+                                    @foreach (var (m, p) in Model.Strengths)
+                                    {
+                                        <li><b>@m</b>: @p.ToString("0") pts (team @(Model.TeamPoints.TryGetValue(m, out var t1) ? t1.ToString("0") : "-"))</li>
+                                    }
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-danger"><i class="fas fa-bullseye mr-1"></i>To improve</h6>
+                                @if (Model.ToImprove.Count == 0) { <p class="small text-muted">No measure below average this month.</p> }
+                                <ul class="pl-3 small">
+                                    @foreach (var (m, p) in Model.ToImprove)
+                                    {
+                                        <li><b>@m</b>: @p.ToString("0") pts (team @(Model.TeamPoints.TryGetValue(m, out var t2) ? t2.ToString("0") : "-"))</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                        <h6 class="mt-2">What clients say (6 months)</h6>
+                        @if (k.Tags.Count == 0) { <p class="small text-muted mb-1">No feedback tags yet.</p> }
+                        <div>
+                            @foreach (var t in k.Tags)
+                            {
+                                <span class="tag-chip @(t.Positive ? "pos" : "neg")">@t.Tag · @t.Count</span>
+                            }
+                        </div>
+                        <div class="chart-box short mt-2"><canvas data-chart="@J(rankTrend)" aria-label="Tickets closed and ratings by month"></canvas></div>
+                    </div></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Service dimensions vs team (1-5, six months)</h4></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(dims)" aria-label="Average per service dimension against the team"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card"><div class="card-header"><h4 class="mb-0">Ratings (six months)</h4></div>
+                    <div class="card-body">
+                        @if (k.Count > 0)
+                        {
+                            <div class="d-flex justify-content-around text-center mb-2">
+                                <div><div class="h4 mb-0">@k.Count</div><small class="text-muted">ratings</small></div>
+                                <div><div class="h4 mb-0">@P(k.Csat)</div><small class="text-muted">CSAT</small></div>
+                                <div><div class="h4 mb-0">@N(k.Nps, "+0;-0;0")</div><small class="text-muted">NPS</small></div>
+                                <div><div class="h4 mb-0">@P(k.Fcr)</div><small class="text-muted">FCR</small></div>
+                            </div>
+                            <div class="chart-box short"><canvas data-chart="@J(stars)" aria-label="Ratings by stars"></canvas></div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No client rating in these six months.</p>
+                        }
+                    </div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h4 class="mb-0">Latest client feedback</h4></div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Rated</th><th>Ticket</th><th>House</th><th>Stars</th><th>NPS / CES</th><th style="min-width: 280px;">Feedback</th><th>Follow-up</th></tr></thead>
+                    <tbody>
+                        @foreach (var row in Model.RecentFeedback)
+                        {
+                            var fr = row.Rating;
+                            <tr class="@(fr.NeedsFollowUp && fr.ReviewedOn == null ? "table-danger" : "")">
+                                <td class="text-nowrap">@fr.CreatedOn.ToString("dd MMM yyyy")</td>
+                                <td><a asp-controller="@Model.Controller" asp-action="TicketView" asp-route-id="@fr.IssueId">@row.TicketNumber</a><div class="small text-muted">@row.TicketTitle · @row.Priority</div></td>
+                                <td>@row.HouseName</td>
+                                <td class="text-nowrap" style="color: #f39c12;">@Stars(fr.Stars)@if (fr.ExcludedFromScore) { <span class="badge badge-secondary ml-1" title="@fr.ExcludeReason">not counted</span> }</td>
+                                <td class="small">@(fr.RecommendScore?.ToString() ?? "-") / @(fr.EffortScore?.ToString() ?? "-")</td>
+                                <td>
+                                    @foreach (var t in fr.TagList)
+                                    {
+                                        <span class="tag-chip @(FeedbackTags.IsPositive(t) ? "pos" : "neg")">@t</span>
+                                    }
+                                    <div style="white-space: pre-wrap;">@fr.Comment</div>
+                                </td>
+                                <td class="small">@(fr.ReviewedOn != null ? "Reviewed by " + fr.ReviewedBy : fr.NeedsFollowUp ? "Waiting" : "-")</td>
+                            </tr>
+                        }
+                        @if (Model.RecentFeedback.Count == 0)
+                        {
+                            <tr><td colspan="7" class="text-muted">No client rating in these six months.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+@section Scripts {
+<script src="~/lib/chart.js/chart.umd.min.js"></script>
+<script src="~/js/xfl-perf-charts.js" asp-append-version="true"></script>
+}

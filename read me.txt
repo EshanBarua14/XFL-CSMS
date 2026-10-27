@@ -58,19 +58,28 @@ See FIXES.md for the list of what was changed.
 
 5. Client ratings and Engineer Scorecard
 ----------------------------------------
-- When XFL staff close a ticket, the client who raised it gets an e-mail and can rate it (1-5 stars,
-  optional speed / communication / quality scores, "fully solved?" and a comment) for 14 days, change the
-  rating for 48 hours, and reopen the ticket if the problem is not solved (Maker > ticket page).
-- Ratings are visible ONLY to Admin and Support Manager: menu "Service Feedback" (filters, CSV, follow-up of
-  1-2 star ratings) and a "Client Rating" panel on their ticket page. Support Engineers never see them.
-- Menu "Engineer Scorecard" ranks Support Engineers per month (score 0-100 from client rating, SLA, resolution
-  time, volume, reopens, first response and overdue backlog). A month is frozen on the 3rd of the next month and
-  the top engineer who passes the award gates is nominated "Best Support Engineer of the Month"; a manager
-  confirms or picks another engineer with a reason (confirmed automatically after 5 days).
+- When XFL staff close a ticket, the client who raised it gets an e-mail and can rate it for 14 days, change the
+  rating for 48 hours, and reopen the ticket if the problem is not solved (Maker > ticket page). The form asks:
+  overall stars (CSAT), speed / communication / quality / professionalism / knowledge (1-5), fully solved?,
+  solved the first time? (FCR), effort to get it solved (CES 1-5), likelihood to recommend (NPS 0-10),
+  quick tags (praise / problems) and a comment.
+- A rating of 1-2 stars or "not solved" is e-mailed to every Admin and Support Manager and must be followed up
+  within 48 hours (overdue badge). Management can reply to the client (shown on the client's ticket page and
+  e-mailed), and can leave a rating out of the scorecard with a recorded reason (fairness).
+- Ratings are visible ONLY to Admin and Support Manager: menu "Service Feedback" (KPI tiles, trend, star
+  distribution, NPS, dimensions, tags, per engineer table, CSV) and a "Client Rating" panel on their ticket page.
+  Support Engineers never see them.
+- Menu "Engineer Scorecard" ranks Support Engineers per month: score 0-100 from client rating 25, SLA met 20,
+  resolution time 15, volume 10, reopens 10, first-contact resolution 10, first response 5, overdue backlog 5.
+  It shows team KPI tiles, a podium, a leaderboard chart of what each score is made of and 6-month trends.
+  Click an engineer for the Engineer Profile: rank, KPIs, score and quality trends, strengths and gaps against
+  the team (radar), coaching summary, service dimensions and the latest feedback.
 - An engineer is ranked with at least 5 closed tickets in the month (no rating needed: without ratings the
-  client-rating part counts as average). The award also needs 3 client ratings, adjusted rating 4.0+, SLA met
-  85%+ and no unreviewed 1-star rating. The scorecard opens on the latest month that has closed tickets.
-- Weights, minimums and award gates: appsettings.json > "Scorecard". SLA targets per priority: Admin > SLA Targets.
-- The migration RatingsAndScorecard is applied at start-up like the others. It fills the new assignee id of
-  existing tickets from the stored engineer name. Reopens, first response and status history are recorded from
-  now on, so the first fully accurate scorecard is the first complete month after deployment.
+  client-rating part counts as average). A month is frozen on the 3rd of the next month and the top engineer who
+  passes the award rules (3+ ratings, adjusted rating 4.0+, CSAT 80%+, SLA met 85%+, no unreviewed 1-star
+  rating) is nominated "Best Support Engineer of the Month"; a manager confirms or picks another engineer with a
+  reason (confirmed automatically after 5 days).
+- SLA targets are in MINUTES per priority: Admin > SLA Targets (default High 60 / 480, Medium 240 / 2880,
+  Low 1440 / 7200). The migration PerformanceKpisAndSlaMinutes converts existing hour values to minutes.
+- Weights, minimums and award rules: appsettings.json > "Scorecard".
+- Charts follow the light / dark theme switch.

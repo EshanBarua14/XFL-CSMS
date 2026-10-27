@@ -18,6 +18,9 @@ namespace XFLCSMS.Services
         /// <summary>Hours after submitting during which the client can still change the rating.</summary>
         public const int EditHours = 48;
 
+        /// <summary>Hours within which management should follow up a low rating (shown as overdue after).</summary>
+        public const int FollowUpHours = 48;
+
         private readonly DataContext _context;
         private readonly TicketService _tickets;
 
@@ -106,7 +109,13 @@ namespace XFLCSMS.Services
             rating.SpeedScore = Score(form.SpeedScore);
             rating.CommunicationScore = Score(form.CommunicationScore);
             rating.QualityScore = Score(form.QualityScore);
+            rating.ProfessionalismScore = Score(form.ProfessionalismScore);
+            rating.KnowledgeScore = Score(form.KnowledgeScore);
+            rating.EffortScore = Score(form.EffortScore);
+            rating.RecommendScore = form.RecommendScore is >= 0 and <= 10 ? (byte)form.RecommendScore.Value : null;
             rating.FullySolved = form.FullySolved;
+            rating.FirstContactResolved = form.FirstContactResolved;
+            rating.Tags = FeedbackTags.Join(form.Tags);
             rating.Comment = comment;
 
             await _context.SaveChangesAsync();
@@ -205,7 +214,14 @@ namespace XFLCSMS.Services
             }
 
             var all = await query.OrderByDescending(r => r.CreatedOn).ToListAsync();
-            view.UnreviewedLow = await _context.TicketRatings.CountAsync(r => r.Stars <= 2 && r.ReviewedOn == null);
+            view.UnreviewedLow = await _context.TicketRatings.CountAsync(r => (r.Stars <= 2 || !r.FullySolved) && r.ReviewedOn == null);
+            view.Kpis = RatingKpis.From(all);
+            view.Trend = all.GroupBy(r => new DateTime(r.CreatedOn.Year, r.CreatedOn.Month, 1)).OrderBy(g => g.Key)
+                .Select(g =>
+                {
+                    var k = RatingKpis.From(g);
+                    return new KpiPoint { Month = g.Key, Ratings = k.Count, AverageStars = k.AverageStars, Csat = k.Csat, Nps = k.Nps, Ces = k.Ces, Fcr = k.Fcr };
+                }).ToList();
 
             // Summary per engineer over the same filters (except stars / follow-up, which narrow the list only).
             var closedQuery = _context.Issues.Where(i => i.IStatus == "Close" && i.ClosedOn != null);
@@ -225,6 +241,7 @@ namespace XFLCSMS.Services
                 closedQuery = closedQuery.Where(i => i.BrokerageId == houseId);
             }
 
+            view.ClosedInPeriod = await closedQuery.Where(i => engineerId == null || i.AssignedToUserId == engineerId).CountAsync();
             var closedPerEngineer = await closedQuery.Where(i => i.AssignedToUserId != null)
                 .GroupBy(i => i.AssignedToUserId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
 
@@ -237,7 +254,8 @@ namespace XFLCSMS.Services
                     AverageStars = g.Average(r => (double)r.Stars),
                     FourOrFive = g.Count(r => r.Stars >= 4),
                     OneOrTwo = g.Count(r => r.Stars <= 2),
-                    ClosedTickets = closedPerEngineer.FirstOrDefault(c => c.Id == g.Key)?.Count ?? 0
+                    ClosedTickets = closedPerEngineer.FirstOrDefault(c => c.Id == g.Key)?.Count ?? 0,
+                    Kpis = RatingKpis.From(g)
                 })
                 .Where(s => engineerId == null || s.EngineerUserId == engineerId)
                 .OrderByDescending(s => s.AverageStars).ThenByDescending(s => s.Ratings)
@@ -250,7 +268,7 @@ namespace XFLCSMS.Services
 
             if (followUp)
             {
-                all = all.Where(r => r.Stars <= 2 && r.ReviewedOn == null).ToList();
+                all = all.Where(r => r.NeedsFollowUp && r.ReviewedOn == null).ToList();
             }
 
             var houseNames = view.Houses.ToDictionary(h => h.Id, h => h.Name);
@@ -285,10 +303,55 @@ namespace XFLCSMS.Services
             return true;
         }
 
+        /// <summary>Management's answer to the client, shown on the client's ticket page. Also counts as the follow-up.</summary>
+        public async Task<TicketRating?> ReplyAsync(int ratingId, User manager, string? reply)
+        {
+            var rating = await _context.TicketRatings.Include(r => r.Issue).FirstOrDefaultAsync(r => r.RatingId == ratingId);
+            if (rating == null || string.IsNullOrWhiteSpace(reply))
+            {
+                return null;
+            }
+
+            var text = reply.Trim();
+            rating.ClientReply = text.Length > 1000 ? text.Substring(0, 1000) : text;
+            rating.ClientReplyBy = manager.FullName;
+            rating.ClientReplyOn = DateTime.Now;
+            if (rating.ReviewedOn == null)
+            {
+                rating.ReviewedBy = manager.FullName;
+                rating.ReviewedOn = DateTime.Now;
+                rating.ReviewNote = "Replied to the client.";
+            }
+
+            await _context.SaveChangesAsync();
+            return rating;
+        }
+
+        /// <summary>Leaves a rating out of the scorecard (reason required) or counts it again.</summary>
+        public async Task<string?> SetExcludedAsync(int ratingId, User manager, bool exclude, string? reason)
+        {
+            var rating = await _context.TicketRatings.FirstOrDefaultAsync(r => r.RatingId == ratingId);
+            if (rating == null)
+            {
+                return "Rating not found.";
+            }
+
+            if (exclude && string.IsNullOrWhiteSpace(reason))
+            {
+                return "Please give the reason for leaving this rating out of the scorecard.";
+            }
+
+            rating.ExcludedFromScore = exclude;
+            rating.ExcludeReason = exclude ? (reason!.Trim().Length > 500 ? reason.Trim().Substring(0, 500) : reason.Trim()) : null;
+            rating.ExcludedBy = exclude ? manager.FullName + ", " + DateTime.Now.ToString("dd MMM yyyy", CultureInfo.InvariantCulture) : null;
+            await _context.SaveChangesAsync();
+            return null;
+        }
+
         public static byte[] Csv(ServiceFeedbackView view)
         {
             var csv = new StringBuilder();
-            csv.AppendLine("Date,Ticket,Title,Priority,Brokerage House,Rated By,Engineer,Stars,Speed,Communication,Solution Quality,Fully Solved,Comment,Reviewed By,Reviewed On,Review Note");
+            csv.AppendLine("Date,Ticket,Title,Priority,Brokerage House,Rated By,Engineer,Stars,Speed,Communication,Solution Quality,Professionalism,Knowledge,Effort (CES),Recommend (NPS 0-10),Fully Solved,First Contact Resolved,Tags,Comment,Reviewed By,Reviewed On,Review Note,Reply To Client,Excluded From Score,Exclude Reason");
             foreach (var row in view.Rows)
             {
                 var r = row.Rating;
@@ -297,7 +360,11 @@ namespace XFLCSMS.Services
                     r.CreatedOn.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), row.TicketNumber, row.TicketTitle, row.Priority, row.HouseName,
                     row.RatedByName, r.EngineerName, r.Stars.ToString(CultureInfo.InvariantCulture), r.SpeedScore?.ToString(CultureInfo.InvariantCulture),
                     r.CommunicationScore?.ToString(CultureInfo.InvariantCulture), r.QualityScore?.ToString(CultureInfo.InvariantCulture),
-                    r.FullySolved ? "Yes" : "No", r.Comment, r.ReviewedBy, r.ReviewedOn?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), r.ReviewNote
+                    r.ProfessionalismScore?.ToString(CultureInfo.InvariantCulture), r.KnowledgeScore?.ToString(CultureInfo.InvariantCulture),
+                    r.EffortScore?.ToString(CultureInfo.InvariantCulture), r.RecommendScore?.ToString(CultureInfo.InvariantCulture),
+                    r.FullySolved ? "Yes" : "No", r.FirstContactResolved == null ? "" : r.FirstContactResolved.Value ? "Yes" : "No", string.Join("; ", r.TagList),
+                    r.Comment, r.ReviewedBy, r.ReviewedOn?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), r.ReviewNote,
+                    r.ClientReply, r.ExcludedFromScore ? "Yes" : "No", r.ExcludeReason
                 }.Select(CsvField)));
             }
 

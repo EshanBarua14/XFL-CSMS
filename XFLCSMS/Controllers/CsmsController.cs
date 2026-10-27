@@ -121,6 +121,74 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>
+        /// Escalates a rating that needs follow-up (1-2 stars or "not solved") to every active Admin and Support Manager.
+        /// A mail failure is logged and never stops the rating.
+        /// </summary>
+        protected void NotifyLowRating(IssueTable issue, XFLCSMS.Models.Feedback.TicketRating rating)
+        {
+            var logger = HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(GetType());
+            try
+            {
+                var managers = Db.Users
+                    .Where(u => u.UStatus && u.Email != null && u.Email != "" && (u.UCatagory || (u.UType && u.Department == "Support Maneger")))
+                    .Select(u => new { u.Email, u.FullName, u.UCatagory })
+                    .ToList();
+                var mail = HttpContext.RequestServices.GetRequiredService<IEmailServices>();
+                var title = System.Net.WebUtility.HtmlEncode(issue.ITitle ?? string.Empty);
+                var comment = string.IsNullOrWhiteSpace(rating.Comment) ? "(no comment)" : System.Net.WebUtility.HtmlEncode(rating.Comment);
+                foreach (var m in managers)
+                {
+                    var link = Url.Action("TicketView", m.UCatagory ? "Admin" : "SupportManegar", new { id = issue.IssueId }, Request.Scheme);
+                    mail.SendEmail(new EmailDto
+                    {
+                        To = m.Email!,
+                        Subject = "Low client rating on ticket " + issue.TNumber + " (" + rating.Stars + "/5)",
+                        Body = "Dear " + System.Net.WebUtility.HtmlEncode(m.FullName) + ",<br/><br/>" +
+                               "The client rated ticket <b>" + issue.TNumber + "</b> (" + title + ") <b>" + rating.Stars + " of 5</b>" +
+                               (rating.FullySolved ? "" : " and says the problem is <b>not solved</b>") + ".<br/>" +
+                               "Engineer: " + System.Net.WebUtility.HtmlEncode(rating.EngineerName ?? "-") + "<br/>" +
+                               "Comment: " + comment + "<br/><br/>" +
+                               "Please follow up within " + FeedbackService.FollowUpHours + " hours: <a href=\"" + link + "\">open the ticket</a>.<br/><br/>" +
+                               "XFL CSMS"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not send the low rating e-mail for ticket {Ticket}.", issue.TNumber);
+            }
+        }
+
+        /// <summary>Tells the client that XFL management answered his feedback.</summary>
+        protected void NotifyClientReply(XFLCSMS.Models.Feedback.TicketRating rating)
+        {
+            var logger = HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(GetType());
+            try
+            {
+                var owner = Db.Users.FirstOrDefault(u => u.Id == rating.RatedByUserId);
+                if (owner == null || string.IsNullOrWhiteSpace(owner.Email) || rating.Issue == null)
+                {
+                    return;
+                }
+
+                var link = Url.Action("TicketView", "Maker", new { id = rating.IssueId }, Request.Scheme);
+                HttpContext.RequestServices.GetRequiredService<IEmailServices>().SendEmail(new EmailDto
+                {
+                    To = owner.Email,
+                    Subject = "Reply to your feedback on ticket " + rating.Issue.TNumber,
+                    Body = "Dear " + System.Net.WebUtility.HtmlEncode(owner.FullName) + ",<br/><br/>" +
+                           "Thank you for your feedback on ticket <b>" + rating.Issue.TNumber + "</b>. XFL support management replied:<br/><br/>" +
+                           "<i>" + System.Net.WebUtility.HtmlEncode(rating.ClientReply ?? string.Empty) + "</i><br/><br/>" +
+                           "<a href=\"" + link + "\">Open the ticket</a><br/><br/>Xpert Fintech Limited"
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not send the feedback reply e-mail for rating {Rating}.", rating.RatingId);
+            }
+        }
+
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

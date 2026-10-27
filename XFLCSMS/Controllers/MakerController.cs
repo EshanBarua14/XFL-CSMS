@@ -1426,17 +1426,25 @@ namespace XFLCSMS.Controllers
                 var state = await feedback.GetStateAsync(issue);
                 if (!ModelState.IsValid)
                 {
-                    var again = RatingFormFor(issue, state, feedback);
-                    again.Stars = form.Stars;
-                    again.SpeedScore = form.SpeedScore;
-                    again.CommunicationScore = form.CommunicationScore;
-                    again.QualityScore = form.QualityScore;
-                    again.FullySolved = form.FullySolved;
-                    again.Comment = form.Comment;
-                    return View(again);
+                    var shown = RatingFormFor(issue, state, feedback);
+                    form.TicketNumber = shown.TicketNumber;
+                    form.TicketTitle = shown.TicketTitle;
+                    form.EngineerName = shown.EngineerName;
+                    form.ClosedOn = shown.ClosedOn;
+                    form.IsEdit = shown.IsEdit;
+                    return View(form);
                 }
 
+                var wasFollowUp = state.Rating?.NeedsFollowUp == true;
                 var error = await feedback.SaveAsync(issue, CurrentUser!, form);
+                if (error == null && !wasFollowUp)
+                {
+                    var saved = (await feedback.GetStateAsync(issue)).Rating;
+                    if (saved != null && saved.NeedsFollowUp)
+                    {
+                        NotifyLowRating(issue, saved);
+                    }
+                }
                 if (error != null)
                 {
                     TempData["ErrorMessage"] = error;
@@ -1493,7 +1501,13 @@ namespace XFLCSMS.Controllers
                 SpeedScore = rating?.SpeedScore,
                 CommunicationScore = rating?.CommunicationScore,
                 QualityScore = rating?.QualityScore,
+                ProfessionalismScore = rating?.ProfessionalismScore,
+                KnowledgeScore = rating?.KnowledgeScore,
+                EffortScore = rating?.EffortScore,
+                RecommendScore = rating?.RecommendScore,
                 FullySolved = rating?.FullySolved ?? true,
+                FirstContactResolved = rating?.FirstContactResolved,
+                Tags = rating?.TagList.ToList() ?? new List<string>(),
                 Comment = rating?.Comment,
                 IsEdit = rating != null
             };

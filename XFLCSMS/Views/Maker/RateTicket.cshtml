@@ -1,72 +1,148 @@
 @model XFLCSMS.Models.Feedback.RatingForm
+@using XFLCSMS.Models.Feedback
 @{
     Layout = "_MakerLayout";
     ViewData["Title"] = (Model.IsEdit ? "Change your rating for " : "Rate the support for ") + Model.TicketNumber;
     ViewData["Subtitle"] = Model.TicketTitle + (Model.EngineerName != null ? " · handled by " + Model.EngineerName : "") + (Model.ClosedOn != null ? " · closed " + Model.ClosedOn.Value.ToString("dd MMM yyyy") : "");
-    var subScores = new[] { ("SpeedScore", "Speed of support", Model.SpeedScore), ("CommunicationScore", "Communication", Model.CommunicationScore), ("QualityScore", "Quality of the solution", Model.QualityScore) };
+    var dimensions = new[]
+    {
+        ("SpeedScore", "Speed of support", "How quickly the team responded and worked", Model.SpeedScore),
+        ("CommunicationScore", "Communication", "Clear, timely updates you could follow", Model.CommunicationScore),
+        ("QualityScore", "Quality of the solution", "The fix works and fits your need", Model.QualityScore),
+        ("ProfessionalismScore", "Professionalism", "Courteous, respectful and responsible", Model.ProfessionalismScore),
+        ("KnowledgeScore", "Technical knowledge", "Understood the problem and the product", Model.KnowledgeScore)
+    };
+    var effort = new[] { "Very difficult", "Difficult", "Neutral", "Easy", "Very easy" };
 }
 @section Head {
+<link rel="stylesheet" href="~/css/xfl-perf.css" asp-append-version="true" />
 <style>
     .star-pick { display: inline-flex; flex-direction: row-reverse; }
-    .star-pick input { display: none; }
-    .star-pick label { font-size: 2rem; color: #ccc; cursor: pointer; padding: 0 2px; margin: 0; }
-    .star-pick.small label { font-size: 1.3rem; }
+    .star-pick input { position: absolute; opacity: 0; pointer-events: none; }
+    .star-pick label { font-size: 2.2rem; color: var(--xfl-line); cursor: pointer; padding: 0 2px; margin: 0; }
+    .star-pick.small label { font-size: 1.35rem; }
     .star-pick input:checked ~ label, .star-pick label:hover, .star-pick label:hover ~ label { color: #f39c12; }
+    .star-caption { font-weight: 600; color: var(--xfl-muted); margin-left: 10px; }
 </style>
 }
 
-
 <section class="content">
     <div class="container-fluid">
-        <div class="card card-warning">
+        <div class="card card-warning card-outline" style="max-width: 980px;">
             <div class="card-body">
                 <form asp-controller="Maker" asp-action="RateTicket" method="post">
                     <input type="hidden" asp-for="IssueId" />
                     <div asp-validation-summary="All" class="text-danger"></div>
 
-                    <div class="form-group">
-                        <label class="d-block">Overall, how satisfied are you with the support? <span class="text-danger">*</span></label>
-                        <div class="star-pick">
+                    <h6 class="mb-1">1. Overall satisfaction (CSAT) <span class="text-danger">*</span></h6>
+                    <p class="small text-muted mb-1">Overall, how satisfied are you with the support on this ticket?</p>
+                    <div class="d-flex align-items-center">
+                        <div class="star-pick" id="overallStars">
                             @for (var i = 5; i >= 1; i--)
                             {
                                 <input type="radio" id="stars@(i)" name="Stars" value="@i" @(Model.Stars == i ? "checked" : "") required />
                                 <label for="stars@(i)" title="@i of 5">★</label>
                             }
                         </div>
+                        <span class="star-caption" id="starCaption"></span>
                     </div>
 
-                    <div class="row">
-                        @foreach (var (name, label, value) in subScores)
-                        {
-                            <div class="col-md-4 form-group">
-                                <label class="d-block">@label <span class="text-muted small">(optional)</span></label>
-                                <div class="star-pick small">
-                                    @for (var i = 5; i >= 1; i--)
-                                    {
-                                        <input type="radio" id="@(name)@(i)" name="@name" value="@i" @(value == i ? "checked" : "") />
-                                        <label for="@(name)@(i)" title="@i of 5">★</label>
-                                    }
+                    <div class="rate-section">
+                        <h6 class="mb-2">2. Rate each part of the service <span class="text-muted small font-weight-normal">(optional)</span></h6>
+                        <div class="row">
+                            @foreach (var (name, label, hint, value) in dimensions)
+                            {
+                                <div class="col-md-6 col-lg-4 form-group">
+                                    <label class="d-block mb-0">@label</label>
+                                    <small class="d-block text-muted mb-1">@hint</small>
+                                    <div class="star-pick small">
+                                        @for (var i = 5; i >= 1; i--)
+                                        {
+                                            <input type="radio" id="@(name)@(i)" name="@name" value="@i" @(value == i ? "checked" : "") />
+                                            <label for="@(name)@(i)" title="@i of 5">★</label>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="rate-section">
+                        <h6 class="mb-2">3. Resolution</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="d-block">Was your issue fully solved?</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="solvedYes" name="FullySolved" value="true" @(Model.FullySolved ? "checked" : "") />
+                                    <label class="form-check-label" for="solvedYes">Yes</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="solvedNo" name="FullySolved" value="false" @(!Model.FullySolved ? "checked" : "") />
+                                    <label class="form-check-label" for="solvedNo">No</label>
                                 </div>
                             </div>
-                        }
+                            <div class="col-md-6 form-group">
+                                <label class="d-block">Was it solved the first time, without you having to chase or explain again?</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="fcrYes" name="FirstContactResolved" value="true" @(Model.FirstContactResolved == true ? "checked" : "") />
+                                    <label class="form-check-label" for="fcrYes">Yes</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="fcrNo" name="FirstContactResolved" value="false" @(Model.FirstContactResolved == false ? "checked" : "") />
+                                    <label class="form-check-label" for="fcrNo">No</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="d-block">Was your issue fully solved?</label>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" id="solvedYes" name="FullySolved" value="true" @(Model.FullySolved ? "checked" : "") />
-                            <label class="form-check-label" for="solvedYes">Yes</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" id="solvedNo" name="FullySolved" value="false" @(!Model.FullySolved ? "checked" : "") />
-                            <label class="form-check-label" for="solvedNo">No</label>
+                    <div class="rate-section">
+                        <h6 class="mb-1">4. Effort (CES)</h6>
+                        <p class="small text-muted mb-2">How easy was it to get your issue solved?</p>
+                        <div class="scale-pick ces">
+                            @for (var i = 1; i <= 5; i++)
+                            {
+                                <input type="radio" id="ces@(i)" name="EffortScore" value="@i" @(Model.EffortScore == i ? "checked" : "") />
+                                <label for="ces@(i)" title="@effort[i - 1]" style="min-width: 96px;">@effort[i - 1]</label>
+                            }
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="Comment">Your feedback <span class="text-muted small">(optional)</span></label>
+                    <div class="rate-section">
+                        <h6 class="mb-1">5. Recommendation (NPS)</h6>
+                        <p class="small text-muted mb-2">How likely are you to recommend XFL support to a colleague? 0 = not at all likely, 10 = extremely likely.</p>
+                        <div class="scale-pick nps">
+                            @for (var i = 0; i <= 10; i++)
+                            {
+                                <input type="radio" id="nps@(i)" name="RecommendScore" value="@i" @(Model.RecommendScore == i ? "checked" : "") />
+                                <label for="nps@(i)" class="@(i <= 6 ? "d" : i <= 8 ? "p" : "g")">@i</label>
+                            }
+                        </div>
+                        <div class="scale-hint mt-1"><span>Not at all likely</span><span>Extremely likely</span></div>
+                    </div>
+
+                    <div class="rate-section">
+                        <h6 class="mb-2">6. What stood out? <span class="text-muted small font-weight-normal">(pick any)</span></h6>
+                        <div class="tag-pick mb-1">
+                            @foreach (var (tag, i) in FeedbackTags.Positive.Select((t, i) => (t, i)))
+                            {
+                                <input type="checkbox" id="tp@(i)" name="Tags" value="@tag" @(Model.Tags.Contains(tag) ? "checked" : "") />
+                                <label for="tp@(i)" class="pos"><i class="fas fa-thumbs-up mr-1"></i>@tag</label>
+                            }
+                        </div>
+                        <div class="tag-pick">
+                            @foreach (var (tag, i) in FeedbackTags.Negative.Select((t, i) => (t, i)))
+                            {
+                                <input type="checkbox" id="tn@(i)" name="Tags" value="@tag" @(Model.Tags.Contains(tag) ? "checked" : "") />
+                                <label for="tn@(i)" class="neg"><i class="fas fa-thumbs-down mr-1"></i>@tag</label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="rate-section form-group">
+                        <label asp-for="Comment">7. Your feedback <span class="text-muted small">(optional)</span></label>
                         <textarea asp-for="Comment" class="form-control" rows="4" maxlength="1000" placeholder="What went well, what could be better?"></textarea>
-                        <small class="text-muted">Your rating and feedback are seen only by XFL support management. You can change them for @XFLCSMS.Services.FeedbackService.EditHours hours.</small>
+                        <small class="text-muted">Your rating and feedback are seen only by XFL support management. You can change them for @XFLCSMS.Services.FeedbackService.EditHours hours.
+                            A low rating is sent to management, who will follow up with you.</small>
                     </div>
 
                     <button type="submit" class="btn btn-warning"><i class="fas fa-paper-plane"></i> Submit rating</button>
@@ -76,3 +152,14 @@
         </div>
     </div>
 </section>
+@section Scripts {
+<script>
+    (function () {
+        var words = { 1: 'Very dissatisfied', 2: 'Dissatisfied', 3: 'Neutral', 4: 'Satisfied', 5: 'Very satisfied' };
+        var caption = document.getElementById('starCaption');
+        function show() { var c = document.querySelector('#overallStars input:checked'); caption.textContent = c ? words[c.value] : ''; }
+        document.querySelectorAll('#overallStars input').forEach(function (i) { i.addEventListener('change', show); });
+        show();
+    })();
+</script>
+}
