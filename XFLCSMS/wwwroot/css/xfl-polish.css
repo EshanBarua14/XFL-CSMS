@@ -343,3 +343,28 @@ html[data-theme="dark"] .xfl-product-badge { background: rgba(59, 139, 235, .18)
 .card > .card-body + .card-body { padding-top: 0; }
 .note-editor.note-frame { margin-bottom: 1rem; }
 .main-footer { padding: 14px var(--xfl-gutter); }
+
+/* ---- registration: one wide card, two columns of fields ---- */
+.xfl-register-box { width: 100%; max-width: 940px; margin: 0 auto; padding: 0 16px; }
+.xfl-register-card { margin: 0; }
+.xfl-register-head { display: flex; align-items: center; gap: 16px; padding: 20px 24px; }
+.xfl-register-brand img { display: block; width: 56px; height: 56px; border-radius: 50%; background: #fff; object-fit: contain; box-shadow: 0 4px 12px rgba(16, 42, 71, .18); }
+.xfl-register-title { margin: 0; font-size: 1.5rem; line-height: 1.2; color: var(--xfl-navy); }
+.xfl-register-sub { margin: 2px 0 0; color: var(--xfl-muted); }
+.xfl-register-card > form > .card-body { padding: 20px 24px 4px; }
+.xfl-register-section { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--xfl-muted);
+    margin: 4px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--xfl-line); }
+.xfl-register-section:not(:first-of-type) { margin-top: 8px; }
+.xfl-register-card .form-group { margin-bottom: 14px; }
+.xfl-register-card .form-group > label { font-size: 14px; margin-bottom: 4px; }
+.xfl-register-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; }
+.xfl-register-foot .icheck-primary { margin: 0; }
+.xfl-register-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+.xfl-register-actions .btn { min-width: 140px; }
+.register-page:has(.xfl-register-box) { display: flex; align-items: center; justify-content: center; }
+html[data-theme="dark"] .xfl-register-title { color: #e3e8ee; }
+.dark-mode .xfl-register-card { background: var(--xfl-surface); }
+@media (max-width: 575.98px) { .xfl-register-head, .xfl-register-card > form > .card-body, .xfl-register-foot { padding-left: 16px; padding-right: 16px; } .xfl-register-actions { width: 100%; justify-content: space-between; } }
+.xfl-register-card .input-group-text:empty { display: none; }
+.xfl-register-card .input-group:has(.input-group-text:empty) > .form-control { border-radius: 8px; }
+@media (max-width: 767.98px) { .register-page:has(.xfl-register-box) { padding-top: 72px; align-items: flex-start; } }

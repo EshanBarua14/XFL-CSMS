@@ -16,262 +16,124 @@
 
     <!-- icheck bootstrap -->
     <link rel="stylesheet" href="~/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
-    <style>
-        .form-toggle {
-            display: none;
-        }
-
-            .form-toggle.active {
-                display: inherit;
-            }
-    </style>
 </head>
 
 
 <body class="hold-transition register-page">
 
-    <div class="register-box">
-        <!-- Register Logo -->
-        <div class="card card-outline card-primary">
-            <div class="card-header text-center">
-                <a href="~/" class="xfl-login-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="104" height="104"><span class="h1"><b>XFL</b> CSMS</span></a>
-                <p class="register-box-msg">Register a New Account</p>
-
-
-
-            </div>
-
-            <div class="card-body">
-                <form asp-controller="RegisterLogin" asp-action="Register" method="post" id="form1" class="form-toggle active">
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
-                    <div class="card">
-                        <div class="card-body register-card-body">
-                            <p class="register-box-msg"><b>Personal Information</b></p>
-
-                            <div  class="input-group mb-3">
-                                <input asp-for="@Model.userRegisterRequest.FullName" id="fullname" name="userRegisterRequest.FullName" type="text" class="form-control" placeholder="Full Name">
-                                <div  class="input-group-append">
-                                    <div  class="input-group-text">
-                                        <span   class="fas fa-user"></span>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.FullName" class="text-danger"></span>
-
-                            <div class="input-group mb-3">
-                                <input asp-for="userRegisterRequest.Email" type="email" id="email" name="userRegisterRequest.Email" class="form-control" placeholder="Email">
-                                <div class="input-group-append">
-                                    <div class="input-group-text">
-                                        <span   class="fas fa-envelope"></span>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.Email" class="text-danger"></span>
-
-                            <div class="input-group mb-3">
-                                <input asp-for="userRegisterRequest.PhonNumber" id="PhonNumber" name="userRegisterRequest.PhonNumber" type="text" class="form-control" placeholder="Phone Number">
-                                <div class="input-group-append">
-                                    <div class="input-group-text">
-                                        <span  class="fa fa-mobile"></span>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.PhonNumber" class="text-danger"></span>
-
-
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-body register-card-body">
-                            <p class="login-box-msg"><b>Company Information</b></p>
-
-
-                            <div class="input-group mb-3">
-
-                                <select asp-for="userRegisterRequest.BrokerageHouseName" id="brokerageCodes"  name="userRegisterRequest.BrokerageHouseName" class="form-control">
-
-                                        <option value="0">Select Your Organization</option>
-                                        @foreach (var item in Model.Brokerages)
-                                        {
-                                            <option value="@item.BrokerageId" data-acronym="@item.BrokerageHouseAcronym">@item.BrokerageHouseName</option>
-                                        }
-
-                                </select>
-
-                                <div class="input-group-append">
-                                    <div class="input-group-text">
-                                        <span  class="fa fa-home"></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.BrokerageHouseName" class="text-danger"></span>
-
-
-                            <div class="input-group mb-3">
-
-                                    <input id="BrokerageHouseAcronym" name="userRegisterRequest.BrokerageHouseAcronym" type="text"
-                                           class="form-control" placeholder=" Acronym" readonly>
-                                
-
-                                <div class="input-group-append">
-                                    <div class="input-group-text">
-                                        @if(@Model.Acronyme !=null)
-                                        {
-                                            <span id="Acronym"> @Model.Acronyme </span>
-                                        }
-                                        else
-                                        {
-                                            <span id="Acronym"> </span>
-                                        }
-                                        
-                                    </div>
-                                </div>
-
-                      
-                            </div>
-
-                            @if(Model.Branchhs != null)
-                            {
-
-                                <div class="input-group mb-3">
-                                    <select asp-for="userRegisterRequest.Branch" id="Branch" name="userRegisterRequest.Branch" class="form-control">
-                                        <option value="0">Select Your Branch</option>
-                                        @foreach (var item in Model.Branchhs)
-                                        {
-                                            <option value="@item.BranchId">@item.BranchName</option>
-                                        }
-
-                                    </select>
-                                    <div class="input-group-append">
-                                        <div class="input-group-text">
-                                            <span class="fa fa-building"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span asp-validation-for="userRegisterRequest.Branch" class="text-danger"></span>
-
-                            }
-                            else
-                            {
-                                <div class="input-group mb-3">
-                                    <select asp-for="userRegisterRequest.Branch" id="Branch" name="userRegisterRequest.Branch" class="form-control">
-                                        <option value="0">Select Your Branch</option>
-                                    </select>
-                                    <div class="input-group-append">
-                                        <div class="input-group-text">
-                                            <span class="fa fa-building"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span asp-validation-for="userRegisterRequest.Branch" class="text-danger"></span>
-
-                                
-                            }
-
-
-
-
-
-                            @if(Model.Branchhs !=null)
-                            {
-                                <div class="input-group mb-3">
-                                    <input asp-for="userRegisterRequest.EmployeeId" id="EmployeeId" name="userRegisterRequest.EmployeeId" type="text" class="form-control" placeholder="Employee ID">
-                                    <div class="input-group-append">
-                                        <div class="input-group-text">
-                                            <span class="fas fa-id-card"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="input-group mb-3">
-                                    <input asp-for="userRegisterRequest.EmployeeId" id="EmployeeId" name="userRegisterRequest.EmployeeId" type="text" class="form-control" placeholder="Employee ID">
-                                    <div class="input-group-append">
-                                        <div class="input-group-text">
-                                            <span class="fas fa-id-card"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                            }
- 
-                            <span asp-validation-for="userRegisterRequest.EmployeeId" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-body register-card-body">
-                            <p class="login-box-msg"><b>Account Credentials</b></p>
-
-                            <div class="input-group mb-3">
-                                <input asp-for="userRegisterRequest.UserName" type="text" id="Username" name="userRegisterRequest.UserName" class="form-control" placeholder="User Name">
-                                <div class="input-group-append">
-                                    <div class="input-group-text">
-                                        <span class="fas fa-user"></span>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.UserName" class="text-danger"></span>
-                            
-
-
-                            <div class="input-group mb-3">
-                                <input asp-for="userRegisterRequest.Password" type="password" class="form-control" id="password" name="userRegisterRequest.Password" aria-describedby="passwordToggle" placeholder="Password">
-                                <button class="btn btn-outline-secondary" type="button" id="passwordToggle" onclick="togglePassword()">Show</button>
-                            </div>
-                            <span asp-validation-for="userRegisterRequest.Password" class="text-danger"></span>
-                            <div class="input-group mb-3">
-                                <input  type="password" class="form-control" id="Confirmpassword" name="userRegisterRequest.ConfirmPassword" aria-describedby="ConfirmpasswordToggle" placeholder="Confirm Password">
-                                <button class="btn btn-outline-secondary" type="button" id="ConfirmpasswordToggle" onclick="ConfirmtogglePassword()">Show</button>
-                            </div>
-                            <span id="passwordMismatchError" class="text-danger" style="display: none;">Passwords do not match.</span>
-                            <span asp-validation-for="userRegisterRequest.ConfirmPassword" class="text-danger"></span>
-
-
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body register-card-body">
-                            <div class="">
-                                <div class="icheck-primary">
-                                    <input asp-for="userRegisterRequest.Terms" id="Terms" type="checkbox" name="userRegisterRequest.Terms">
-                                    <label for="Terms">
-                                        I agree to the <a href="#">terms & conditions</a>
-                                    </label>
-                                </div>
-                                <span asp-validation-for="userRegisterRequest.Terms" class="text-danger"></span>
-                            </div>
-                            <!-- /.col -->
-                            <div class="mb-3">
-                                <button type="submit" class="btn btn-outline-primary btn-block">Register</button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-
-              
-
-                <div align="center">
-                    <a asp-action="Login" class="text-center">I already have a membership</a>
+    <div class="xfl-register-box">
+        <div class="card card-outline card-primary xfl-register-card">
+            <div class="card-header xfl-register-head">
+                <a href="~/" class="xfl-register-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="56" height="56"></a>
+                <div>
+                    <h1 class="xfl-register-title"><b>XFL</b> CSMS</h1>
+                    <p class="xfl-register-sub">Create an account for your brokerage house</p>
                 </div>
-                <!-- /.col -->
-
             </div>
 
+            <form asp-controller="RegisterLogin" asp-action="Register" method="post" id="form1" autocomplete="off">
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <h2 class="xfl-register-section"><i class="fas fa-user mr-2"></i>Personal information</h2>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="fullname">Full name</label>
+                            <input asp-for="userRegisterRequest.FullName" id="fullname" name="userRegisterRequest.FullName" type="text" class="form-control" placeholder="Your full name">
+                            <span asp-validation-for="userRegisterRequest.FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="email">Email</label>
+                            <input asp-for="userRegisterRequest.Email" type="email" id="email" name="userRegisterRequest.Email" class="form-control" placeholder="name@company.com">
+                            <span asp-validation-for="userRegisterRequest.Email" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="PhonNumber">Phone number</label>
+                            <input asp-for="userRegisterRequest.PhonNumber" id="PhonNumber" name="userRegisterRequest.PhonNumber" type="text" class="form-control" placeholder="01XXXXXXXXX">
+                            <span asp-validation-for="userRegisterRequest.PhonNumber" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="xfl-register-section"><i class="fas fa-building mr-2"></i>Company information</h2>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="brokerageCodes">Brokerage house</label>
+                            <div class="input-group">
+                                <select asp-for="userRegisterRequest.BrokerageHouseName" id="brokerageCodes" name="userRegisterRequest.BrokerageHouseName" class="form-control">
+                                    <option value="0">Select your organization</option>
+                                    @foreach (var item in Model.Brokerages)
+                                    {
+                                        <option value="@item.BrokerageId" data-acronym="@item.BrokerageHouseAcronym">@item.BrokerageHouseName</option>
+                                    }
+                                </select>
+                                <div class="input-group-append"><span class="input-group-text" id="Acronym" title="Acronym">@(Model.Acronyme ?? "")</span></div>
+                            </div>
+                            <span asp-validation-for="userRegisterRequest.BrokerageHouseName" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="Branch">Branch</label>
+                            <select asp-for="userRegisterRequest.Branch" id="Branch" name="userRegisterRequest.Branch" class="form-control">
+                                <option value="0">Select your branch</option>
+                                @if (Model.Branchhs != null)
+                                {
+                                    foreach (var item in Model.Branchhs)
+                                    {
+                                        <option value="@item.BranchId">@item.BranchName</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="userRegisterRequest.Branch" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="EmployeeId">Employee ID</label>
+                            <input asp-for="userRegisterRequest.EmployeeId" id="EmployeeId" name="userRegisterRequest.EmployeeId" type="text" class="form-control" placeholder="Your employee ID">
+                            <span asp-validation-for="userRegisterRequest.EmployeeId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="xfl-register-section"><i class="fas fa-key mr-2"></i>Account</h2>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="Username">User name</label>
+                            <input asp-for="userRegisterRequest.UserName" type="text" id="Username" name="userRegisterRequest.UserName" class="form-control" placeholder="Choose a user name">
+                            <span asp-validation-for="userRegisterRequest.UserName" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="password">Password</label>
+                            <div class="input-group">
+                                <input asp-for="userRegisterRequest.Password" type="password" class="form-control" id="password" name="userRegisterRequest.Password" aria-describedby="passwordToggle" placeholder="Password" autocomplete="new-password">
+                                <div class="input-group-append"><button class="btn btn-outline-secondary" type="button" id="passwordToggle" onclick="togglePassword()">Show</button></div>
+                            </div>
+                            <span asp-validation-for="userRegisterRequest.Password" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="Confirmpassword">Confirm password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="Confirmpassword" name="userRegisterRequest.ConfirmPassword" aria-describedby="ConfirmpasswordToggle" placeholder="Repeat the password" autocomplete="new-password">
+                                <div class="input-group-append"><button class="btn btn-outline-secondary" type="button" id="ConfirmpasswordToggle" onclick="ConfirmtogglePassword()">Show</button></div>
+                            </div>
+                            <span id="passwordMismatchError" class="text-danger small" style="display: none;">Passwords do not match.</span>
+                            <span asp-validation-for="userRegisterRequest.ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer xfl-register-foot">
+                    <div>
+                        <div class="icheck-primary">
+                            <input asp-for="userRegisterRequest.Terms" id="Terms" type="checkbox" name="userRegisterRequest.Terms">
+                            <label for="Terms">I agree to the <a href="#">terms &amp; conditions</a></label>
+                        </div>
+                        <span asp-validation-for="userRegisterRequest.Terms" class="text-danger small"></span>
+                    </div>
+                    <div class="xfl-register-actions">
+                        <a asp-action="Login">I already have an account</a>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus mr-1"></i>Register</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-    
-
-
-
-    
-
 
     <!-- Password -->
     <script>
@@ -357,7 +219,6 @@
         // Get references to the select element and the Acronym span
         var selectElement = document.getElementById('brokerageCodes');
         var acronymSpan = document.getElementById('Acronym');
-        var acc = document.getElementById('BrokerageHouseAcronym');
 
         // Add an event listener to the select element
         selectElement.addEventListener('change', function () {          
@@ -365,7 +226,7 @@
             var selectedOption = selectElement.options[selectElement.selectedIndex];
 
             // Update the Acronym span with the data-acronym attribute of the selected option
-            acronymSpan.textContent = selectedOption.getAttribute('data-acronym');
+            acronymSpan.textContent = selectedOption.getAttribute('data-acronym') || '';
             
             
             
