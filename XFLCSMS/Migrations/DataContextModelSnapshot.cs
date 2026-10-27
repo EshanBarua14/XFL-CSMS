@@ -177,6 +177,9 @@ namespace XFLCSMS.Migrations
                     b.Property<double?>("AdjustedRating")
                         .HasColumnType("float");
 
+                    b.Property<double?>("AverageEffort")
+                        .HasColumnType("float");
+
                     b.Property<double?>("AverageStars")
                         .HasColumnType("float");
 
@@ -184,6 +187,9 @@ namespace XFLCSMS.Migrations
                         .HasColumnType("float");
 
                     b.Property<double>("BacklogPoints")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("CsatPercent")
                         .HasColumnType("float");
 
                     b.Property<bool>("Eligible")
@@ -197,6 +203,12 @@ namespace XFLCSMS.Migrations
                     b.Property<int>("EngineerUserId")
                         .HasColumnType("int");
 
+                    b.Property<double>("FcrPoints")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("FcrRate")
+                        .HasColumnType("float");
+
                     b.Property<double>("FirstResponsePoints")
                         .HasColumnType("float");
 
@@ -209,11 +221,14 @@ namespace XFLCSMS.Migrations
                     b.Property<double?>("MedianFirstResponseMinutes")
                         .HasColumnType("float");
 
-                    b.Property<double?>("MedianResolutionHours")
+                    b.Property<double?>("MedianResolutionMinutes")
                         .HasColumnType("float");
 
                     b.Property<DateTime>("Month")
                         .HasColumnType("datetime2");
+
+                    b.Property<double?>("Nps")
+                        .HasColumnType("float");
 
                     b.Property<int?>("Rank")
                         .HasColumnType("int");
@@ -234,6 +249,9 @@ namespace XFLCSMS.Migrations
                         .HasColumnType("float");
 
                     b.Property<double?>("ResolutionRatio")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("ResponseSlaCompliance")
                         .HasColumnType("float");
 
                     b.Property<double>("Score")
@@ -268,11 +286,11 @@ namespace XFLCSMS.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<double>("FirstResponseHours")
-                        .HasColumnType("float");
+                    b.Property<int>("FirstResponseMinutes")
+                        .HasColumnType("int");
 
-                    b.Property<double>("ResolutionHours")
-                        .HasColumnType("float");
+                    b.Property<int>("ResolutionMinutes")
+                        .HasColumnType("int");
 
                     b.HasKey("Priority");
 
@@ -282,20 +300,20 @@ namespace XFLCSMS.Migrations
                         new
                         {
                             Priority = "High",
-                            FirstResponseHours = 1.0,
-                            ResolutionHours = 8.0
+                            FirstResponseMinutes = 60,
+                            ResolutionMinutes = 480
                         },
                         new
                         {
                             Priority = "Medium",
-                            FirstResponseHours = 4.0,
-                            ResolutionHours = 48.0
+                            FirstResponseMinutes = 240,
+                            ResolutionMinutes = 2880
                         },
                         new
                         {
                             Priority = "Low",
-                            FirstResponseHours = 24.0,
-                            ResolutionHours = 120.0
+                            FirstResponseMinutes = 1440,
+                            ResolutionMinutes = 7200
                         });
                 });
 
@@ -307,6 +325,17 @@ namespace XFLCSMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RatingId"), 1L, 1);
 
+                    b.Property<string>("ClientReply")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ClientReplyBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("ClientReplyOn")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -317,6 +346,9 @@ namespace XFLCSMS.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<byte?>("EffortScore")
+                        .HasColumnType("tinyint");
+
                     b.Property<string>("EngineerName")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -324,17 +356,40 @@ namespace XFLCSMS.Migrations
                     b.Property<int?>("EngineerUserId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ExcludeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ExcludedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("ExcludedFromScore")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("FirstContactResolved")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("FullySolved")
                         .HasColumnType("bit");
 
                     b.Property<int>("IssueId")
                         .HasColumnType("int");
 
+                    b.Property<byte?>("KnowledgeScore")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte?>("ProfessionalismScore")
+                        .HasColumnType("tinyint");
+
                     b.Property<byte?>("QualityScore")
                         .HasColumnType("tinyint");
 
                     b.Property<int>("RatedByUserId")
                         .HasColumnType("int");
+
+                    b.Property<byte?>("RecommendScore")
+                        .HasColumnType("tinyint");
 
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(1000)
@@ -352,6 +407,10 @@ namespace XFLCSMS.Migrations
 
                     b.Property<byte>("Stars")
                         .HasColumnType("tinyint");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
 
                     b.Property<DateTime?>("UpdatedOn")
                         .HasColumnType("datetime2");

@@ -9,9 +9,10 @@ namespace XFLCSMS.Services
     /// <summary>
     /// Monthly Support Engineer scorecard and the Best Support Engineer of the Month award.
     ///
-    /// Seven measures per engineer and month, each turned into 0-100 points by percentile rank among the
-    /// eligible engineers (best = 100), then weighted: client rating 30, SLA compliance 20, resolution time 15,
-    /// weighted volume 15, reopen rate 10, first response 5, backlog health 5 (appsettings "Scorecard").
+    /// Eight measures per engineer and month, each turned into 0-100 points by percentile rank among the
+    /// eligible engineers (best = 100), then weighted: client rating 25, SLA compliance 20, resolution time 15,
+    /// weighted volume 10, reopen rate 10, first-contact resolution 10, first response 5, backlog health 5
+    /// (appsettings "Scorecard"). CSAT, NPS and customer effort are reported next to the score.
     /// A month is frozen on the 3rd of the next month; the top eligible engineer who passes the award gates
     /// is nominated and a manager confirms or overrides (confirmed automatically after 5 days).
     /// There is no background job in this application, so freezing happens the first time a management page
@@ -45,7 +46,7 @@ namespace XFLCSMS.Services
             var targets = await _context.SlaTargets.ToListAsync();
             foreach (var d in SlaTarget.Defaults.Where(d => targets.All(t => !string.Equals(t.Priority, d.Priority, StringComparison.OrdinalIgnoreCase))))
             {
-                targets.Add(new SlaTarget { Priority = d.Priority, FirstResponseHours = d.FirstResponseHours, ResolutionHours = d.ResolutionHours });
+                targets.Add(new SlaTarget { Priority = d.Priority, FirstResponseMinutes = d.FirstResponseMinutes, ResolutionMinutes = d.ResolutionMinutes });
             }
 
             return targets.OrderBy(t => PriorityPoints.TryGetValue(t.Priority, out var p) ? -p : 0).ToList();
@@ -123,8 +124,8 @@ namespace XFLCSMS.Services
                     Status = winner == null ? EngineerAward.NoWinner : EngineerAward.Nominated,
                     NominatedOn = now,
                     Reason = winner == null
-                        ? (ranked.Count == 0 ? "No engineer closed the minimum of " + Settings.MinClosedTickets + " tickets." : "No ranked engineer passed the award rules (at least " + Settings.MinRatings + " client ratings, adjusted rating " + Settings.AwardMinRating.ToString("0.0") + ", SLA met " + (Settings.AwardMinSla * 100).ToString("0") + "%, no unreviewed 1-star rating).")
-                        : winner.Rank > 1 ? "Higher ranked engineers did not pass the award rules (number of ratings, rating, SLA or an unreviewed 1-star rating)." : null
+                        ? (ranked.Count == 0 ? "No engineer closed the minimum of " + Settings.MinClosedTickets + " tickets." : "No ranked engineer passed the award rules (" + AwardRulesText + ").")
+                        : winner.Rank > 1 ? "Higher ranked engineers did not pass the award rules (" + AwardRulesText + ")." : null
                 });
 
                 await _context.SaveChangesAsync();
@@ -139,11 +140,15 @@ namespace XFLCSMS.Services
             }
         }
 
+        public string AwardRulesText => "at least " + Settings.MinRatings + " client ratings, adjusted rating " + Settings.AwardMinRating.ToString("0.0")
+            + ", CSAT " + (Settings.AwardMinCsat * 100).ToString("0") + "%, SLA met " + (Settings.AwardMinSla * 100).ToString("0") + "%, no unreviewed 1-star rating";
+
         public bool PassesGates(MonthlyEngineerScore row)
         {
             return row.Rank != null
                 && row.RatingsCount >= Settings.MinRatings
                 && (row.AdjustedRating ?? 0) >= Settings.AwardMinRating
+                && (row.CsatPercent ?? 0) >= Settings.AwardMinCsat
                 && (row.SlaCompliance ?? 0) >= Settings.AwardMinSla
                 && row.LowRatingsUnreviewed == 0;
         }
@@ -173,9 +178,7 @@ namespace XFLCSMS.Services
                 AwardHistory = await _context.EngineerAwards.OrderByDescending(a => a.Month).Take(12).ToListAsync()
             };
 
-            view.Rows = award != null
-                ? await _context.MonthlyEngineerScores.Where(s => s.Month == selected).ToListAsync()
-                : await ComputeAsync(selected);
+            view.Rows = await RowsForAsync(selected);
             view.Rows = view.Rows.OrderBy(r => r.Rank ?? int.MaxValue).ThenByDescending(r => r.TicketsClosed).ThenBy(r => r.EngineerName).ToList();
 
             var previous = selected.AddMonths(-1);
@@ -190,6 +193,156 @@ namespace XFLCSMS.Services
             // The current month, the last 12 months and every older month that has closed tickets.
             view.Months = Enumerable.Range(0, 13).Select(i => MonthStart(now).AddMonths(-i))
                 .Concat(withData).Append(selected).Distinct().OrderByDescending(m => m).ToList();
+
+            view.TeamKpis = RatingKpis.From(await RatingsAsync(selected, null));
+            var withTickets = view.Rows.Where(r => r.TicketsClosed > 0).ToList();
+            view.TeamClosed = withTickets.Sum(r => r.TicketsClosed);
+            if (view.TeamClosed > 0)
+            {
+                view.TeamSla = withTickets.Sum(r => (r.SlaCompliance ?? 0) * r.TicketsClosed) / view.TeamClosed;
+                view.TeamReopenRate = withTickets.Sum(r => (r.ReopenRate ?? 0) * r.TicketsClosed) / view.TeamClosed;
+            }
+
+            view.Trend = await TrendAsync(selected, null);
+            return view;
+        }
+
+        /// <summary>The month's rows: frozen when the month is closed, otherwise computed now.</summary>
+        public async Task<List<MonthlyEngineerScore>> RowsForAsync(DateTime month)
+        {
+            month = MonthStart(month);
+            return await _context.EngineerAwards.AnyAsync(a => a.Month == month)
+                ? await _context.MonthlyEngineerScores.Where(s => s.Month == month).ToListAsync()
+                : await ComputeAsync(month);
+        }
+
+        /// <summary>Ratings received in a month (all engineers or one), without those management left out of the score.</summary>
+        public async Task<List<TicketRating>> RatingsAsync(DateTime month, int? engineerId, int months = 1)
+        {
+            var end = MonthStart(month).AddMonths(1);
+            var start = end.AddMonths(-months);
+            return await _context.TicketRatings
+                .Where(r => r.CreatedOn >= start && r.CreatedOn < end && !r.ExcludedFromScore && (engineerId == null || r.EngineerUserId == engineerId))
+                .ToListAsync();
+        }
+
+        /// <summary>Six months of KPIs up to the given month, for the team or one engineer.</summary>
+        public async Task<List<KpiPoint>> TrendAsync(DateTime month, int? engineerId, int months = 6)
+        {
+            var trend = new List<KpiPoint>();
+            var allRatings = await RatingsAsync(month, engineerId, months);
+            for (var i = months - 1; i >= 0; i--)
+            {
+                var m = MonthStart(month).AddMonths(-i);
+                var rows = await RowsForAsync(m);
+                var k = RatingKpis.From(allRatings.Where(r => r.CreatedOn >= m && r.CreatedOn < m.AddMonths(1)));
+                var mine = engineerId == null ? rows.Where(r => r.TicketsClosed > 0).ToList() : rows.Where(r => r.EngineerUserId == engineerId).ToList();
+                var closed = mine.Sum(r => r.TicketsClosed);
+                var rankedScores = rows.Where(r => r.Rank != null).Select(r => r.Score).ToList();
+                var me = engineerId == null ? null : mine.FirstOrDefault();
+                trend.Add(new KpiPoint
+                {
+                    Month = m,
+                    Ratings = k.Count,
+                    AverageStars = k.AverageStars,
+                    Csat = k.Csat,
+                    Nps = k.Nps,
+                    Ces = k.Ces,
+                    Fcr = k.Fcr,
+                    Closed = closed,
+                    Sla = closed == 0 ? null : mine.Sum(r => (r.SlaCompliance ?? 0) * r.TicketsClosed) / closed,
+                    Score = me?.Rank != null ? me.Score : null,
+                    Rank = me?.Rank,
+                    TeamMedianScore = Median(rankedScores)
+                });
+            }
+
+            return trend;
+        }
+
+        public static readonly string[] Measures = { "Client rating", "SLA met", "Resolution time", "Volume", "Reopens", "First-contact resolution", "First response", "Backlog" };
+
+        public static double[] PointsOf(MonthlyEngineerScore r) => new[]
+        {
+            r.RatingPoints, r.SlaPoints, r.ResolutionPoints, r.VolumePoints, r.ReopenPoints, r.FcrPoints, r.FirstResponsePoints, r.BacklogPoints
+        };
+
+        /// <summary>Weighted share of the score each measure contributed (sums to the score).</summary>
+        public static double[] ContributionOf(MonthlyEngineerScore r, ScorecardSettings s)
+        {
+            var w = new[] { s.RatingWeight, s.SlaWeight, s.ResolutionWeight, s.VolumeWeight, s.ReopenWeight, s.FcrWeight, s.FirstResponseWeight, s.BacklogWeight };
+            var total = s.TotalWeight <= 0 ? 1 : s.TotalWeight;
+            var p = PointsOf(r);
+            return p.Select((v, i) => Math.Round(v * w[i] / total, 1)).ToArray();
+        }
+
+        /// <summary>One engineer's performance page.</summary>
+        public async Task<EngineerProfileView?> ProfileAsync(int engineerId, DateTime? month)
+        {
+            var engineer = await _context.Users.Where(u => u.Id == engineerId && u.UType && u.Department == "Support Engineer")
+                .Select(u => new { u.Id, u.FullName }).FirstOrDefaultAsync();
+            if (engineer == null)
+            {
+                return null;
+            }
+
+            await CatchUpAsync();
+            var now = DateTime.Now;
+            var withData = await MonthsWithClosedTicketsAsync();
+            var lastMonth = MonthStart(now).AddMonths(-1);
+            var latestWithData = withData.FirstOrDefault(m => m < MonthStart(now));
+            var selected = MonthStart(month ?? (withData.Contains(lastMonth) || latestWithData == default ? lastMonth : latestWithData));
+
+            var rows = await RowsForAsync(selected);
+            var ranked = rows.Where(r => r.Rank != null).ToList();
+            var view = new EngineerProfileView
+            {
+                EngineerUserId = engineer.Id,
+                EngineerName = engineer.FullName,
+                Month = selected,
+                IsFrozen = await _context.EngineerAwards.AnyAsync(a => a.Month == selected),
+                Months = Enumerable.Range(0, 13).Select(i => MonthStart(now).AddMonths(-i)).Concat(withData).Append(selected).Distinct().OrderByDescending(m => m).ToList(),
+                Row = rows.FirstOrDefault(r => r.EngineerUserId == engineerId),
+                PreviousRow = (await RowsForAsync(selected.AddMonths(-1))).FirstOrDefault(r => r.EngineerUserId == engineerId),
+                RankedCount = ranked.Count,
+                Settings = Settings,
+                Trend = await TrendAsync(selected, engineerId),
+                Awards = await _context.EngineerAwards.Where(a => a.EngineerUserId == engineerId && a.Status != EngineerAward.NoWinner)
+                    .OrderByDescending(a => a.Month).ToListAsync()
+            };
+
+            if (ranked.Count > 0)
+            {
+                for (var i = 0; i < Measures.Length; i++)
+                {
+                    view.TeamPoints[Measures[i]] = Math.Round(ranked.Average(r => PointsOf(r)[i]), 1);
+                }
+            }
+
+            if (view.Row?.Rank != null)
+            {
+                var points = Measures.Select((m, i) => (m, PointsOf(view.Row)[i])).ToList();
+                view.Strengths = points.Where(p => p.Item2 >= 60).OrderByDescending(p => p.Item2).Take(3).ToList();
+                view.ToImprove = points.Where(p => p.Item2 < 50).OrderBy(p => p.Item2).Take(3).ToList();
+            }
+
+            var ratings = await _context.TicketRatings.Include(r => r.Issue)
+                .Where(r => r.CreatedOn >= selected.AddMonths(-5) && r.CreatedOn < selected.AddMonths(1))
+                .ToListAsync();
+            var counted = ratings.Where(r => !r.ExcludedFromScore).ToList();
+            view.Kpis = RatingKpis.From(counted.Where(r => r.EngineerUserId == engineerId));
+            view.TeamKpis = RatingKpis.From(counted);
+
+            var houses = await _context.Brokerages.ToDictionaryAsync(b => b.BrokerageId, b => b.BrokerageHouseName);
+            view.RecentFeedback = ratings.Where(r => r.EngineerUserId == engineerId).OrderByDescending(r => r.CreatedOn).Take(15)
+                .Select(r => new FeedbackRow
+                {
+                    Rating = r,
+                    TicketNumber = r.Issue?.TNumber ?? string.Empty,
+                    TicketTitle = r.Issue?.ITitle,
+                    Priority = r.Issue?.Priority,
+                    HouseName = r.Issue != null && houses.TryGetValue(r.Issue.BrokerageId, out var h) ? h : string.Empty
+                }).ToList();
 
             return view;
         }
@@ -208,7 +361,7 @@ namespace XFLCSMS.Services
                 Controller = controller,
                 Award = award,
                 Score = score,
-                UnreviewedLowRatings = await _context.TicketRatings.CountAsync(r => r.Stars <= 2 && r.ReviewedOn == null)
+                UnreviewedLowRatings = await _context.TicketRatings.CountAsync(r => (r.Stars <= 2 || !r.FullySolved) && r.ReviewedOn == null)
             };
         }
 
@@ -286,7 +439,7 @@ namespace XFLCSMS.Services
             closed = closed.Where(i => !(i.UserId == i.AssignedToUserId && (i.ClosedOn!.Value - i.TDate).TotalMinutes < 5)).ToList();
 
             var ratings = await _context.TicketRatings
-                .Where(r => r.CreatedOn >= start && r.CreatedOn < end && r.EngineerUserId != null && engineerIds.Contains(r.EngineerUserId.Value))
+                .Where(r => r.CreatedOn >= start && r.CreatedOn < end && !r.ExcludedFromScore && r.EngineerUserId != null && engineerIds.Contains(r.EngineerUserId.Value))
                 .ToListAsync();
             var teamAverage = ratings.Count == 0 ? 0 : ratings.Average(r => (double)r.Stars);
 
@@ -331,6 +484,12 @@ namespace XFLCSMS.Services
                     LowRatingsUnreviewed = myRatings.Count(r => r.Stars == 1 && r.ReviewedOn == null)
                 };
 
+                var kpis = RatingKpis.From(myRatings);
+                row.CsatPercent = kpis.Csat;
+                row.Nps = kpis.Nps;
+                row.AverageEffort = kpis.Ces;
+                row.FcrRate = kpis.Fcr;
+
                 if (myRatings.Count > 0)
                 {
                     row.AdjustedRating = (s.RatingConfidence * teamAverage + myRatings.Sum(r => (double)r.Stars)) / (s.RatingConfidence + myRatings.Count);
@@ -338,14 +497,17 @@ namespace XFLCSMS.Services
 
                 if (mine.Count > 0)
                 {
-                    row.SlaCompliance = mine.Count(i => (i.ClosedOn!.Value - i.TDate).TotalHours <= Sla(i.Priority).ResolutionHours) / (double)mine.Count;
-                    row.MedianResolutionHours = Median(mine.Select(i => (i.ClosedOn!.Value - (i.AssignOn ?? i.TDate)).TotalHours));
-                    row.ResolutionRatio = Median(mine.Select(i => Math.Max(0, (i.ClosedOn!.Value - (i.AssignOn ?? i.TDate)).TotalHours) / Sla(i.Priority).ResolutionHours));
+                    row.SlaCompliance = mine.Count(i => (i.ClosedOn!.Value - i.TDate).TotalMinutes <= Sla(i.Priority).ResolutionMinutes) / (double)mine.Count;
+                    row.MedianResolutionMinutes = Median(mine.Select(i => (i.ClosedOn!.Value - (i.AssignOn ?? i.TDate)).TotalMinutes));
+                    row.ResolutionRatio = Median(mine.Select(i => Math.Max(0, (i.ClosedOn!.Value - (i.AssignOn ?? i.TDate)).TotalMinutes) / Sla(i.Priority).ResolutionMinutes));
                     row.ReopenRate = reopened / (double)mine.Count;
 
                     var responses = mine.Where(i => i.FirstResponseOn != null)
                         .Select(i => Math.Max(0, (i.FirstResponseOn!.Value - (i.AssignOn ?? i.TDate)).TotalMinutes)).ToList();
                     row.MedianFirstResponseMinutes = responses.Count == 0 ? null : Median(responses);
+                    var answered = mine.Where(i => i.FirstResponseOn != null).ToList();
+                    row.ResponseSlaCompliance = answered.Count == 0 ? null
+                        : answered.Count(i => (i.FirstResponseOn!.Value - i.TDate).TotalMinutes <= Sla(i.Priority).FirstResponseMinutes) / (double)answered.Count;
                 }
                 else if (reopened > 0)
                 {
@@ -354,7 +516,7 @@ namespace XFLCSMS.Services
 
                 row.BacklogOverdueShare = myOpen.Count == 0
                     ? 0
-                    : myOpen.Count(i => (backlogAt - i.TDate).TotalHours > 2 * Sla(i.Priority).ResolutionHours) / (double)myOpen.Count;
+                    : myOpen.Count(i => (backlogAt - i.TDate).TotalMinutes > 2 * Sla(i.Priority).ResolutionMinutes) / (double)myOpen.Count;
 
                 // Ranked on closed tickets alone: an engineer without client ratings gets neutral rating points (50).
                 // The award additionally needs MinRatings ratings (PassesGates).
@@ -368,6 +530,7 @@ namespace XFLCSMS.Services
             Points(eligible, r => r.ResolutionRatio, false, (r, p) => r.ResolutionPoints = p);
             Points(eligible, r => r.WeightedVolume, true, (r, p) => r.VolumePoints = p);
             Points(eligible, r => r.ReopenRate, false, (r, p) => r.ReopenPoints = p);
+            Points(eligible, r => r.FcrRate, true, (r, p) => r.FcrPoints = p);
             Points(eligible, r => r.MedianFirstResponseMinutes, false, (r, p) => r.FirstResponsePoints = p);
             Points(eligible, r => r.BacklogOverdueShare, false, (r, p) => r.BacklogPoints = p);
 
@@ -375,7 +538,7 @@ namespace XFLCSMS.Services
             foreach (var r in eligible)
             {
                 r.Score = Math.Round((s.RatingWeight * r.RatingPoints + s.SlaWeight * r.SlaPoints + s.ResolutionWeight * r.ResolutionPoints
-                    + s.VolumeWeight * r.VolumePoints + s.ReopenWeight * r.ReopenPoints + s.FirstResponseWeight * r.FirstResponsePoints
+                    + s.VolumeWeight * r.VolumePoints + s.ReopenWeight * r.ReopenPoints + s.FcrWeight * r.FcrPoints + s.FirstResponseWeight * r.FirstResponsePoints
                     + s.BacklogWeight * r.BacklogPoints) / total, 1);
             }
 
@@ -435,7 +598,7 @@ namespace XFLCSMS.Services
         public static byte[] Csv(ScorecardView view)
         {
             var csv = new StringBuilder();
-            csv.AppendLine("Month,Rank,Engineer,Eligible,Score,Tickets Closed,Weighted Volume,Ratings,Average Stars,Adjusted Rating,SLA %,Median Resolution h,Resolution vs SLA,Reopen %,Median First Response min,Backlog Overdue %,Rating pts,SLA pts,Resolution pts,Volume pts,Reopen pts,First Response pts,Backlog pts");
+            csv.AppendLine("Month,Rank,Engineer,Eligible,Score,Tickets Closed,Weighted Volume,Ratings,Average Stars,Adjusted Rating,SLA %,Median Resolution min,Resolution vs SLA,Reopen %,Median First Response min,Response SLA %,Backlog Overdue %,CSAT %,NPS,CES,FCR %,Rating pts,SLA pts,Resolution pts,Volume pts,Reopen pts,FCR pts,First Response pts,Backlog pts");
             string N(double? v, string f = "0.##") => v?.ToString(f, CultureInfo.InvariantCulture) ?? string.Empty;
             foreach (var r in view.Rows)
             {
@@ -444,10 +607,11 @@ namespace XFLCSMS.Services
                     view.Month.ToString("yyyy-MM", CultureInfo.InvariantCulture), r.Rank?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                     FeedbackService.CsvField(r.EngineerName), r.Eligible ? "Yes" : "No", N(r.Score, "0.0"), r.TicketsClosed.ToString(CultureInfo.InvariantCulture),
                     N(r.WeightedVolume), r.RatingsCount.ToString(CultureInfo.InvariantCulture), N(r.AverageStars), N(r.AdjustedRating),
-                    N(r.SlaCompliance * 100, "0.#"), N(r.MedianResolutionHours, "0.#"), N(r.ResolutionRatio), N(r.ReopenRate * 100, "0.#"),
-                    N(r.MedianFirstResponseMinutes, "0"), N(r.BacklogOverdueShare * 100, "0.#"),
+                    N(r.SlaCompliance * 100, "0.#"), N(r.MedianResolutionMinutes, "0"), N(r.ResolutionRatio), N(r.ReopenRate * 100, "0.#"),
+                    N(r.MedianFirstResponseMinutes, "0"), N(r.ResponseSlaCompliance * 100, "0.#"), N(r.BacklogOverdueShare * 100, "0.#"),
+                    N(r.CsatPercent * 100, "0.#"), N(r.Nps, "0.#"), N(r.AverageEffort, "0.##"), N(r.FcrRate * 100, "0.#"),
                     N(r.RatingPoints, "0.#"), N(r.SlaPoints, "0.#"), N(r.ResolutionPoints, "0.#"), N(r.VolumePoints, "0.#"),
-                    N(r.ReopenPoints, "0.#"), N(r.FirstResponsePoints, "0.#"), N(r.BacklogPoints, "0.#")
+                    N(r.ReopenPoints, "0.#"), N(r.FcrPoints, "0.#"), N(r.FirstResponsePoints, "0.#"), N(r.BacklogPoints, "0.#")
                 }));
             }
 

@@ -1326,6 +1326,72 @@ namespace XFLCSMS.Controllers
             }
         }
 
+        /// <summary>One Support Engineer's performance: KPIs, six-month trend and client feedback in depth.</summary>
+        public async Task<IActionResult> EngineerProfile(int id, string? month, [FromServices] ScorecardService scorecard)
+        {
+            try
+            {
+                DateTime? selected = DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
+                var view = await scorecard.ProfileAsync(id, selected);
+                if (view == null)
+                {
+                    return NotFound();
+                }
+
+                view.Layout = "_SupportManegerLayout";
+                view.Controller = "SupportManegar";
+                return View("EngineerProfile", view);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Answers the client's feedback; the reply is shown on the client's ticket page and e-mailed to him.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReplyToClient(int ratingId, string? reply, string? returnUrl, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                var rating = await feedback.ReplyAsync(ratingId, CurrentUser!, reply);
+                if (rating == null)
+                {
+                    TempData["ErrorMessage"] = "Please write the reply.";
+                }
+                else
+                {
+                    NotifyClientReply(rating);
+                    TempData["SuccessMessage"] = "Your reply was sent to the client.";
+                }
+
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction("ServiceFeedback");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Leaves a rating out of the engineer scorecard (with a reason), or counts it again.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExcludeRating(int ratingId, bool exclude, string? reason, string? returnUrl, [FromServices] FeedbackService feedback)
+        {
+            try
+            {
+                var error = await feedback.SetExcludedAsync(ratingId, CurrentUser!, exclude, reason);
+                TempData[error == null ? "SuccessMessage" : "ErrorMessage"] = error ?? (exclude ? "The rating is no longer counted in the scorecard." : "The rating is counted in the scorecard again.");
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction("ServiceFeedback");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
         /// <summary>Monthly Support Engineer ranking and Best Support Engineer of the Month.</summary>
         public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard)
         {

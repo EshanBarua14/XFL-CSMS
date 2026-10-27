@@ -13,6 +13,14 @@
             {
                 <a asp-controller="Maker" asp-action="RateTicket" asp-route-id="@issueId" class="btn btn-sm btn-outline-secondary ml-2">Change rating</a>
             }
+            @if (!string.IsNullOrWhiteSpace(r.ClientReply))
+            {
+                <div class="callout callout-info mt-3 mb-0">
+                    <h6 class="mb-1"><i class="fas fa-reply mr-1"></i> Reply from XFL support management</h6>
+                    <p class="mb-1" style="white-space: pre-wrap;">@r.ClientReply</p>
+                    <small class="text-muted">@r.ClientReplyBy, @r.ClientReplyOn?.ToString("dd MMM yyyy HH:mm")</small>
+                </div>
+            }
         }
         else if (Model.CanRate)
         {

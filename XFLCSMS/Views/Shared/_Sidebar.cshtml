@@ -110,6 +110,7 @@
     if (current == null)
     {
         if (action.Equals("TicketView", StringComparison.OrdinalIgnoreCase) || action.Equals("EditTicket", StringComparison.OrdinalIgnoreCase) || action.Equals("RateTicket", StringComparison.OrdinalIgnoreCase)) { current = allTickets; }
+        else if (action.Equals("EngineerProfile", StringComparison.OrdinalIgnoreCase)) { current = "Scorecard"; }
         else if (action.Contains("Todo", StringComparison.OrdinalIgnoreCase)) { current = "ViewTodo"; }
         else
         {

@@ -1,10 +1,13 @@
 @model XFLCSMS.Models.Feedback.RatingPanelView
+@using XFLCSMS.Models.Feedback
 @{
     var r = Model.Rating;
     string Stars(int n) => new string('★', n) + new string('☆', 5 - n);
-    string Sub(byte? v) => v.HasValue ? Stars(v.Value) : "-";
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var effort = new[] { "", "Very difficult", "Difficult", "Neutral", "Easy", "Very easy" };
 }
-<div class="card card-outline @(r == null ? "card-secondary" : r.Stars <= 2 ? "card-danger" : "card-success")">
+<link rel="stylesheet" href="~/css/xfl-perf.css" asp-append-version="true" />
+<div class="card card-outline @(r == null ? "card-secondary" : r.NeedsFollowUp ? "card-danger" : "card-success")">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-star mr-1"></i> Client Rating <small class="text-muted ml-2">visible to Admin and Support Manager only</small></h3>
         <div class="card-tools">
@@ -35,25 +38,50 @@
                     <div><b>@r.Stars / 5</b> for <b>@(r.EngineerName ?? "(no engineer)")</b></div>
                     <div class="text-muted small">Rated @r.CreatedOn.ToString("dd MMM yyyy HH:mm")@(r.UpdatedOn != null ? ", changed " + r.UpdatedOn.Value.ToString("dd MMM yyyy HH:mm") : "")</div>
                     <div class="mt-1">
-                        @if (r.FullySolved)
+                        <span class="badge @(r.FullySolved ? "badge-success" : "badge-danger")">@(r.FullySolved ? "Fully solved" : "Not fully solved")</span>
+                        @if (r.FirstContactResolved != null)
                         {
-                            <span class="badge badge-success">Fully solved</span>
+                            <span class="badge @(r.FirstContactResolved == true ? "badge-success" : "badge-warning")">@(r.FirstContactResolved == true ? "Solved first time" : "Had to chase")</span>
                         }
-                        else
+                        @if (r.ExcludedFromScore)
                         {
-                            <span class="badge badge-danger">Not fully solved</span>
+                            <span class="badge badge-secondary" title="@r.ExcludeReason">Not counted in scorecard</span>
                         }
                     </div>
                 </div>
-                <div class="col-md-3 small">
-                    <div>Speed: <span style="color: #f39c12;">@Sub(r.SpeedScore)</span></div>
-                    <div>Communication: <span style="color: #f39c12;">@Sub(r.CommunicationScore)</span></div>
-                    <div>Solution quality: <span style="color: #f39c12;">@Sub(r.QualityScore)</span></div>
+                <div class="col-md-4 small">
+                    @foreach (var (label, v) in new[] { ("Speed", r.SpeedScore), ("Communication", r.CommunicationScore), ("Solution quality", r.QualityScore), ("Professionalism", r.ProfessionalismScore), ("Knowledge", r.KnowledgeScore) })
+                    {
+                        <div class="d-flex align-items-center mb-1">
+                            <span style="width: 120px;">@label</span>
+                            @if (v.HasValue)
+                            {
+                                <div class="score-bar flex-fill mr-2"><span style="width: @(v.Value * 20)%;"></span></div><b>@v</b>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </div>
+                    }
+                    <div class="mt-2">
+                        Effort (CES): <b>@(r.EffortScore.HasValue ? r.EffortScore + " · " + effort[r.EffortScore.Value] : "-")</b><br />
+                        Recommend (NPS): <b>@(r.RecommendScore?.ToString() ?? "-")</b>
+                        @if (r.RecommendScore != null)
+                        {
+                            var kind = r.RecommendScore >= 9 ? ("Promoter", "badge-success") : r.RecommendScore >= 7 ? ("Passive", "badge-warning") : ("Detractor", "badge-danger");
+                            <span class="badge @kind.Item2">@kind.Item1</span>
+                        }
+                    </div>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
+                    @foreach (var t in r.TagList)
+                    {
+                        <span class="tag-chip @(FeedbackTags.IsPositive(t) ? "pos" : "neg")">@t</span>
+                    }
                     @if (!string.IsNullOrWhiteSpace(r.Comment))
                     {
-                        <blockquote class="mb-1" style="white-space: pre-wrap;">@r.Comment</blockquote>
+                        <blockquote class="mb-1 mt-1" style="white-space: pre-wrap;">@r.Comment</blockquote>
                     }
                     else
                     {
@@ -62,19 +90,62 @@
                 </div>
             </div>
             <hr />
-            @if (r.ReviewedOn != null)
-            {
-                <p class="mb-0 small"><i class="fas fa-check-circle text-success"></i> Reviewed by <b>@r.ReviewedBy</b> on @r.ReviewedOn.Value.ToString("dd MMM yyyy")@(string.IsNullOrWhiteSpace(r.ReviewNote) ? "" : ": " + r.ReviewNote)</p>
-            }
-            else
-            {
-                <form asp-controller="@Model.Controller" asp-action="ReviewRating" method="post" class="form-inline">
-                    <input type="hidden" name="ratingId" value="@r.RatingId" />
-                    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
-                    <input type="text" name="note" maxlength="1000" class="form-control form-control-sm mr-2 mb-1" style="min-width: 320px;" placeholder="Internal follow-up note (optional)" />
-                    <button type="submit" class="btn btn-sm @(r.Stars <= 2 ? "btn-danger" : "btn-outline-secondary") mb-1"><i class="fas fa-check"></i> Mark as reviewed</button>
-                </form>
-            }
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="small font-weight-bold text-uppercase text-muted">Internal follow-up</h6>
+                    @if (r.ReviewedOn != null)
+                    {
+                        <p class="mb-0 small"><i class="fas fa-check-circle text-success"></i> Reviewed by <b>@r.ReviewedBy</b> on @r.ReviewedOn.Value.ToString("dd MMM yyyy")@(string.IsNullOrWhiteSpace(r.ReviewNote) ? "" : ": " + r.ReviewNote)</p>
+                    }
+                    else
+                    {
+                        @if (r.NeedsFollowUp && r.CreatedOn.AddHours(XFLCSMS.Services.FeedbackService.FollowUpHours) < DateTime.Now)
+                        {
+                            <p class="small text-danger mb-1"><i class="fas fa-exclamation-triangle"></i> Follow-up overdue (target @XFLCSMS.Services.FeedbackService.FollowUpHours hours).</p>
+                        }
+                        <form asp-controller="@Model.Controller" asp-action="ReviewRating" method="post" class="form-inline">
+                            <input type="hidden" name="ratingId" value="@r.RatingId" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <input type="text" name="note" maxlength="1000" class="form-control form-control-sm mr-2 mb-1 flex-fill" placeholder="Internal follow-up note (optional)" />
+                            <button type="submit" class="btn btn-sm @(r.NeedsFollowUp ? "btn-danger" : "btn-outline-secondary") mb-1"><i class="fas fa-check"></i> Mark as reviewed</button>
+                        </form>
+                    }
+
+                    <details class="mt-2">
+                        <summary class="small">@(r.ExcludedFromScore ? "Count this rating in the scorecard again" : "Leave this rating out of the scorecard")</summary>
+                        <form asp-controller="@Model.Controller" asp-action="ExcludeRating" method="post" class="mt-2">
+                            <input type="hidden" name="ratingId" value="@r.RatingId" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <input type="hidden" name="exclude" value="@(r.ExcludedFromScore ? "false" : "true")" />
+                            @if (r.ExcludedFromScore)
+                            {
+                                <p class="small mb-1">Left out by @r.ExcludedBy: @r.ExcludeReason</p>
+                            }
+                            else
+                            {
+                                <input type="text" name="reason" maxlength="500" class="form-control form-control-sm mb-1" placeholder="Reason, e.g. the rating is about a product limitation, not the engineer (required)" required />
+                            }
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">@(r.ExcludedFromScore ? "Count again" : "Leave out")</button>
+                        </form>
+                    </details>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="small font-weight-bold text-uppercase text-muted">Reply to the client</h6>
+                    @if (!string.IsNullOrWhiteSpace(r.ClientReply))
+                    {
+                        <div class="callout callout-info py-2 mb-2 small">
+                            <span style="white-space: pre-wrap;">@r.ClientReply</span>
+                            <div class="text-muted">@r.ClientReplyBy, @r.ClientReplyOn?.ToString("dd MMM yyyy HH:mm")</div>
+                        </div>
+                    }
+                    <form asp-controller="@Model.Controller" asp-action="ReplyToClient" method="post">
+                        <input type="hidden" name="ratingId" value="@r.RatingId" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <textarea name="reply" class="form-control form-control-sm mb-1" rows="2" maxlength="1000" placeholder="Shown on the client's ticket page and e-mailed to them" required></textarea>
+                        <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-reply"></i> @(string.IsNullOrWhiteSpace(r.ClientReply) ? "Send reply" : "Send new reply")</button>
+                    </form>
+                </div>
+            </div>
         }
 
         @if (Model.History.Count > 0)
