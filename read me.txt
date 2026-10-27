@@ -152,6 +152,7 @@ CSMS_DB=..., CSMS_SERVER=..., CSMS_PORT=... change the database, SQL Server or p
   them is saved there. Accounts that have signed in to the current version use the newer password hashing
   and cannot sign in to the old versions.
 - The old versions cannot send e-mail when started by these scripts.
+- The scripts run the app on .NET 8 / 10 when the .NET 6 runtime is not installed (DOTNET_ROLL_FORWARD=Major).
 
 10. CI
 ------
