@@ -11,6 +11,7 @@
 # built from there, so main keeps working as it is. The old code never alters the schema of a database
 # the new code created, but whatever you click in it is written to the database it points at.
 set -euo pipefail
+# The app targets .NET 6; DOTNET_ROLL_FORWARD=Major lets it run on a newer runtime (8, 10) when 6 is not installed.
 
 TAG="${1:-v1-original}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -60,4 +61,5 @@ ASPNETCORE_URLS="http://localhost:$PORT" \
 ConnectionStrings__DefaultConnection="$CONN" \
 EmailHost=127.0.0.1 \
 EmailPassword=disabled \
+DOTNET_ROLL_FORWARD="${DOTNET_ROLL_FORWARD:-Major}" \
   dotnet run --no-launch-profile
