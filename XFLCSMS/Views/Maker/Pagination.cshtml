@@ -260,7 +260,7 @@
                             <td>
                                 <a>
                                     <b>@Html.DisplayFor(modelItem => item.ITitle)</b>
-                                </a>
+                                </a> <partial name="_ProductBadge" model="item.ProductId" />
                                 <br />
                                 <small>
                                     <b>Created on:</b> @Html.DisplayFor(modelItem => item.TDate)

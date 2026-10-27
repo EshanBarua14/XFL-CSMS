@@ -1,0 +1,16 @@
+@model int?
+@inject XFLCSMS.Data.DataContext Db
+@using Microsoft.EntityFrameworkCore
+@* The product of a ticket as a small badge, for the ticket lists. The names are read once per request. *@
+@{
+    var names = Context.Items["xfl-product-names"] as Dictionary<int, string>;
+    if (names == null)
+    {
+        names = Db.Products.AsNoTracking().ToDictionary(p => p.ProductId, p => p.ProductName);
+        Context.Items["xfl-product-names"] = names;
+    }
+}
+@if (Model.HasValue && names.TryGetValue(Model.Value, out var name))
+{
+    <span class="xfl-product-badge ml-1">@name</span>
+}

@@ -245,6 +245,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -296,6 +299,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -537,6 +543,7 @@ namespace XFLCSMS.Controllers
 
                 await _context.AddAsync(brokerage);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("BrocarageHouseList", "Admin");
             }
             catch (Exception ex)
@@ -839,6 +846,7 @@ namespace XFLCSMS.Controllers
                 brocarage.BrokerageHouseName = brokeragesss.BrokerageHouseName;
                 brocarage.BrokerageHouseAcronym = brokeragesss.BrokerageHouseAcronym;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("BrocarageHouseList", "Admin");
             }
             catch (Exception ex)
@@ -946,6 +954,7 @@ namespace XFLCSMS.Controllers
                 branchh.BrokerageId = branchView.BrokerageId;
                 await _context.Branchhs.AddAsync(branchh);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("BranchList", "Admin");
             }
             catch (Exception ex)
@@ -1003,6 +1012,7 @@ namespace XFLCSMS.Controllers
                 b.BranchId = branch.BranchId;
                 b.BranchName = branch.BranchName;
                 b.BrokerageHouseName = GetBrocarageHouseName(branch.BrokerageId);
+                b.BrokerageId = branch.BrokerageId ?? 0;
                 b.brocarage = Brocarage;
 
                 return View(b);
@@ -1025,14 +1035,22 @@ namespace XFLCSMS.Controllers
                     return NotFound();
                 }
 
+                if (!await _context.Brokerages.AnyAsync(b => b.BrokerageId == branchView.BrokerageId))
+                {
+                    ModelState.AddModelError(nameof(BranchView.BrokerageId), "Please select a brokerage house.");
+                }
+
                 if (!ModelState.IsValid)
                 {
                     branchView.BrokerageHouseName = GetBrocarageHouseName(branch.BrokerageId) ?? string.Empty;
+                    branchView.brocarage = await _context.Brokerages.ToListAsync();
                     return View("EditBranch", branchView);
                 }
 
                 branch.BranchName = branchView.BranchName.Trim();
+                branch.BrokerageId = branchView.BrokerageId;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("BranchList", "Admin");
             }
             catch (Exception ex)
@@ -1067,6 +1085,154 @@ namespace XFLCSMS.Controllers
             }
         }
 
+
+        // ---- Products (Setup > Products): what a ticket is about. OST, Smart Trade, ... ----
+
+        public async Task<IActionResult> ProductList()
+        {
+            try
+            {
+                var products = await _context.Products.AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToListAsync();
+                ViewBag.TicketCounts = await _context.Issues.Where(i => i.ProductId != null)
+                    .GroupBy(i => i.ProductId!.Value).Select(g => new { g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(g => g.Key, g => g.Count);
+                return View(products);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        public async Task<IActionResult> ViewProduct(int id)
+        {
+            try
+            {
+                var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.ProductId == id);
+                if (product == null)
+                {
+                    return NotFound();
+                }
+
+                ViewBag.TicketCount = await _context.Issues.CountAsync(i => i.ProductId == id);
+                return View(product);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        public async Task<IActionResult> CreateProduct()
+        {
+            var next = await _context.Products.Select(p => (int?)p.SortOrder).MaxAsync() ?? 0;
+            return View(new XFLCSMS.Models.Product.Product { IsActive = true, SortOrder = next + 10 });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateProduct([Bind("ProductName,Description,IsActive,SortOrder")] XFLCSMS.Models.Product.Product product)
+        {
+            try
+            {
+                product.ProductId = 0; // identity column: the database assigns the id
+                product.ProductName = (product.ProductName ?? string.Empty).Trim();
+                if (await _context.Products.AnyAsync(p => p.ProductName == product.ProductName))
+                {
+                    ModelState.AddModelError(nameof(product.ProductName), "A product with this name already exists.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(product);
+                }
+
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Product \"" + product.ProductName + "\" was added.";
+                return RedirectToAction("ProductList");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        public async Task<IActionResult> EditProduct(int id)
+        {
+            try
+            {
+                var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.ProductId == id);
+                return product == null ? NotFound() : View(product);
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProduct([Bind("ProductId,ProductName,Description,IsActive,SortOrder")] XFLCSMS.Models.Product.Product product)
+        {
+            try
+            {
+                var existing = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == product.ProductId);
+                if (existing == null)
+                {
+                    return NotFound();
+                }
+
+                product.ProductName = (product.ProductName ?? string.Empty).Trim();
+                if (await _context.Products.AnyAsync(p => p.ProductName == product.ProductName && p.ProductId != product.ProductId))
+                {
+                    ModelState.AddModelError(nameof(product.ProductName), "A product with this name already exists.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(product);
+                }
+
+                existing.ProductName = product.ProductName;
+                existing.Description = product.Description;
+                existing.IsActive = product.IsActive;
+                existing.SortOrder = product.SortOrder;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Product \"" + existing.ProductName + "\" was saved.";
+                return RedirectToAction("ProductList");
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            try
+            {
+                var item = await _context.Products.FindAsync(id);
+                if (item == null)
+                {
+                    return NotFound("The product was not found.");
+                }
+
+                if (await _context.Issues.AnyAsync(i => i.ProductId == id))
+                {
+                    return Conflict("This product has tickets, so it cannot be deleted. Edit it and untick \"Active\" to stop offering it for new tickets.");
+                }
+
+                _context.Products.Remove(item);
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
 
         public async Task<IActionResult> SupportTypeList()
         {
@@ -1134,6 +1300,7 @@ namespace XFLCSMS.Controllers
 
                 await _context.AddAsync(supportType);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportTypeList", "Admin");
             }
             catch (Exception ex)
@@ -1183,6 +1350,7 @@ namespace XFLCSMS.Controllers
 
                 existing.SType = brokeragesss.SType;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportTypeList", "Admin");
             }
             catch (Exception ex)
@@ -1285,6 +1453,7 @@ namespace XFLCSMS.Controllers
 
                 await _context.AddAsync(supportCatagory);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportCatagoryList", "Admin");
             }
             catch (Exception ex)
@@ -1333,6 +1502,7 @@ namespace XFLCSMS.Controllers
 
                 existing.SCatagory = supportCatagory.SCatagory;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportCatagoryList", "Admin");
             }
             catch (Exception ex)
@@ -1433,6 +1603,7 @@ namespace XFLCSMS.Controllers
 
                 await _context.AddAsync(supportSubCatagory);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportSubCatagoryList", "Admin");
             }
             catch (Exception ex)
@@ -1481,6 +1652,7 @@ namespace XFLCSMS.Controllers
 
                 existing.SubCatagory = supportSubCatagory.SubCatagory;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("SupportSubCatagoryList", "Admin");
             }
             catch (Exception ex)
@@ -1583,6 +1755,7 @@ namespace XFLCSMS.Controllers
 
                 await _context.AddAsync(affectedSection);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("AffectedSectionList", "Admin");
             }
             catch (Exception ex)
@@ -1631,6 +1804,7 @@ namespace XFLCSMS.Controllers
 
                 existing.ASection = affectedSection.ASection;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "The changes were saved.";
                 return RedirectToAction("AffectedSectionList", "Admin");
             }
             catch (Exception ex)
@@ -1679,6 +1853,7 @@ namespace XFLCSMS.Controllers
 
             var reportview = new ReportView
             {
+                Products = Tickets.AllProducts(),
                 EmployeeNames = supportEngineer,
                 brocarages = BrocarageHouse,
                 
@@ -1705,6 +1880,8 @@ namespace XFLCSMS.Controllers
 
             if (reportView.search.BrokerageId.HasValue)
                 searchResults = searchResults.Where(x => x.BrokerageId == reportView.search.BrokerageId).ToList();
+            if (reportView.search.ProductId.HasValue)
+                searchResults = searchResults.Where(x => x.ProductId == reportView.search.ProductId).ToList();
             if (!String.IsNullOrEmpty(reportView.search.Priority))
                 searchResults = searchResults.Where(x => x.Priority.Contains(reportView.search.Priority)).ToList();
             if (!String.IsNullOrEmpty(reportView.search.AStatus))
@@ -2620,6 +2797,7 @@ namespace XFLCSMS.Controllers
                 var me = CurrentUser!;
                 var viewModel = new IssueViewModel
                 {
+                    Products = Tickets.ActiveProducts(),
                     SupportTypes = _context.SupportTypes.ToList(),
                     SupportCatagories = _context.SupportCatagories.ToList(),
                     SupportSubCatagories = _context.SupportSubCatagories.ToList(),

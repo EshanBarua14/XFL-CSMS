@@ -12,7 +12,7 @@ namespace XFLCSMS.Models.Branch
         public int BranchId { get; set; }
 
         [Required(ErrorMessage = "BrokerageHouseName is required")]
-        [RegularExpression(@"^[a-z A-Z.]+$", ErrorMessage = "Only letters allowed.")]
+        [RegularExpression(@"^[A-Za-z0-9][A-Za-z0-9 .&()/+,_-]*$", ErrorMessage = "Letters, digits, spaces and . , & ( ) / + - _ only.")]
         public string BranchName { get; set; }=string.Empty;
       
         [ForeignKey("Brokerage")]

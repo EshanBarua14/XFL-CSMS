@@ -1,34 +1,20 @@
 ﻿@model IEnumerable<XFLCSMS.Models.Register.User>
+@{
+    ViewData["Title"] = "User List";
+    ViewData["Subtitle"] = "Everyone who can sign in to XFL CSMS.";
+}
+@section PageActions {
+    <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary"><i class="fas fa-user-plus mr-1"></i>Create User</a>
+}
 
 
     <!-- Main content -->
     <section class="content">
 
         <!-- Default box -->
-        <div class="card">
-            <div class="card-header">
-
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>User list <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary btn-sm ml-3"><i class="fas fa-user-plus"></i> Create User</a></h4>
-                    </div>
-                    <div class="col-md-6 text-right">
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <button type="button" class="btn btn-tool" data-card-widget="remove" title="Remove">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped projects" id="issuesTable">
+        <div class="card xfl-table-card">
+            <div class="card-body">
+                <table class="table table-hover xfl-table" id="issuesTable">
                     <thead>
                         <tr>
                             <th style="width:5%">

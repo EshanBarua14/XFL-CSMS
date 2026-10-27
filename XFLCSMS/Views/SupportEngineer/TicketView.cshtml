@@ -1,21 +1,12 @@
-﻿@using System.IO;
+﻿@{
+    ViewData["Title"] = "Ticket Details";
+}
+@using System.IO;
 
 @model XFLCSMS.Models.Issue.MakerView;
 @{
     Layout = "_SupportEngineerLayout";
 }
-
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h4>View Details</h4>
-            </div>
-
-        </div>
-    </div><!-- /.container-fluid -->
-</section>
-
 
 <!-- Main content -->
 <section class="content">
@@ -81,6 +72,10 @@
 
                         <div class="card-body">
 
+                            <div class="form-group">
+                                <label>Product</label>
+                                <input type="text" value="@(Model.Product ?? "(not set)")" class="form-control" readonly>
+                            </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1">Support Type</label>
                                 <input type="text" value="@Model.SupportType" class="form-control" id="exampleInputEmail1" placeholder="Support Type" readonly>

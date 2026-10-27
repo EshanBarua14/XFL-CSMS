@@ -1,0 +1,28 @@
+@model XFLCSMS.Models.Product.Product
+@{
+    ViewData["Title"] = "Edit Product";
+    ViewData["Subtitle"] = "Products are offered on the Create Ticket form of every role.";
+}
+@section PageActions {
+    <a class="btn btn-outline-secondary" asp-action="ProductList"><i class="fas fa-arrow-left mr-1"></i>Back to list</a>
+}
+<div class="row">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card xfl-form-card">
+            <form asp-controller="Admin" asp-action="EditProduct" method="post" novalidate>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="ProductId" />
+                    <partial name="_ProductFields" model="Model" />
+                </div>
+                <div class="card-footer xfl-form-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save changes</button>
+                    <a class="btn btn-outline-secondary" asp-action="ProductList">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

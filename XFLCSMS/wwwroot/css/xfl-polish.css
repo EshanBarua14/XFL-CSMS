@@ -118,10 +118,13 @@ label { font-weight: 600; color: var(--xfl-label); }
 .main-header .nav-link:hover { color: var(--xfl-blue); }
 
 /* ---- the XFL logo on the sign-in, registration and password pages ---- */
-.xfl-login-brand { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; color: var(--xfl-navy); text-decoration: none; }
+.xfl-login-brand { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 6px auto 10px;
+    text-align: center; color: var(--xfl-navy); text-decoration: none; }
 .xfl-login-brand:hover { color: var(--xfl-navy); text-decoration: none; }
-.xfl-login-brand img { width: 104px; height: 104px; border-radius: 50%; box-shadow: 0 6px 18px rgba(16, 42, 71, .18); background: #fff; }
-.xfl-login-brand .h1 { margin: 0; font-size: 1.9rem; letter-spacing: .02em; }
+.xfl-login-brand img { display: block; width: 104px; height: 104px; margin: 0 auto; object-fit: contain; border-radius: 50%; box-shadow: 0 6px 18px rgba(16, 42, 71, .18); background: #fff; }
+.xfl-login-brand .h1 { display: block; margin: 0; font-size: 1.9rem; letter-spacing: .02em; text-align: center; }
+.login-box .card-header.text-center, .register-box .card-header.text-center { display: flex; flex-direction: column; align-items: center; }
+.login-box .login-box-msg, .register-box .login-box-msg { width: 100%; text-align: center; padding: 0; margin: 4px 0 0; }
 
 
 /* ---- light / dark switch ---- */
@@ -214,3 +217,101 @@ html:has(> body.login-page), html:has(> body.register-page) { background: transp
     .content-wrapper .card .table:not(.dataTable) { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .content-wrapper .card .dataTables_wrapper { overflow-x: auto; }
 }
+
+/* ======================================================================
+   Page shell (_AppLayout): one header, one gutter, the same on every page
+   ====================================================================== */
+:root { --xfl-gutter: 24px; }
+@media (max-width: 767.98px) { :root { --xfl-gutter: 14px; } }
+
+.xfl-page-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px;
+    padding: 22px var(--xfl-gutter) 4px; }
+.xfl-page-heading { min-width: 0; }
+.xfl-page-title { margin: 0; font-size: 1.6rem; font-weight: 700; line-height: 1.25; color: var(--xfl-ink); overflow-wrap: anywhere; }
+.xfl-page-subtitle { margin: 4px 0 0; color: var(--xfl-muted); font-size: .95rem; }
+.xfl-page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.xfl-page-actions:empty { display: none; }
+
+.content-wrapper > .content.xfl-content { padding: 16px var(--xfl-gutter) var(--xfl-gutter); }
+/* pages written for the old shell bring their own wrappers: they must not add a second gutter */
+.xfl-content > .content, .xfl-content > section.content, .xfl-content > .content-header,
+.xfl-content > .content > .container-fluid, .xfl-content > .container-fluid, .xfl-content > .xfl-dashboard > .container-fluid,
+.xfl-content > .content > .container, .xfl-content > .container { padding-left: 0; padding-right: 0; max-width: none; }
+.xfl-content > .content, .xfl-content > section.content { padding-top: 0; padding-bottom: 0; }
+.xfl-content > .content-header { padding-top: 0; }
+.xfl-content .card { margin-bottom: 20px; }
+.xfl-content > :last-child .card:last-child, .xfl-content > .card:last-child { margin-bottom: 0; }
+.xfl-content > .alert { margin-bottom: 16px; }
+
+/* card bodies: a table card keeps its table flush, but DataTables' search / paging get the same inner space */
+.card-body { padding: 20px; }
+.xfl-table-card > .card-body { padding: 16px 20px; }
+.card-body.p-0 > .dataTables_wrapper, .card-body.p-0 > .table-responsive > .dataTables_wrapper { padding: 16px 20px; }
+.card-body.p-0 > .table:not(.dataTable) th:first-child, .card-body.p-0 > .table:not(.dataTable) td:first-child { padding-left: 20px; }
+.card-body.p-0 > .table:not(.dataTable) th:last-child, .card-body.p-0 > .table:not(.dataTable) td:last-child { padding-right: 20px; }
+.dataTables_wrapper > .row:first-child { margin-bottom: 8px; }
+.dataTables_wrapper > .row:last-child { margin-top: 8px; }
+.dataTables_wrapper .dataTables_filter input { margin-left: 8px; }
+.card > .card-header { padding: 14px 20px; }
+.card > .card-footer { padding: 14px 20px; background: var(--xfl-surface-2); border-top: 1px solid var(--xfl-line); }
+.xfl-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.xfl-details dt { color: var(--xfl-muted); font-weight: 600; padding: 8px 0; border-bottom: 1px solid var(--xfl-line); margin: 0; }
+.xfl-details dd { padding: 8px 0; border-bottom: 1px solid var(--xfl-line); margin: 0; overflow-wrap: anywhere; }
+.xfl-details dt:last-of-type, .xfl-details dd:last-of-type { border-bottom: 0; }
+.xfl-product-badge { display: inline-block; padding: .25em .6em; border-radius: 6px; font-size: 12px; font-weight: 600;
+    background: rgba(23, 105, 194, .12); color: var(--xfl-blue); white-space: nowrap; }
+html[data-theme="dark"] .xfl-product-badge { background: rgba(59, 139, 235, .18); color: #8fbaf0; }
+
+/* ======================================================================
+   Side menu (_Sidebar): user panel, search, groups that open and close
+   ====================================================================== */
+.main-sidebar .sidebar { padding: 0 10px 16px; }
+.xfl-user-panel { margin: 14px 0 10px; }
+.xfl-user-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; color: #e6edf5;
+    background: rgba(255, 255, 255, .06); text-decoration: none; transition: background-color .15s ease; }
+.xfl-user-toggle:hover, .xfl-user-toggle:focus, .xfl-user-panel.show .xfl-user-toggle { background: rgba(255, 255, 255, .12); color: #fff; text-decoration: none; }
+.xfl-avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--xfl-blue); color: #fff; font-weight: 700; font-size: 14px; letter-spacing: .03em; }
+.xfl-user-text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.xfl-user-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xfl-user-role { font-size: 12px; color: #9fb3c9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xfl-user-caret { font-size: 11px; opacity: .7; }
+.xfl-user-panel .dropdown-menu { width: 100%; margin-top: 4px; }
+.xfl-sidebar-search { margin-bottom: 6px; }
+.xfl-sidebar-search .input-group { width: 100%; }
+
+.nav-sidebar > .nav-item { margin-bottom: 2px; }
+.nav-sidebar > .nav-item > .nav-link { padding: 9px 12px; color: #d3deea; }
+.nav-sidebar > .nav-item > .nav-link:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav-sidebar .nav-link > p > .right { transition: transform .2s ease; top: .85rem; }
+/* an open group: its title is highlighted and its entries sit in a tinted, indented panel */
+.nav-sidebar > .xfl-menu-group.menu-open > .nav-link, .nav-sidebar > .xfl-menu-group.menu-is-opening > .nav-link,
+.sidebar-dark-primary .nav-sidebar > .xfl-menu-group > .nav-link.xfl-group-active { background: rgba(255, 255, 255, .10); color: #fff; box-shadow: none; }
+.nav-sidebar > .xfl-menu-group > .nav-treeview { margin: 2px 0 6px; padding: 4px 0; border-radius: 8px; background: rgba(0, 0, 0, .16); }
+.nav-sidebar.nav-child-indent .nav-treeview { padding-left: 0; }
+.nav-sidebar.nav-child-indent .nav-treeview > .nav-item > .nav-link { margin: 0 6px; padding: 7px 10px 7px 26px; width: calc(100% - 12px); }
+.nav-sidebar .nav-treeview > .nav-item > .nav-link > .nav-icon { font-size: .85rem; width: 1.4rem; }
+.nav-sidebar .nav-treeview > .nav-item > .nav-link p { font-size: 14px; }
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active { color: #fff; }
+/* collapsed (icons only) menu: no panel tint, no padding that pushes the icons */
+.sidebar-collapse .main-sidebar:not(:hover) .xfl-user-text, .sidebar-collapse .main-sidebar:not(:hover) .xfl-user-caret,
+.sidebar-collapse .main-sidebar:not(:hover) .xfl-sidebar-search { display: none; }
+.sidebar-collapse .main-sidebar:not(:hover) .xfl-user-toggle { justify-content: center; background: transparent; padding: 8px 0; }
+.sidebar-collapse .main-sidebar:not(:hover) .nav-treeview { display: none !important; }
+.sidebar-collapse .main-sidebar:not(:hover) .sidebar { padding: 0 6px; }
+.dark-mode .xfl-page-title { color: var(--xfl-ink); }
+.dark-mode .card > .card-footer { background: var(--xfl-surface-2); }
+/* list pages whose header and table sit straight in section.content: drawn as one card */
+.xfl-content > section.content.xfl-card-like { background: var(--xfl-surface); border: 1px solid var(--xfl-line); border-radius: 12px;
+    box-shadow: 0 2px 10px var(--xfl-shadow); overflow: hidden; padding: 0; }
+.xfl-card-like > .card-header { background: transparent; padding: 16px 20px; border-bottom: 1px solid var(--xfl-line); }
+.xfl-card-like > .card-header .row { align-items: center; }
+.xfl-card-like > .card-header p { margin: 0; }
+.xfl-card-like > .card-body.p-0 { padding: 0 !important; }
+.xfl-card-like > .card-body.p-0 > .table th:first-child, .xfl-card-like > .card-body.p-0 > .table td:first-child { padding-left: 20px; }
+.xfl-card-like > .card-body.p-0 > .table th:last-child, .xfl-card-like > .card-body.p-0 > .table td:last-child { padding-right: 20px; }
+.xfl-card-like > .card-footer, .xfl-card-like > .card-body:last-child:not(.p-0) { padding: 14px 20px; }
+.xfl-card-like > .card-footer { border-top: 1px solid var(--xfl-line); }
+.xfl-card-like select#rowsPerPageSelect { border: 1px solid var(--xfl-field-line); border-radius: 6px; padding: 2px 6px; background: var(--xfl-field); color: var(--xfl-ink); }
+.xfl-card-like #paginationRow { padding: 12px 20px 16px; border-top: 1px solid var(--xfl-line); }
+.xfl-card-like #paginationRow .row { align-items: center; }

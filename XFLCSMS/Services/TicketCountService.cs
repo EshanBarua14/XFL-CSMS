@@ -48,6 +48,7 @@ namespace XFLCSMS.Services
             public string Priority = string.Empty;
             public string? Engineer;
             public int? SupportTypeId;
+            public int? ProductId;
             public DateTime? ClosedOn;
             public bool IsClosed => Status == "Close";
         }
@@ -74,7 +75,7 @@ namespace XFLCSMS.Services
             var end = to?.Date.AddDays(1); // the last day counts completely
 
             var all = (await _context.Issues.AsNoTracking()
-                    .Select(i => new { i.BrokerageId, i.UserId, i.TDate, i.IStatus, i.Priority, i.AssignBy, i.SupportTypeId, i.ClosedOn })
+                    .Select(i => new { i.BrokerageId, i.UserId, i.TDate, i.IStatus, i.Priority, i.AssignBy, i.SupportTypeId, i.ProductId, i.ClosedOn })
                     .ToListAsync())
                 .Select(i => new Row
                 {
@@ -85,6 +86,7 @@ namespace XFLCSMS.Services
                     Priority = string.IsNullOrWhiteSpace(i.Priority) ? "(none)" : i.Priority.Trim(),
                     Engineer = string.IsNullOrWhiteSpace(i.AssignBy) ? null : i.AssignBy.Trim(),
                     SupportTypeId = i.SupportTypeId,
+                    ProductId = i.ProductId,
                     ClosedOn = i.ClosedOn
                 })
                 .ToList();
@@ -133,6 +135,15 @@ namespace XFLCSMS.Services
 
             view.Engineers = Group(rows, r => r.Engineer ?? "(not assigned)");
 
+            // every product is listed (like the houses), tickets from before products existed count as "(not set)"
+            var products = await _context.Products.AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToListAsync();
+            view.Products = products.Select(p => Count(p.ProductName, rows.Where(r => r.ProductId == p.ProductId))).ToList();
+            var noProduct = rows.Where(r => r.ProductId == null || products.All(p => p.ProductId != r.ProductId)).ToList();
+            if (noProduct.Count > 0)
+            {
+                view.Products.Add(Count("(not set)", noProduct));
+            }
+
             var types = await _context.SupportTypes.AsNoTracking().ToDictionaryAsync(t => t.SupportTypeId, t => t.SType);
             view.SupportTypes = Group(rows, r => r.SupportTypeId.HasValue && types.TryGetValue(r.SupportTypeId.Value, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "(not set)");
 
@@ -159,6 +170,12 @@ namespace XFLCSMS.Services
                 .ToList();
 
             return view;
+        }
+
+        private static NameCount Count(string name, IEnumerable<Row> rows)
+        {
+            var list = rows.ToList();
+            return new NameCount { Name = name, Raised = list.Count, Closed = list.Count(r => r.IsClosed), NotClosed = list.Count(r => !r.IsClosed) };
         }
 
         private static List<NameCount> Group(IEnumerable<Row> rows, Func<Row, string> key)
@@ -201,6 +218,7 @@ namespace XFLCSMS.Services
                 }
             }
 
+            Block("Product", view.Products);
             Block("Engineer", view.Engineers);
             Block("Support type", view.SupportTypes);
             Block("Priority", view.Priorities);
