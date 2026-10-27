@@ -4,31 +4,10 @@
 }
 <html>  
 <head>
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="~/css/all.min.css">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="~/css/adminlte.min.css">
-    <link rel="stylesheet" href="~/css/xfl-polish.css" asp-append-version="true">
-    <script src="~/js/xfl-ui.js" asp-append-version="true" defer></script>
-    <!-- Bootstrap CSS from CDN -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <partial name="_XflHead" />
 
-    <!-- Bootstrap JS from CDN -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <!-- Bootstrap CSS from CDN -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- CKEditor from CDN -->
-    <script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
 
-    <!-- Multiple file upload -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="~/css/datatablecss/jquery.datatables.css" rel="stylesheet" />
-    <link href="~/css/datatablecss/jquery.datatables.min.css" rel="stylesheet" />
 </head>
 <body>
 <div class="container">
@@ -83,23 +62,13 @@
 </div>
 
 <!-- ./wrapper -->
-<!-- jQuery -->
-<script src="~/lib/jquery/dist/jquery.min.js"></script>
-<!-- Bootstrap 4 -->
-<script src="~/js/bootstrap.bundle.min.js"></script>
 <!-- bs-custom-file-input -->
 <script src="~/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-<!-- AdminLTE App -->
-<script src="~/js/adminlte.min.js"></script>
-<!-- AdminLTE for demo purposes -->
-<script src="~/js/demo.js"></script>
-<script src="~/js/serverdt_js.js"></script>
-<script src="~/datatable/jquery.datatables.js"></script>
-<script src="~/datatable/jquery.datatables.min.js"></script>
+<script src="~/js/ServerDT_JS.js"></script>
 
 
 </body>
 </html>
 @section Scripts{
-    <script src="~/js/serverdt_js.js"></script>
+    <script src="~/js/ServerDT_JS.js"></script>
 }

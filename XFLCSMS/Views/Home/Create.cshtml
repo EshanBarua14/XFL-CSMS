@@ -8,17 +8,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>XFL CSMS | Create Brokerage House</title>
+    <partial name="_XflHead" />
 
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="~/css/all.min.css">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="~/css/adminlte.min.css">
-    <link rel="stylesheet" href="~/css/xfl-polish.css" asp-append-version="true">
-    <script src="~/js/xfl-ui.js" asp-append-version="true" defer></script>
-    <link href="~/css/datatablecss/jquery.datatables.css" rel="stylesheet" />
-    <link href="~/css/datatablecss/jquery.datatables.min.css" rel="stylesheet" />
 </head>
 <body>    
 <h1>Create</h1>
@@ -50,19 +41,10 @@
     <a asp-action="Index">Back to List</a>
 </div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <!-- Bootstrap 4 -->
-    <script src="~/js/bootstrap.bundle.min.js"></script>
     <!-- bs-custom-file-input -->
     <script src="~/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-    <!-- AdminLTE App -->
-    <script src="~/js/adminlte.min.js"></script>
-    <!-- AdminLTE for demo purposes -->
-    <script src="../../dist/js/demo.js"></script>
     <script src="~/js/maket_datatable.js"></script>
 
-    <script src="~/datatable/jquery.datatables.js"></script>
-    <script src="~/datatable/jquery.datatables.min.js"></script>
 </body>
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
