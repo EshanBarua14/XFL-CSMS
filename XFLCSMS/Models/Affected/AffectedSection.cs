@@ -10,6 +10,7 @@ namespace XFLCSMS.Models.Affected
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AffectedSectionId { get; set; }
         [Required]
+        [Display(Name = "Affected section")]
         //[StringLength(100, MinimumLength = 4, ErrorMessage = "Password must be 4 to 100 characters")]
         //[RegularExpression(@"^[a-zA-Z.]+$", ErrorMessage = "Only letters allowed.")]
         public string ASection { get; set; } = string.Empty;

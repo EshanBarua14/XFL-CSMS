@@ -28,6 +28,9 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 - **Paging:** an empty list showed page 0 of 0 with serial -9; a page number past the end showed an empty table.
 - **Forgot password** with a user name tried to send the mail *to the user name*. **Registration** with a failing mail server ended in an error page and left an account that could never be verified; it is now rolled back with a message.
 
+- **Admin > Edit User: choosing Support Manager / Support Engineer did not change the role** unless "User Type" was also set to "XFL User"; the user kept signing in as a Maker but was offered as an engineer on Edit Ticket. User Type now follows the department (as in Create User).
+- **Edit Ticket offered disabled engineers** (and non-XFL accounts with department "Support Engineer") in the assign list. Only active XFL support engineers are listed now (`TicketService.AssignableEngineersAsync`).
+
 ## 3. Security
 
 - Many actions had no session check at all (report searches, attachment download/delete, and the old scaffolding controllers `Home`, `Issue`, `DataTable`, `ServerDT` - including file upload and ticket delete). All role controllers now inherit `CsmsController`, which requires the role's session; the old controllers are admin-only (`Infrastructure/SessionAuthorizeAttribute.cs`).
@@ -55,13 +58,42 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 
 - **`appsettings.json` contains a Gmail app password and it is in the git history.** Revoke it and keep the new one in user-secrets / an environment variable.
 - .NET 6 is out of support (since Nov 2024). The project still targets `net6.0` with the same packages.
-- Pages load jQuery/Bootstrap/DataTables/CKEditor from public CDNs, so they need internet access.
+- Only the Google font still comes from the internet; without it the pages fall back to the system font. Everything else is served from `wwwroot` (section 7).
 - Passwords are a single salted HMAC-SHA512 (kept so existing accounts keep working).
 - The AJAX delete calls and some POST forms carry no anti-forgery token.
 - The old scaffolding controllers/views were kept (admin-only now); `api/UserControllers/*` is still public.
+
+## 7. Look and feel, editor, dark mode
+
+- **Rich-text editor: CKEditor 4.16.2 replaced by Summernote 0.9.1.** CKEditor 4.16.2 is out of support and has published security fixes after it (the warning on every ticket page). Its only maintained 4.x release, 4.25.x-lts, is a commercial build that needs a paid licence key; CKEditor 5 is free only under GPL (or a paid licence) and needs its own build. Summernote is MIT-licensed, maintained, built for Bootstrap 4 / jQuery like the rest of the app, and is served from `wwwroot/lib/summernote` (no CDN). Existing ticket text (HTML) opens and saves unchanged. The server-side sanitizer still cleans everything that is saved. Pasted pictures are limited to 1 MB each (larger files go in as attachments).
+- **Ticket View** shows the details as formatted text instead of a read-only editor.
+- **Light / dark mode.** A Dark / Light switch is in the top bar of every page (top right corner on the sign-in pages). The choice is remembered in the browser; with no choice yet the Windows / browser setting is used. Charts, tables, forms, dialogs and the editor follow the theme.
+- **One set of scripts per page.** Pages used to load jQuery up to three times (3.3.1 slim, 3.5.1, 3.6.0, 3.6.4), Bootstrap 4.3.1 and 5.3.0 JavaScript together, Bootstrap 5 CSS on top of AdminLTE (Bootstrap 4), and DataTables / CKEditor / Chart.js from CDNs. Each reload of jQuery dropped the plugins loaded before it. Every page now loads the same set from `Views/Shared/_XflHead.cshtml`, all from `wwwroot`: jQuery 3.6, Bootstrap 4.6, AdminLTE 3.2, DataTables 1.11 (Bootstrap 4 style), Summernote, Font Awesome; Chart.js 4.6 (`wwwroot/lib/chart.js`) on the dashboards. Unused AdminLTE demo scripts (jqvmap, knob, daterangepicker, tempusdominus, overlayScrollbars, `demo.js`) removed from the dashboards.
+- To-do edit dialog used Bootstrap 5 markup (`btn-close`, `data-bs-dismiss`); now Bootstrap 4.
+- "Sowing 1 to 10 form 25 items" -> "Showing 1 to 10 of 25 items"; "Shows:" -> "Show:".
+- On phones, wide tables scroll sideways inside their card. The registration page scrolls instead of being cut off at the top.
+- Removed `Controllers/_SupportEngineerLayout.cshtml` (+ `.css`): an unused old copy of the engineer layout that still referenced CKEditor 4.16.2.
+
+## 8. Page layout, side menu, products
+
+- **One page shell for every signed-in page** (`Views/Shared/_AppLayout.cshtml`). The four role layouts and the four dashboards each had their own copy of the top bar and menu; they now all use the shell. Every page has the same header (title, short description, buttons on the right such as *Create Ticket*, *Add Product*) and the same 24 px margin (14 px on phones), with its content in cards. A page sets `ViewData["Title"]` (and optionally `ViewData["Subtitle"]`) and puts buttons in `@section PageActions { ... }`. Change Password (all roles) now opens inside the app instead of as a separate sign-in-style page.
+- **Side menu redesigned** (`Views/Shared/_Sidebar.cshtml`): user card with name, role and a menu (profile, change password, log out), menu search, and real groups that open and close (Tickets, Reports, Users, Setup, To-Do, Team To-Dos) instead of one hidden "PAGES" list. The open page is marked on the server (also on its view / edit pages) and its group starts open. Collapsing the menu (☰) leaves the icons.
+- **Sign-in logo**: the logo picture itself had the globe lower than the middle (and cut at the bottom). `wwwroot/img/xfl-logo-centered.png` is the same logo re-centred on a square; the sign-in, registration and password pages and the menu use it, and the logo block is centred.
+- **Products.** New table `Products` (migration `AddProducts`, applied at start-up). The 6 products are added when the table is empty: OST, Smart Trade, Xpert Trading OMS, Xpert BO Account Opening Portal, Xpert eKYC, Xpert DMS.
+  - Admin > Setup > Products: list (with ticket count), add, view, edit (name, description, display order, active), delete. A product with tickets cannot be deleted; untick *Active* to stop offering it.
+  - Create Ticket (all roles): *Product* is required (active products only).
+  - Ticket view shows the product; staff can change it on Edit Ticket; the brokerage house user sees it read-only.
+  - Ticket lists show a product badge; Ticket Reports can filter by product; Ticket Counts has a *By Product* table (and CSV block).
+  - Tickets raised before this change show "(not set)".
+- **Setup pages** (brokerage houses, branches, support types, categories, sub-categories, affected sections) rebuilt the same way as Products: list with View / Edit / Delete, add and edit forms in one card with labels, validation messages and Save / Cancel, a details page with Edit / Delete. A branch's brokerage house can now be changed. Saving shows a confirmation.
+- Names of support types, categories, sub-categories, branches and brokerage houses may now contain spaces, digits and `. , & ( ) / + - _` (before: letters only, so "Bug Fix" or "Back Office 2" were refused); 2 characters minimum instead of 4.
+- Dashboards: Ionicons (from a CDN) replaced by Font Awesome icons served locally.
 
 ## New files
 
 `Controllers/CsmsController.cs`, `Infrastructure/SessionAuthorizeAttribute.cs`, `Services/TicketService.cs`,
 `Services/PasswordHasher.cs`, `Services/HtmlSanitizer.cs`, `Data/DbInitializer.cs`,
-`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`
+`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`, `Data/DemoDataSeeder.cs` (sample data, Development only),
+`Views/Shared/_XflHead.cshtml`, `wwwroot/js/xfl-theme.js`, `wwwroot/lib/summernote/*` (MIT), `wwwroot/lib/chart.js/*` (MIT),
+`Views/Shared/_AppLayout.cshtml`, `Views/Shared/_Sidebar.cshtml`, `Views/Shared/_ProductBadge.cshtml`, `Models/Product/Product.cs`,
+`Views/Admin/ProductList|CreateProduct|EditProduct|ViewProduct|_ProductFields.cshtml`, `Migrations/20261027092109_AddProducts*.cs`, `wwwroot/img/xfl-logo-centered.png`

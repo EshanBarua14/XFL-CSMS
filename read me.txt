@@ -21,6 +21,18 @@ Option B - start with an empty database (also the way to go on SQL Server 2019)
    (values come from "SeedAdmin" in appsettings.Development.json; change the password after signing in).
    That administrator can then create brokerage houses and branches, which registration needs.
 
+   Sample data (Development only): with "SeedDemoData": true in appsettings.Development.json, a database
+   that has no tickets yet also gets 3 brokerage houses with branches, support types/categories/
+   sub-categories/affected sections, 10 tickets in every status, to-dos and one account per role
+   (password Demo@12345, from "SeedDemoPassword"):
+        manager                         Support Manager
+        engineer1, engineer2            Support Engineer
+        maker.alpha, maker.alpha2       Maker, Alpha Securities Limited
+        maker.beta                      Maker, Beta Capital Limited
+        maker.inactive                  disabled account (sign-in is refused)
+   A database that already has tickets (e.g. the restored CSMS.bak) is never touched.
+   Set "SeedDemoData": false to switch it off.
+
 2. Connection string
 --------------------
 XFLCSMS/appsettings.json > ConnectionStrings > DefaultConnection

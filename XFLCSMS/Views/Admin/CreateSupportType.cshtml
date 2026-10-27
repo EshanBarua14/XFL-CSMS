@@ -1,44 +1,31 @@
-﻿@model XFLCSMS.Models.Support.SupportType;
-           
-<section class="content">
-
-    <h1>Create</h1>
-
-    <h4>Support Type</h4>
-    <hr />
-    <div class="row">
-        <div class="col-md-4">
-            <form asp-controller="Admin" asp-action="CreateSupportType">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="form-group">
-                    <label asp-for="@Model.SType" class="control-label"></label>
-                    <input asp-for="@Model.SType" class="form-control" />
-                    <span asp-validation-for="@Model.SType" class="text-danger"></span>
+﻿@model XFLCSMS.Models.Support.SupportType
+@{
+    ViewData["Title"] = "Add Support Type";
+    ViewData["Subtitle"] = "The kinds of support a ticket can ask for.";
+}
+@section PageActions {
+    <a class="btn btn-outline-secondary" asp-action="SupportTypeList"><i class="fas fa-arrow-left mr-1"></i>Back to list</a>
+}
+<div class="row">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card xfl-form-card">
+            <form asp-controller="Admin" asp-action="CreateSupportType" method="post" novalidate>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <div class="form-group">
+                        <label asp-for="SType">Support type <span class="text-danger">*</span></label>
+                        <input asp-for="SType" class="form-control" placeholder="e.g. Bug Fix" autocomplete="off" />
+                        <span asp-validation-for="SType" class="invalid-feedback d-block"></span>
+                    </div>
                 </div>
-                          
-                <div class="form-group">
-                    <input type="submit" value="Create" class="btn btn-primary" />
+                <div class="card-footer xfl-form-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Add Support Type</button>
+                    <a class="btn btn-outline-secondary" asp-action="SupportTypeList">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
-
-    <div>
-        <a asp-controller="Admin" asp-action="SupportTypeList">Back to List</a>
-    </div>
-
-</section>
-<script type="text/javascript">
-    // Define a function named preventback
-    function preventback() {
-        // Forward the browser's history by one step, effectively preventing the user from going back
-        window.history.forward();
-    }
-
-    // Set a timeout to call the preventback function immediately after the script is executed
-    // back button allowed
-
-    // When the window loads, assign a null function to the onload event to effectively do nothing
-    window.onload = function () { null };
-</script>
-      
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

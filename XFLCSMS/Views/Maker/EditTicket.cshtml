@@ -1,22 +1,12 @@
 ﻿@model XFLCSMS.Models.Issue.MakerView;
 @{
+    ViewData["Title"] = "Edit Ticket";
     Layout = "_MakerLayout";
 }
 
    
             <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Edit Ticket</h1>
-                </div>
-
-            </div>
-        </div><!-- /.container-fluid -->
-    </section>
-
-            <!-- Main content -->
+    <!-- Main content -->
             <section class="content">
                 <form asp-action="EditTicketttt" asp-controller="Maker" name="files" method="post" enctype="multipart/form-data" id="uploadForm">
                     <div class="container-fluid">
@@ -82,6 +72,10 @@
                                     <div class="card-body">
 
                                         <div class="form-group">
+                                            <label>Product</label>
+                                            <input type="text" value="@(Model.Product ?? "(not set)")" class="form-control" readonly>
+                                        </div>
+                                        <div class="form-group">
                                             <label for="exampleInputEmail1">Support Type</label>
                                             <input type="text" asp-for="@Model.SupportType" class="form-control" id="exampleInputEmail1" placeholder="Support Type" readonly>
                                         </div>
@@ -133,7 +127,8 @@
 
 
 
-                            <div class="container-fluid">
+                            <div class="card card-primary">
+                                <div class="card-header"><h3 class="card-title">Description</h3></div>
                                 <div class="card-body">
                                     <div class="form-group">
                                         <label>Issue Title</label>
@@ -322,7 +317,6 @@
         }
     </script>
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script>
         $(document).ready(function () {
             $(".delete-btn").on("click", function () {

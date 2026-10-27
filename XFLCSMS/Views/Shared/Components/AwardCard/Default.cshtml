@@ -3,8 +3,8 @@
     var a = Model.Award;
 }
 <div class="row">
-    <div class="col-lg-8">
-        <div class="callout callout-warning">
+    <div class="col-lg-8 d-flex">
+        <div class="callout callout-warning flex-fill mb-3">
             @if (a == null)
             {
                 <h5 class="mb-1"><i class="fas fa-trophy text-warning"></i> Best Support Engineer of the Month</h5>
@@ -35,8 +35,8 @@
             }
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="callout @(Model.UnreviewedLowRatings > 0 ? "callout-danger" : "callout-success")">
+    <div class="col-lg-4 d-flex">
+        <div class="callout @(Model.UnreviewedLowRatings > 0 ? "callout-danger" : "callout-success") flex-fill mb-3">
             <h5 class="mb-1"><i class="fas fa-comment-dots"></i> Client feedback</h5>
             @if (Model.UnreviewedLowRatings > 0)
             {

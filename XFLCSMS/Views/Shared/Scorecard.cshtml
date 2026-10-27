@@ -10,38 +10,21 @@
     var notRanked = Model.Rows.Where(r => r.Rank == null).ToList();
     var a = Model.Award;
     var monthKey = Model.Month.ToString("yyyy-MM");
+    ViewData["Title"] = "Engineer Scorecard";
+    ViewData["Subtitle"] = "Support Engineers ranked best to worst for " + Model.Month.ToString("MMMM yyyy") + ". "
+        + (Model.IsFrozen ? "Final: scores were frozen when the month closed." : "Provisional: scores change until the month is frozen on " + Model.FreezesOn.ToString("dd MMM yyyy") + ".");
 }
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-7">
-                <h1>Engineer Scorecard</h1>
-                <p class="text-muted mb-0">
-                    Support Engineers ranked best to worst for @Model.Month.ToString("MMMM yyyy").
-                    @if (Model.IsFrozen)
-                    {
-                        <span>Final: scores were frozen when the month closed.</span>
-                    }
-                    else
-                    {
-                        <span class="text-warning">Provisional: scores change until the month is frozen on @Model.FreezesOn.ToString("dd MMM yyyy").</span>
-                    }
-                </p>
-            </div>
-            <div class="col-sm-5 text-sm-right d-print-none">
-                <form asp-controller="@Model.Controller" asp-action="Scorecard" method="get" class="form-inline justify-content-sm-end">
-                    <select name="month" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
-                        @foreach (var m in Model.Months)
-                        {
-                            <option value="@m.ToString("yyyy-MM")" selected="@(m == Model.Month)">@m.ToString("MMMM yyyy")</option>
-                        }
-                    </select>
-                    <a class="btn btn-default btn-sm" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey" asp-route-export="csv"><i class="fas fa-file-csv"></i> CSV</a>
-                </form>
-            </div>
-        </div>
-    </div>
-</section>
+@section PageActions {
+    <form asp-controller="@Model.Controller" asp-action="Scorecard" method="get" class="form-inline d-print-none">
+        <select name="month" class="form-control mr-2" onchange="this.form.submit()" aria-label="Month">
+            @foreach (var m in Model.Months)
+            {
+                <option value="@m.ToString("yyyy-MM")" selected="@(m == Model.Month)">@m.ToString("MMMM yyyy")</option>
+            }
+        </select>
+        <a class="btn btn-outline-secondary" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>CSV</a>
+    </form>
+}
 
 <section class="content">
     <div class="container-fluid">

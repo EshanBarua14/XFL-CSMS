@@ -12,7 +12,7 @@ using XFLCSMS.Data;
 namespace XFLCSMS.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20261026073940_RatingsAndScorecard")]
+    [Migration("20261027103300_RatingsAndScorecard")]
     partial class RatingsAndScorecard
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -492,6 +492,9 @@ namespace XFLCSMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("SupportCatagoryId")
                         .HasColumnType("int");
 
@@ -527,6 +530,8 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("BrokerageId");
 
+                    b.HasIndex("ProductId");
+
                     b.HasIndex("SupportCatagoryId");
 
                     b.HasIndex("SupportSubCatagoryId");
@@ -536,6 +541,37 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Issues");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Product.Product", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductId"), 1L, 1);
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProductId");
+
+                    b.HasIndex("ProductName")
+                        .IsUnique();
+
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Register.User", b =>
@@ -778,6 +814,11 @@ namespace XFLCSMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("XFLCSMS.Models.Product.Product", "Product")
+                        .WithMany("Issues")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("XFLCSMS.Models.Support.SupportCatagory", "supportCatagorys")
                         .WithMany("issue")
                         .HasForeignKey("SupportCatagoryId");
@@ -797,6 +838,8 @@ namespace XFLCSMS.Migrations
                         .IsRequired();
 
                     b.Navigation("Brokerages");
+
+                    b.Navigation("Product");
 
                     b.Navigation("SupportSubCatagorys");
 
@@ -840,6 +883,11 @@ namespace XFLCSMS.Migrations
             modelBuilder.Entity("XFLCSMS.Models.Issue.IssueTable", b =>
                 {
                     b.Navigation("attachment");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Product.Product", b =>
+                {
+                    b.Navigation("Issues");
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Register.User", b =>

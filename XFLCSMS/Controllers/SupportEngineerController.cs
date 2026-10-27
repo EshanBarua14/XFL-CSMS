@@ -461,6 +461,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -496,7 +499,7 @@ namespace XFLCSMS.Controllers
                 var issueWithAttachments = _context.Issues
                     .Include(i => i.attachment)  // Include attachments in the query
                     .FirstOrDefault(i => i.IssueId == id);
-                var SupportEng = _context.Users.Where(i => i.Department == "Support Engineer").ToList();
+                var SupportEng = await Tickets.AssignableEngineersAsync();
 
                 if (issueWithAttachments == null || !CanAccessIssue(issueWithAttachments))
                 {
@@ -511,6 +514,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -602,6 +608,7 @@ namespace XFLCSMS.Controllers
 
                 var viewModel = new IssueViewModel
                 {
+                    Products = Tickets.ActiveProducts(),
                     SupportTypes = _context.SupportTypes.ToList(),
                     SupportCatagories = _context.SupportCatagories.ToList(),
                     SupportSubCatagories = _context.SupportSubCatagories.ToList(),
@@ -687,6 +694,7 @@ namespace XFLCSMS.Controllers
 
                 var reportview = new ReportView
                 {
+                Products = Tickets.AllProducts(),
                     EmployeeNames = supportEngineer,
                     brocarages = BrocarageHouse,
 
@@ -719,6 +727,8 @@ namespace XFLCSMS.Controllers
 
             if (reportView.SESearch.BrokerageId.HasValue)
                 searchResults = searchResults.Where(x => x.BrokerageId == reportView.SESearch.BrokerageId).ToList();
+            if (reportView.SESearch.ProductId.HasValue)
+                searchResults = searchResults.Where(x => x.ProductId == reportView.SESearch.ProductId).ToList();
             if (!String.IsNullOrEmpty(reportView.SESearch.Priority))
                 searchResults = searchResults.Where(x => x.Priority.Contains(reportView.SESearch.Priority)).ToList();
                 

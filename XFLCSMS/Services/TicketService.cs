@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using XFLCSMS.Models.Feedback;
 using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Register;
@@ -85,6 +86,11 @@ namespace XFLCSMS.Services
                 return (null, "Please select a priority.", rejected);
             }
 
+            if (!form.ProductId.HasValue || !_context.Products.Any(p => p.ProductId == form.ProductId.Value && p.IsActive))
+            {
+                return (null, "Please select the product the ticket is about.", rejected);
+            }
+
             // XFL staff may raise a ticket for a brokerage house (a call, an e-mail): it gets that house's number and
             // is counted for that house. Everybody else raises for the own house, whatever the form says.
             var houseId = user.BrokerageHouseName;
@@ -105,6 +111,7 @@ namespace XFLCSMS.Services
                 TDate = DateTime.Now,
                 TNumber = ticketNumber,
                 Priority = form.Priority,
+                ProductId = form.ProductId,
                 ITitle = form.ITitle.Trim(),
                 Details = form.IssueDetails,
                 Comments = form.Commands,
@@ -262,6 +269,32 @@ namespace XFLCSMS.Services
             }
         }
 
+        /// <summary>Products offered on the Create Ticket form: the active ones, in the admin's order.</summary>
+        public List<XFLCSMS.Models.Product.Product> ActiveProducts()
+        {
+            return _context.Products.AsNoTracking().Where(p => p.IsActive).OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToList();
+        }
+
+        /// <summary>Every product (for Edit Ticket: a ticket may sit on a product that was switched off since).</summary>
+        public List<XFLCSMS.Models.Product.Product> AllProducts()
+        {
+            return _context.Products.AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToList();
+        }
+
+        public string? ProductName(int? productId)
+        {
+            return productId.HasValue ? _context.Products.AsNoTracking().Where(p => p.ProductId == productId.Value).Select(p => p.ProductName).FirstOrDefault() : null;
+        }
+
+        /// <summary>Engineers a ticket can be assigned to: active XFL support engineers (not disabled accounts).</summary>
+        public Task<List<User>> AssignableEngineersAsync()
+        {
+            return _context.Users
+                .Where(u => u.Department == "Support Engineer" && u.UType && u.UStatus)
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
+        }
+
         /// <summary>Edit rules for the ticket owner (Maker): text fields and priority only.</summary>
         public void ApplyOwnerEdit(IssueTable issue, MakerView form, User editor)
         {
@@ -277,6 +310,13 @@ namespace XFLCSMS.Services
             var oldStatus = issue.IStatus;
             var oldComments = issue.Comments;
             ApplyCommonFields(issue, form, editor);
+
+            // staff may move a ticket to another product (an existing one; inactive products stay valid on old tickets)
+            if (form.ProductId.HasValue && form.ProductId != issue.ProductId
+                && _context.Products.Any(p => p.ProductId == form.ProductId.Value))
+            {
+                issue.ProductId = form.ProductId;
+            }
 
             var now = DateTime.Now;
             var newAssignee = string.IsNullOrWhiteSpace(form.AssgnBy) ? null : form.AssgnBy;

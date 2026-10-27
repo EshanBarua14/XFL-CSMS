@@ -4,21 +4,16 @@
     string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string Stars(int n) => new string('★', n) + new string('☆', 5 - n);
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    ViewData["Title"] = "Service Feedback";
+    ViewData["Subtitle"] = "Client ratings of closed tickets. Visible to Admin and Support Manager only; engineers and clients never see them.";
 }
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-8">
-                <h1>Service Feedback</h1>
-                <p class="text-muted mb-0">Client ratings of closed tickets. Visible to Admin and Support Manager only; engineers and clients never see them.</p>
-            </div>
-            <div class="col-sm-4 text-sm-right d-print-none">
-                <a class="btn btn-default btn-sm" asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)"
-                   asp-route-engineerId="@Model.EngineerId" asp-route-stars="@Model.Stars" asp-route-houseId="@Model.HouseId" asp-route-followUp="@Model.FollowUp" asp-route-export="csv"><i class="fas fa-file-csv"></i> Download (CSV)</a>
-            </div>
-        </div>
-    </div>
-</section>
+@section PageActions {
+    <a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-followUp="true" class="btn btn-outline-danger d-print-none">
+        <i class="fas fa-flag mr-1"></i>Needs follow-up <span class="badge badge-danger ml-1">@Model.UnreviewedLow</span>
+    </a>
+    <a class="btn btn-outline-secondary d-print-none" asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)"
+       asp-route-engineerId="@Model.EngineerId" asp-route-stars="@Model.Stars" asp-route-houseId="@Model.HouseId" asp-route-followUp="@Model.FollowUp" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>Download (CSV)</a>
+}
 
 <section class="content">
     <div class="card d-print-none">
@@ -54,9 +49,6 @@
                     <label class="form-check-label" for="fbFollow">Needs follow-up only</label>
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm mb-1"><i class="fas fa-filter"></i> Show</button>
-                <a asp-controller="@Model.Controller" asp-action="ServiceFeedback" asp-route-followUp="true" class="btn btn-outline-danger btn-sm ml-2 mb-1">
-                    Needs follow-up <span class="badge badge-danger">@Model.UnreviewedLow</span>
-                </a>
             </form>
         </div>
     </div>

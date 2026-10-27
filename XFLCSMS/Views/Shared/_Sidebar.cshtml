@@ -1,0 +1,194 @@
+@*
+    The side menu of every signed-in page (the four layouts and the four dashboards).
+    The menu depends on the role, taken from the controller that renders the page.
+    Groups open and close (AdminLTE treeview); the group of the open page starts open with its entry marked.
+*@
+@{
+    var controller = (ViewContext.RouteData.Values["controller"] as string) ?? "";
+    var action = (ViewContext.RouteData.Values["action"] as string) ?? "";
+    var profile = ViewBag.Profile as XFLCSMS.Models.Register.User;
+
+    // (title, icon, action) for single entries; groups hold several
+    var menu = new List<(string Title, string Icon, string? Action, (string Title, string Icon, string Action)[]? Items)>();
+    var todo = ("To-Do", "fas fa-tasks", (string?)null, new[] {
+        ("To-Do List", "fas fa-list-ul", "ViewTodo"),
+        ("All My To-Dos", "fas fa-stream", "AllTodo"),
+        ("Completed", "fas fa-check-double", "CompletedTodo"),
+        ("To-Do Report", "fas fa-chart-bar", "TodoReports") });
+    string roleName;
+    string allTickets;
+
+    switch (controller)
+    {
+        case "Admin":
+            roleName = "Administrator";
+            allTickets = "AdminView";
+            menu.Add(("Dashboard", "fas fa-tachometer-alt", "Dashbord", null));
+            menu.Add(("Tickets", "fas fa-ticket-alt", null, new[] {
+                ("Create Ticket", "fas fa-plus-circle", "IssueRaiseFrom"),
+                ("All Tickets", "fas fa-list", "AdminView"),
+                ("Unassigned", "fas fa-inbox", "UnassignedTicketList"),
+                ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
+            menu.Add(("Reports", "fas fa-chart-pie", null, new[] {
+                ("Ticket Counts", "fas fa-calculator", "TicketCounts"),
+                ("Ticket Reports", "fas fa-file-alt", "Reports") }));
+            menu.Add(("Engineer Performance", "fas fa-trophy", null, new[] {
+                ("Engineer Scorecard", "fas fa-medal", "Scorecard"),
+                ("Service Feedback", "fas fa-star", "ServiceFeedback") }));
+            menu.Add(("Users", "fas fa-users", null, new[] {
+                ("Create User", "fas fa-user-plus", "CreateUser"),
+                ("User List", "fas fa-address-book", "UserList") }));
+            menu.Add(("Setup", "fas fa-cogs", null, new[] {
+                ("Products", "fas fa-cubes", "ProductList"),
+                ("Brokerage Houses", "fas fa-building", "BrocarageHouseList"),
+                ("Branches", "fas fa-code-branch", "BranchList"),
+                ("Support Types", "fas fa-life-ring", "SupportTypeList"),
+                ("Categories", "fas fa-tags", "SupportCatagoryList"),
+                ("Sub-Categories", "fas fa-tag", "SupportSubCatagoryList"),
+                ("Affected Sections", "fas fa-puzzle-piece", "AffectedSectionList"),
+                ("SLA Targets", "fas fa-stopwatch", "SlaTargets") }));
+            menu.Add(todo);
+            menu.Add(("Team To-Dos", "fas fa-clipboard-list", null, new[] {
+                ("All Users' To-Dos", "fas fa-clipboard-check", "ViewAllTodo"),
+                ("Team To-Do Report", "fas fa-chart-line", "AllTodoReports") }));
+            break;
+        case "SupportManegar":
+            roleName = "Support Manager";
+            allTickets = "AllTicketList";
+            menu.Add(("Dashboard", "fas fa-tachometer-alt", "Dashbord", null));
+            menu.Add(("Tickets", "fas fa-ticket-alt", null, new[] {
+                ("Create Ticket", "fas fa-plus-circle", "IssueRaiseFrom"),
+                ("All Tickets", "fas fa-list", "AllTicketList"),
+                ("Unassigned", "fas fa-inbox", "UnassignedTicketList"),
+                ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
+            menu.Add(("Reports", "fas fa-chart-pie", null, new[] {
+                ("Ticket Counts", "fas fa-calculator", "TicketCounts"),
+                ("Ticket Reports", "fas fa-file-alt", "Reports") }));
+            menu.Add(("Engineer Performance", "fas fa-trophy", null, new[] {
+                ("Engineer Scorecard", "fas fa-medal", "Scorecard"),
+                ("Service Feedback", "fas fa-star", "ServiceFeedback") }));
+            menu.Add(todo);
+            break;
+        case "SupportEngineer":
+            roleName = "Support Engineer";
+            allTickets = "AllTicketList";
+            menu.Add(("Dashboard", "fas fa-tachometer-alt", "Dashbord", null));
+            menu.Add(("Tickets", "fas fa-ticket-alt", null, new[] {
+                ("Create Ticket", "fas fa-plus-circle", "IssueRaiseFrom"),
+                ("All Tickets", "fas fa-list", "AllTicketList"),
+                ("Assigned to Me", "fas fa-user-check", "AssignedTicketList"),
+                ("Unassigned", "fas fa-inbox", "UnassignedTicketList"),
+                ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
+            menu.Add(("Reports", "fas fa-file-alt", "Reports", null));
+            menu.Add(todo);
+            break;
+        default:
+            roleName = "Brokerage House User";
+            allTickets = "MackerTicketList";
+            menu.Add(("Dashboard", "fas fa-tachometer-alt", "Dashbord", null));
+            menu.Add(("Tickets", "fas fa-ticket-alt", null, new[] {
+                ("Create Ticket", "fas fa-plus-circle", "IssueRaiseFrom"),
+                ("My Tickets", "fas fa-list", "MackerTicketList"),
+                ("Unassigned", "fas fa-inbox", "UnassignedTicketList"),
+                ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
+            menu.Add(("Reports", "fas fa-file-alt", "Reports", null));
+            menu.Add(todo);
+            break;
+    }
+
+    // Pages that are not in the menu (view / edit / create) mark the list they belong to.
+    static string Stem(string a)
+    {
+        foreach (var p in new[] { "Create", "Edit", "View", "Update", "Delete", "Get" })
+            if (a.StartsWith(p, StringComparison.OrdinalIgnoreCase) && a.Length > p.Length) { a = a.Substring(p.Length); break; }
+        foreach (var s in new[] { "List", "View" })
+            if (a.EndsWith(s, StringComparison.OrdinalIgnoreCase) && a.Length > s.Length) { a = a.Substring(0, a.Length - s.Length); break; }
+        return a;
+    }
+    var all = menu.SelectMany(m => m.Items != null ? m.Items.Select(i => i.Action) : new[] { m.Action! }).ToList();
+    string? current = all.FirstOrDefault(a => string.Equals(a, action, StringComparison.OrdinalIgnoreCase));
+    if (current == null)
+    {
+        if (action.Equals("TicketView", StringComparison.OrdinalIgnoreCase) || action.Equals("EditTicket", StringComparison.OrdinalIgnoreCase) || action.Equals("RateTicket", StringComparison.OrdinalIgnoreCase)) { current = allTickets; }
+        else if (action.Contains("Todo", StringComparison.OrdinalIgnoreCase)) { current = "ViewTodo"; }
+        else
+        {
+            var stem = Stem(action);
+            current = all.FirstOrDefault(a => a != "CreateUser" && stem.Length >= 4 && (Stem(a).StartsWith(stem, StringComparison.OrdinalIgnoreCase) || stem.StartsWith(Stem(a), StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    var initials = string.Concat((profile?.FullName ?? "?").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+}
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a asp-controller="@controller" asp-action="Dashbord" class="brand-link">
+        <img src="~/img/xfl-logo-centered.png" alt="XFL" class="brand-image img-circle elevation-3">
+        <span class="brand-text">XFL CSMS</span>
+    </a>
+
+    <div class="sidebar">
+        <div class="xfl-user-panel dropdown">
+            <a href="#" class="xfl-user-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="xfl-avatar">@initials</span>
+                <span class="xfl-user-text">
+                    <span class="xfl-user-name">@(profile?.FullName)</span>
+                    <span class="xfl-user-role">@roleName</span>
+                </span>
+                <i class="fas fa-chevron-down xfl-user-caret"></i>
+            </a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" asp-controller="@controller" asp-action="Profile" asp-route-id="@(profile?.Id)"><i class="fas fa-id-badge mr-2"></i>My Profile</a>
+                <a class="dropdown-item" asp-controller="@controller" asp-action="ChangePassword"><i class="fas fa-key mr-2"></i>Change Password</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item text-danger" asp-controller="@controller" asp-action="Logout"><i class="fas fa-sign-out-alt mr-2"></i>Log Out</a>
+            </div>
+        </div>
+
+        <div class="form-inline xfl-sidebar-search">
+            <div class="input-group" data-widget="sidebar-search">
+                <input class="form-control form-control-sidebar" type="search" placeholder="Search menu" aria-label="Search menu">
+                <div class="input-group-append">
+                    <button class="btn btn-sidebar" type="button" aria-label="Search"><i class="fas fa-search fa-fw"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
+                @foreach (var m in menu)
+                {
+                    if (m.Items == null)
+                    {
+                        <li class="nav-item">
+                            <a asp-controller="@controller" asp-action="@m.Action" class="nav-link @(string.Equals(current, m.Action, StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                <i class="nav-icon @m.Icon"></i>
+                                <p>@m.Title</p>
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        var open = m.Items.Any(i => string.Equals(i.Action, current, StringComparison.OrdinalIgnoreCase));
+                        <li class="nav-item xfl-menu-group @(open ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(open ? "xfl-group-active" : "")">
+                                <i class="nav-icon @m.Icon"></i>
+                                <p>@m.Title<i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                @foreach (var i in m.Items)
+                                {
+                                    <li class="nav-item">
+                                        <a asp-controller="@controller" asp-action="@i.Action" class="nav-link @(string.Equals(current, i.Action, StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                            <i class="nav-icon @i.Icon"></i>
+                                            <p>@i.Title</p>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </li>
+                    }
+                }
+            </ul>
+        </nav>
+    </div>
+</aside>

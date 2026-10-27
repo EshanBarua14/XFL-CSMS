@@ -14,6 +14,10 @@ namespace XFLCSMS.Models.Issue
         public DateTime? CloseOn { get; set; }
         public int? ClosedBy { get; set; }
         public string? ClosedbyName { get; set; }
+        /// <summary>Product of the ticket (name, for display) and its id (staff may change it on Edit Ticket).</summary>
+        public string? Product { get; set; }
+        public int? ProductId { get; set; }
+        public List<XFLCSMS.Models.Product.Product>? Products { get; set; }
         public string? SupportType { get; set; }
         public string? SupportCatagory { get; set; }
         public string? SupportSubCatagory { get; set; }

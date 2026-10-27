@@ -1,5 +1,7 @@
 ﻿@model XFLCSMS.Models.Issue.IssueViewModel;
 @{
+    ViewData["Title"] = "Create Ticket";
+    ViewData["Subtitle"] = "Pick the product, describe the issue and attach screenshots or files if they help.";
     Layout = "_SupportManegerLayout";
 }
 
@@ -8,18 +10,6 @@
 
 
 <!-- Content Header (Page header) -->
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>Issue Raise Form</h1>
-            </div>
-        </div>
-    </div><!-- /.container-fluid -->
-</section>
-
-
-
 <section class="content">
     <form asp-controller="SupportManegar" asp-action="IssueRaiseFrom" name="files" method="post" enctype="multipart/form-data" id="uploadForm">
         <div class="container-fluid">
@@ -74,6 +64,18 @@
                             <h3 class="card-title">Information Regarding Issue</h3>
                         </div>
                         <div class="card-body">
+                            <div class="form-group">
+                                <label for="productSelect">Product <span class="text-danger">*</span></label>
+                                <select name="issueFrom.ProductId" id="productSelect" class="form-control" required>
+                                    <option value="">Choose the product</option>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <option value="@product.ProductId">@product.ProductName</option>
+                                    }
+                                </select>
+                                <div id="productError" class="error" style="display:none;">Please select the product.</div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="Support Type">Support Type</label>
                                 <select asp-for="@Model.issueFrom.SupportTypeId" class="form-control">
@@ -139,7 +141,8 @@
                 </div>
             </div>
 
-            <div class="container-fluid">
+            <div class="card card-primary">
+                <div class="card-header"><h3 class="card-title">Description</h3></div>
                 <div class="card-body">
                     <div class="form-group">
                         <label>Issue Title</label>
@@ -162,7 +165,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <button id="submitButton" type="submit" class="btn btn-outline-primary " disabled>Submit</button>
+                        <button id="submitButton" type="submit" class="btn btn-primary" disabled><i class="fas fa-paper-plane mr-1"></i>Submit ticket</button>
                     </div>
                 </div>
             </div>
@@ -299,6 +302,10 @@
 
     <script>
         function validateForm() {
+            var product = document.getElementById("productSelect").value;
+            var productError = document.getElementById("productError");
+            var productIsValid = product !== "";
+            productError.style.display = productIsValid ? "none" : "block";
             var priority = document.getElementById("prioritySelect").value;
             var issueTitle = document.getElementById("ITitle").value.trim();
 
@@ -329,9 +336,10 @@
                 issueTitleError.classList.remove("error");
             }
 
-            submitButton.disabled = !(priorityIsValid && issueTitleIsValid);
+            submitButton.disabled = !(productIsValid && priorityIsValid && issueTitleIsValid);
         }
 
+        document.getElementById("productSelect").addEventListener("change", validateForm);
         document.getElementById("prioritySelect").addEventListener("change", validateForm);
         document.getElementById("ITitle").addEventListener("input", validateForm);
     </script>

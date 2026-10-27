@@ -1,0 +1,27 @@
+@model XFLCSMS.Models.Product.Product
+@* The fields of Add Product and Edit Product. *@
+<div class="form-group">
+    <label asp-for="ProductName">Product name <span class="text-danger">*</span></label>
+    <input asp-for="ProductName" class="form-control" placeholder="e.g. Xpert eKYC" autocomplete="off" />
+    <span asp-validation-for="ProductName" class="invalid-feedback d-block"></span>
+</div>
+<div class="form-group">
+    <label asp-for="Description">Description</label>
+    <textarea asp-for="Description" class="form-control" rows="3" placeholder="What the product is, who uses it (optional)"></textarea>
+    <span asp-validation-for="Description" class="invalid-feedback d-block"></span>
+</div>
+<div class="form-row">
+    <div class="form-group col-sm-6">
+        <label asp-for="SortOrder">Display order</label>
+        <input asp-for="SortOrder" type="number" min="0" max="9999" step="1" class="form-control" />
+        <small class="form-text text-muted">Lower numbers are listed first.</small>
+        <span asp-validation-for="SortOrder" class="invalid-feedback d-block"></span>
+    </div>
+    <div class="form-group col-sm-6">
+        <label class="d-block">Status</label>
+        <div class="custom-control custom-switch mt-2">
+            <input asp-for="IsActive" type="checkbox" class="custom-control-input" />
+            <label class="custom-control-label" asp-for="IsActive">Active (offered for new tickets)</label>
+        </div>
+    </div>
+</div>

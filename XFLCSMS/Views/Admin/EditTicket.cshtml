@@ -1,21 +1,11 @@
 ﻿@model XFLCSMS.Models.Issue.MakerView;
 @{
+    ViewData["Title"] = "Edit Ticket";
     Layout = "_Layout";
 }
 
 
 <!-- Content Header (Page header) -->
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>Edit Ticket</h1>
-            </div>
-
-        </div>
-    </div><!-- /.container-fluid -->
-</section>
-
 <!-- Main content -->
 <section class="content">
     <form asp-action="EditTicketttt" asp-controller="Admin" name="files" method="post" enctype="multipart/form-data" id="uploadForm">
@@ -100,6 +90,22 @@
                         <div class="card-body">
 
                             <div class="form-group">
+                                <label for="ProductId">Product</label>
+                                <select name="ProductId" id="ProductId" class="form-control">
+                                    @if (Model.ProductId == null)
+                                    {
+                                        <option value="">(not set)</option>
+                                    }
+                                    @foreach (var product in Model.Products ?? new List<XFLCSMS.Models.Product.Product>())
+                                    {
+                                        if (product.IsActive || product.ProductId == Model.ProductId)
+                                        {
+                                            <option value="@product.ProductId" selected="@(product.ProductId == Model.ProductId)">@product.ProductName@(product.IsActive ? "" : " (inactive)")</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label for="exampleInputEmail1">Support Type</label>
                                 <input type="text" asp-for="@Model.SupportType" class="form-control" id="exampleInputEmail1" placeholder="Support Type" readonly>
                             </div>
@@ -160,7 +166,8 @@
 
 
 
-            <div class="container-fluid">
+            <div class="card card-primary">
+                <div class="card-header"><h3 class="card-title">Description</h3></div>
                 <div class="card-body">
                     <div class="form-group">
                         <label>Issue Title</label>
@@ -348,7 +355,6 @@
         }
     </script>
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script>
         $(document).ready(function () {
             $(".delete-btn").on("click", function () {

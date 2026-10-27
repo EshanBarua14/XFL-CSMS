@@ -1,13 +1,10 @@
 @model List<XFLCSMS.Models.Feedback.SlaTarget>
 @{
     Layout = "_Layout";
+    ViewData["Title"] = "SLA Targets";
+    ViewData["Subtitle"] = "Used by the Engineer Scorecard. Hours are calendar hours from the time the ticket was raised (resolution) or assigned (first response).";
 }
-<section class="content-header">
-    <div class="container-fluid">
-        <h1>SLA Targets</h1>
-        <p class="text-muted mb-0">Used by the Engineer Scorecard. Hours are calendar hours from the time the ticket was raised (resolution) or assigned (first response).</p>
-    </div>
-</section>
+
 <section class="content">
     <div class="container-fluid">
         @if (ViewBag.message != null)

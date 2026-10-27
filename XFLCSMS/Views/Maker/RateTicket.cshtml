@@ -1,8 +1,11 @@
 @model XFLCSMS.Models.Feedback.RatingForm
 @{
     Layout = "_MakerLayout";
+    ViewData["Title"] = (Model.IsEdit ? "Change your rating for " : "Rate the support for ") + Model.TicketNumber;
+    ViewData["Subtitle"] = Model.TicketTitle + (Model.EngineerName != null ? " · handled by " + Model.EngineerName : "") + (Model.ClosedOn != null ? " · closed " + Model.ClosedOn.Value.ToString("dd MMM yyyy") : "");
     var subScores = new[] { ("SpeedScore", "Speed of support", Model.SpeedScore), ("CommunicationScore", "Communication", Model.CommunicationScore), ("QualityScore", "Quality of the solution", Model.QualityScore) };
 }
+@section Head {
 <style>
     .star-pick { display: inline-flex; flex-direction: row-reverse; }
     .star-pick input { display: none; }
@@ -10,13 +13,8 @@
     .star-pick.small label { font-size: 1.3rem; }
     .star-pick input:checked ~ label, .star-pick label:hover, .star-pick label:hover ~ label { color: #f39c12; }
 </style>
+}
 
-<section class="content-header">
-    <div class="container-fluid">
-        <h4>@(Model.IsEdit ? "Change your rating" : "Rate the support") for ticket @Model.TicketNumber</h4>
-        <p class="text-muted mb-0">@Model.TicketTitle@(Model.EngineerName != null ? " · handled by " + Model.EngineerName : "")@(Model.ClosedOn != null ? " · closed " + Model.ClosedOn.Value.ToString("dd MMM yyyy") : "")</p>
-    </div>
-</section>
 
 <section class="content">
     <div class="container-fluid">

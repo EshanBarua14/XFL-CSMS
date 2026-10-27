@@ -10,7 +10,8 @@ namespace XFLCSMS.Data
     ///  1. applies pending EF Core migrations (creates the database on a fresh SQL Server);
     ///  2. on a database without any user, creates the first administrator from the "SeedAdmin" settings.
     ///     Without it a fresh database cannot be used at all: registering needs a brokerage house and a
-    ///     branch, and only an administrator can create those.
+    ///     branch, and only an administrator can create those;
+    ///  3. with "SeedDemoData": true and no tickets yet, adds sample data (see DemoDataSeeder).
     /// </summary>
     public static class DbInitializer
     {
@@ -26,8 +27,11 @@ namespace XFLCSMS.Data
                     db.Database.Migrate();
                 }
 
+                SeedProducts(db, logger);
+
                 if (db.Users.Any())
                 {
+                    DemoDataSeeder.Seed(db, configuration, logger);
                     return;
                 }
 
@@ -84,6 +88,8 @@ namespace XFLCSMS.Data
                 db.SaveChanges();
 
                 logger.LogWarning("Empty database: created the first administrator '{UserName}'. Sign in and change the password.", userName);
+
+                DemoDataSeeder.Seed(db, configuration, logger);
             }
             catch (Exception ex)
             {
@@ -91,5 +97,30 @@ namespace XFLCSMS.Data
                 logger.LogError(ex, "Could not initialise the database. Check ConnectionStrings:DefaultConnection in appsettings.json and that SQL Server is running.");
             }
         }
+    
+        /// <summary>The XFL products tickets are raised for. Added once, when the product list is empty;
+        /// after that the admin manages them under Setup > Products.</summary>
+        public static readonly string[] DefaultProducts =
+        {
+            "OST", "Smart Trade", "Xpert Trading OMS", "Xpert BO Account Opening Portal", "Xpert eKYC", "Xpert DMS"
+        };
+
+        private static void SeedProducts(DataContext db, ILogger logger)
+        {
+            if (db.Products.Any())
+            {
+                return;
+            }
+
+            var order = 0;
+            foreach (var name in DefaultProducts)
+            {
+                db.Products.Add(new XFLCSMS.Models.Product.Product { ProductName = name, IsActive = true, SortOrder = ++order * 10 });
+            }
+
+            db.SaveChanges();
+            logger.LogInformation("Added the {Count} default products.", DefaultProducts.Length);
+        }
     }
+
 }

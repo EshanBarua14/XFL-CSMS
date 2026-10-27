@@ -26,6 +26,7 @@ namespace XFLCSMS.Models.Admin
         public List<HouseCount> Houses { get; set; } = new();
         public List<NameCount> Engineers { get; set; } = new();
         public List<NameCount> SupportTypes { get; set; } = new();
+        public List<NameCount> Products { get; set; } = new();
         public List<NameCount> Priorities { get; set; } = new();
         public List<NameCount> RaisedBy { get; set; } = new();
         public List<NameCount> Timeline { get; set; } = new();

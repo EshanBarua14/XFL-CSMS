@@ -1,5 +1,7 @@
 ﻿@model XFLCSMS.Models.Admin.ReportView;
 @{
+    ViewData["Title"] = "Ticket Reports";
+    ViewData["Subtitle"] = "Filter tickets and export the result.";
     Layout = "_MakerLayout";
 }
 <!-- Main content -->
@@ -15,6 +17,18 @@
                         <form id="advancedSearchForm" asp-action="Search"  method="get">
 
                             <div class="row justify-content-center">
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="ProductFilter">Product</label>
+                                        <select class="form-control" name="MakerSearch.ProductId" id="ProductFilter">
+                                            <option value="">All</option>
+                                            @foreach (var product in Model.Products)
+                                            {
+                                                <option value="@product.ProductId">@product.ProductName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="col-4">
                                     <div class="form-group">
                                         <label for="Priority">Priority</label>
@@ -112,7 +126,6 @@
 
 </section>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(function () {
         $('#searchButton').click(function () {

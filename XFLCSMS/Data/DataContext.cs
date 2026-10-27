@@ -32,6 +32,7 @@ namespace XFLCSMS.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<Todo> Todos { get; set; }
+        public DbSet<XFLCSMS.Models.Product.Product> Products { get; set; }
 
         public DbSet<TicketStatusHistory> TicketStatusHistories => Set<TicketStatusHistory>();
         public DbSet<SlaTarget> SlaTargets => Set<SlaTarget>();
@@ -42,6 +43,9 @@ namespace XFLCSMS.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<XFLCSMS.Models.Product.Product>().HasIndex(p => p.ProductName).IsUnique();
+            // deleting a product that tickets use is refused by the admin page; the database keeps the same rule
+            modelBuilder.Entity<IssueTable>().HasOne(i => i.Product).WithMany(p => p.Issues).HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Restrict);
 
             // Users are never deleted through these links: DeleteUser refuses users that are referenced.
             modelBuilder.Entity<IssueTable>()
