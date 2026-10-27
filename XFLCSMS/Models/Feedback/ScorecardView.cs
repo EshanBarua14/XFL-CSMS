@@ -33,7 +33,7 @@ namespace XFLCSMS.Models.Feedback
         public double FirstResponseWeight { get; set; } = 5;
         public double BacklogWeight { get; set; } = 5;
 
-        public int MinClosedTickets { get; set; } = 10;
+        public int MinClosedTickets { get; set; } = 5;
         public int MinRatings { get; set; } = 3;
 
         /// <summary>Confidence constant of the adjusted rating: this many "team average" ratings are mixed in.</summary>

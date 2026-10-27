@@ -75,7 +75,7 @@
                     }
                     @if (Model.Summary.Count == 0)
                     {
-                        <tr><td colspan="7" class="text-muted">No rating in this period.</td></tr>
+                        <tr><td colspan="7" class="text-muted">No rating in this period. Clients rate a ticket from their own ticket list (Rate button) for 14 days after XFL closes it.</td></tr>
                     }
                 </tbody>
             </table>
@@ -122,7 +122,7 @@
                     }
                     @if (Model.Rows.Count == 0)
                     {
-                        <tr><td colspan="8" class="text-muted">No rating matches the filters.</td></tr>
+                        <tr><td colspan="8" class="text-muted">No rating matches the filters. How ratings arrive: a Support Engineer closes the ticket, the client who raised it gets an e-mail and a <b>Rate</b> button on their ticket list, and has 14 days to rate. Tickets closed before this feature was installed, or more than 14 days ago, cannot be rated.</td></tr>
                     }
                 </tbody>
             </table>

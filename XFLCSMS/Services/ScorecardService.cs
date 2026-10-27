@@ -51,26 +51,26 @@ namespace XFLCSMS.Services
             return targets.OrderBy(t => PriorityPoints.TryGetValue(t.Priority, out var p) ? -p : 0).ToList();
         }
 
-        /// <summary>Freezes every finished month that is due and not frozen yet (from the first month with closed tickets), and auto-confirms old nominations.</summary>
+        /// <summary>First day of every month in which at least one ticket was closed, newest first.</summary>
+        public async Task<List<DateTime>> MonthsWithClosedTicketsAsync()
+        {
+            var months = await _context.Issues
+                .Where(i => i.IStatus == "Close" && i.ClosedOn != null)
+                .Select(i => new { i.ClosedOn!.Value.Year, i.ClosedOn.Value.Month })
+                .Distinct()
+                .ToListAsync();
+            return months.Select(m => new DateTime(m.Year, m.Month, 1)).OrderByDescending(m => m).ToList();
+        }
+
+        /// <summary>Freezes every finished month with closed tickets that is due and not frozen yet, and auto-confirms old nominations.</summary>
         public async Task CatchUpAsync()
         {
             var now = DateTime.Now;
             var lastDue = MonthStart(now).AddMonths(now >= FreezeDate(MonthStart(now).AddMonths(-1)) ? -1 : -2);
 
-            // Only look back a year: older months are history and freezing them on first use is enough.
-            for (var month = lastDue.AddMonths(-11); month <= lastDue; month = month.AddMonths(1))
+            var frozen = await _context.EngineerAwards.Select(a => a.Month).ToListAsync();
+            foreach (var month in (await MonthsWithClosedTicketsAsync()).Where(m => m <= lastDue && !frozen.Contains(m)).OrderBy(m => m))
             {
-                if (await _context.EngineerAwards.AnyAsync(a => a.Month == month))
-                {
-                    continue;
-                }
-
-                var end = month.AddMonths(1);
-                if (!await _context.Issues.AnyAsync(i => i.ClosedOn >= month && i.ClosedOn < end))
-                {
-                    continue;
-                }
-
                 await FreezeAsync(month);
             }
 
@@ -123,8 +123,8 @@ namespace XFLCSMS.Services
                     Status = winner == null ? EngineerAward.NoWinner : EngineerAward.Nominated,
                     NominatedOn = now,
                     Reason = winner == null
-                        ? (ranked.Count == 0 ? "No engineer met the minimum of " + Settings.MinClosedTickets + " closed tickets and " + Settings.MinRatings + " ratings." : "No ranked engineer passed the award gates.")
-                        : winner.Rank > 1 ? "Higher ranked engineers did not pass the award gates (rating, SLA or unreviewed 1-star ratings)." : null
+                        ? (ranked.Count == 0 ? "No engineer closed the minimum of " + Settings.MinClosedTickets + " tickets." : "No ranked engineer passed the award rules (at least " + Settings.MinRatings + " client ratings, adjusted rating " + Settings.AwardMinRating.ToString("0.0") + ", SLA met " + (Settings.AwardMinSla * 100).ToString("0") + "%, no unreviewed 1-star rating).")
+                        : winner.Rank > 1 ? "Higher ranked engineers did not pass the award rules (number of ratings, rating, SLA or an unreviewed 1-star rating)." : null
                 });
 
                 await _context.SaveChangesAsync();
@@ -142,6 +142,7 @@ namespace XFLCSMS.Services
         public bool PassesGates(MonthlyEngineerScore row)
         {
             return row.Rank != null
+                && row.RatingsCount >= Settings.MinRatings
                 && (row.AdjustedRating ?? 0) >= Settings.AwardMinRating
                 && (row.SlaCompliance ?? 0) >= Settings.AwardMinSla
                 && row.LowRatingsUnreviewed == 0;
@@ -152,7 +153,13 @@ namespace XFLCSMS.Services
             await CatchUpAsync();
 
             var now = DateTime.Now;
-            var selected = MonthStart(month ?? MonthStart(now).AddMonths(-1));
+            var withData = await MonthsWithClosedTicketsAsync();
+
+            // Without a month in the address: last month, or the latest month that has closed tickets when last month has none.
+            var lastMonth = MonthStart(now).AddMonths(-1);
+            var latestWithData = withData.FirstOrDefault(m => m < MonthStart(now));
+            var selected = MonthStart(month
+                ?? (withData.Contains(lastMonth) || latestWithData == default ? lastMonth : latestWithData));
             var award = await _context.EngineerAwards.FirstOrDefaultAsync(a => a.Month == selected);
 
             var view = new ScorecardView
@@ -180,10 +187,9 @@ namespace XFLCSMS.Services
 
             view.PreviousRanks = prevRows.GroupBy(r => r.EngineerUserId).ToDictionary(g => g.Key, g => g.First().Rank);
 
-            for (var m = MonthStart(now); view.Months.Count < 18; m = m.AddMonths(-1))
-            {
-                view.Months.Add(m);
-            }
+            // The current month, the last 12 months and every older month that has closed tickets.
+            view.Months = Enumerable.Range(0, 13).Select(i => MonthStart(now).AddMonths(-i))
+                .Concat(withData).Append(selected).Distinct().OrderByDescending(m => m).ToList();
 
             return view;
         }
@@ -350,7 +356,9 @@ namespace XFLCSMS.Services
                     ? 0
                     : myOpen.Count(i => (backlogAt - i.TDate).TotalHours > 2 * Sla(i.Priority).ResolutionHours) / (double)myOpen.Count;
 
-                row.Eligible = row.TicketsClosed >= s.MinClosedTickets && row.RatingsCount >= s.MinRatings;
+                // Ranked on closed tickets alone: an engineer without client ratings gets neutral rating points (50).
+                // The award additionally needs MinRatings ratings (PassesGates).
+                row.Eligible = row.TicketsClosed >= s.MinClosedTickets;
                 rows.Add(row);
             }
 
