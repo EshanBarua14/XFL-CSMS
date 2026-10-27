@@ -47,6 +47,10 @@ namespace XFLCSMS.Data
             // deleting a product that tickets use is refused by the admin page; the database keeps the same rule
             modelBuilder.Entity<IssueTable>().HasOne(i => i.Product).WithMany(p => p.Issues).HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Restrict);
 
+            // the lists, reports and dashboards filter tickets by these dates
+            modelBuilder.Entity<IssueTable>().HasIndex(i => i.TDate);
+            modelBuilder.Entity<IssueTable>().HasIndex(i => i.ClosedOn);
+
             // Users are never deleted through these links: DeleteUser refuses users that are referenced.
             modelBuilder.Entity<IssueTable>()
                 .HasOne<User>().WithMany().HasForeignKey(i => i.AssignedToUserId).OnDelete(DeleteBehavior.Restrict);

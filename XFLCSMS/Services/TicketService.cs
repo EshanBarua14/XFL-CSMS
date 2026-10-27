@@ -20,6 +20,37 @@ namespace XFLCSMS.Services
             ".txt", ".doc", ".docx", ".pdf", ".jpg", ".jpeg", ".png", ".xls", ".xlsx", ".csv"
         };
 
+        /// <summary>Largest file accepted per attachment.</summary>
+        public const long MaxAttachmentBytes = 10 * 1024 * 1024;
+
+        /// <summary>The priorities the forms offer; anything else posted is refused.</summary>
+        public static readonly string[] Priorities = { "High", "Medium", "Low" };
+
+        /// <summary>Ticket statuses as stored, with the text shown to people.</summary>
+        public static readonly (string Value, string Label)[] Statuses =
+        {
+            ("Open", "Open"), ("Inqueue", "In Queue"), ("Inprogress", "In Progress"), ("Close", "Closed")
+        };
+
+        public static string StatusLabel(string? status)
+        {
+            foreach (var s in Statuses)
+            {
+                if (string.Equals(s.Value, status, StringComparison.OrdinalIgnoreCase)) { return s.Label; }
+            }
+
+            return string.IsNullOrWhiteSpace(status) ? "Open" : status;
+        }
+
+        public static string? NormalizePriority(string? priority)
+        {
+            return Priorities.FirstOrDefault(p => string.Equals(p, priority?.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Two people saving a ticket for the same house at the same moment used to get the same number
+        // (both read the highest number, both add one). Creation is serialised in this web server.
+        private static readonly SemaphoreSlim NumberLock = new(1, 1);
+
         private static readonly FileExtensionContentTypeProvider ContentTypes = new();
 
         private readonly DataContext _context;
@@ -81,9 +112,15 @@ namespace XFLCSMS.Services
                 return (null, "Please enter an issue title.", rejected);
             }
 
-            if (string.IsNullOrWhiteSpace(form.Priority))
+            var priority = NormalizePriority(form.Priority);
+            if (priority == null)
             {
-                return (null, "Please select a priority.", rejected);
+                return (null, "Please select a priority (High, Medium or Low).", rejected);
+            }
+
+            if (form.ITitle.Trim().Length > 300)
+            {
+                return (null, "The issue title is too long (300 characters at most).", rejected);
             }
 
             if (!form.ProductId.HasValue || !_context.Products.Any(p => p.ProductId == form.ProductId.Value && p.IsActive))
@@ -100,34 +137,43 @@ namespace XFLCSMS.Services
                 houseId = form.ForBrokerageId.Value;
             }
 
-            var ticketNumber = NextTicketNumber(houseId);
-            if (ticketNumber == null)
+            await NumberLock.WaitAsync();
+            IssueTable issue;
+            try
             {
-                return (null, "Your account is not linked to a valid brokerage house. Please contact the XFL team.", rejected);
+                var ticketNumber = NextTicketNumber(houseId);
+                if (ticketNumber == null)
+                {
+                    return (null, "Your account is not linked to a valid brokerage house. Please contact the XFL team.", rejected);
+                }
+
+                issue = new IssueTable
+                {
+                    TDate = DateTime.Now,
+                    TNumber = ticketNumber,
+                    Priority = priority,
+                    ProductId = form.ProductId,
+                    ITitle = form.ITitle.Trim(),
+                    Details = form.IssueDetails,
+                    Comments = form.Commands,
+                    UserId = user.Id,
+                    BrokerageId = houseId,
+                    SupportTypeId = Existing(form.SupportTypeId, id => _context.SupportTypes.Any(x => x.SupportTypeId == id)),
+                    SupportCatagoryId = Existing(form.SupportCatagoryId, id => _context.SupportCatagories.Any(x => x.SupportCatagoryId == id)),
+                    SupportSubCatagoryId = Existing(form.SupportSubCatagoryID, id => _context.SupportSubCatagories.Any(x => x.SupportSubCatagoryId == id)),
+                    AffectedSectionId = Existing(form.AffectedSectionId, id => _context.AffectedSectionss.Any(x => x.AffectedSectionId == id)),
+                    IStatus = "Open",
+                    AssignOn = null,
+                    AssignBy = null
+                };
+
+                _context.Issues.Add(issue);
+                await _context.SaveChangesAsync();
             }
-
-            var issue = new IssueTable
+            finally
             {
-                TDate = DateTime.Now,
-                TNumber = ticketNumber,
-                Priority = form.Priority,
-                ProductId = form.ProductId,
-                ITitle = form.ITitle.Trim(),
-                Details = form.IssueDetails,
-                Comments = form.Commands,
-                UserId = user.Id,
-                BrokerageId = houseId,
-                SupportTypeId = Existing(form.SupportTypeId, id => _context.SupportTypes.Any(x => x.SupportTypeId == id)),
-                SupportCatagoryId = Existing(form.SupportCatagoryId, id => _context.SupportCatagories.Any(x => x.SupportCatagoryId == id)),
-                SupportSubCatagoryId = Existing(form.SupportSubCatagoryID, id => _context.SupportSubCatagories.Any(x => x.SupportSubCatagoryId == id)),
-                AffectedSectionId = Existing(form.AffectedSectionId, id => _context.AffectedSectionss.Any(x => x.AffectedSectionId == id)),
-                IStatus = "Open",
-                AssignOn = null,
-                AssignBy = null
-            };
-
-            _context.Issues.Add(issue);
-            await _context.SaveChangesAsync();
+                NumberLock.Release();
+            }
 
             _context.TicketStatusHistories.Add(new TicketStatusHistory
             {
@@ -172,7 +218,7 @@ namespace XFLCSMS.Services
                 var originalName = Path.GetFileName((file.FileName ?? string.Empty).Replace('\\', '/'));
                 var extension = Path.GetExtension(originalName).ToLowerInvariant();
 
-                if (string.IsNullOrWhiteSpace(originalName) || !AllowedExtensions.Contains(extension))
+                if (string.IsNullOrWhiteSpace(originalName) || !AllowedExtensions.Contains(extension) || file.Length > MaxAttachmentBytes)
                 {
                     rejected.Add(string.IsNullOrWhiteSpace(originalName) ? "(unnamed file)" : originalName);
                     continue;
@@ -427,9 +473,10 @@ namespace XFLCSMS.Services
             issue.Details = form.TicketDetails;
             issue.Comments = form.Command;
 
-            if (!string.IsNullOrWhiteSpace(form.Priority))
+            var priority = NormalizePriority(form.Priority);
+            if (priority != null)
             {
-                issue.Priority = form.Priority;
+                issue.Priority = priority;
             }
 
             issue.UpdatedOn = DateTime.Now;

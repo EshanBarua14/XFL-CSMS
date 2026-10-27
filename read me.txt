@@ -1,4 +1,4 @@
-XFL CSMS - how to run
+﻿XFL CSMS - how to run
 =====================
 
 Requirements
@@ -50,9 +50,17 @@ appsettings.json to switch that off).
 
 4. E-mail
 ---------
-Registration and "forgot password" send a token by e-mail using EmailHost / EmailUsername / EmailPassword
-in appsettings.json (Gmail SMTP, port 587). If the mail cannot be sent the user now sees a message instead
-of an error page, and a registration whose mail failed is rolled back.
+Registration and "forgot password" send a token by e-mail using EmailHost / EmailPort / EmailUsername /
+EmailPassword. The password is NOT in appsettings.json any more (that file is in the public repository).
+Put it in XFLCSMS/appsettings.Local.json (git ignores this file), for example from Git Bash:
+
+   cat > /e/XFL-CSMS-main/XFL-CSMS-main/XFLCSMS/appsettings.Local.json <<'JSON'
+   { "EmailPassword": "your-new-gmail-app-password" }
+   JSON
+
+or set the environment variable EmailPassword. Without it the app starts and works, but no e-mail is sent
+(the log says so at start-up). If the mail cannot be sent the user sees a message instead of an error page,
+and a registration whose mail failed is rolled back.
 
 See FIXES.md for the list of what was changed.
 
@@ -83,3 +91,42 @@ See FIXES.md for the list of what was changed.
   Low 1440 / 7200). The migration PerformanceKpisAndSlaMinutes converts existing hour values to minutes.
 - Weights, minimums and award rules: appsettings.json > "Scorecard".
 - Charts follow the light / dark theme switch.
+
+6. Install as an app (PC and phone)
+-----------------------------------
+XFL CSMS is an installable web app (PWA): it gets its own window, a start-menu / home-screen icon, and an
+"offline" page when the network drops. Tickets are always loaded live from the server.
+- PC (Chrome or Edge): open the app, then click "Install app" in the top bar (or the install icon in the
+  address bar). Works on http://localhost / http://127.0.0.1 without HTTPS.
+- Android (Chrome): open the HTTPS address, then "Install app" (or menu > Install app / Add to Home screen).
+- iPhone / iPad (Safari): open the HTTPS address, tap Share > Add to Home Screen.
+Phones need HTTPS (browsers only install apps from https:// addresses, localhost excepted). Ways to get it:
+  a) quick test from a phone: a Cloudflare tunnel gives a temporary https:// address for the app running on
+     this PC (no router or certificate setup). In Git Bash:
+        winget install --id Cloudflare.cloudflared
+        cloudflared tunnel --url http://127.0.0.1:5200
+     and open the https://....trycloudflare.com address it prints on the phone. Anyone with that address can
+     reach the sign-in page while the tunnel runs; close it with Ctrl+C.
+  b) for real use: publish to IIS on a server with a domain name and a trusted certificate (for example a free
+     Let's Encrypt certificate installed with win-acme), and open https://your-domain on PCs and phones.
+The app reads X-Forwarded-Proto from a proxy / tunnel, so links in e-mails use https:// behind one.
+
+7. Ticket lists, reports and charts
+-----------------------------------
+- Every ticket list (All / Unassigned / Closed / Assigned to me / My tickets) and the Ticket Reports page of
+  every role use one page: filters (period or dates on created / closed / updated, brokerage house, branch,
+  product, status, priority, support type, category, sub-category, affected section, engineer, SLA state,
+  open longer than N days, free text), KPI tiles and a detailed table with 28 columns: "Columns" shows / hides
+  fields (remembered in the browser), the row under the headings searches one column, + opens every field of
+  a ticket, and Copy / CSV / Excel / PDF / Print export what is shown.
+- The report adds charts (created vs closed trend, status, priority with SLA met %, backlog by age, product,
+  house, engineer, category, busy hours) and breakdown tables per house, branch, product, engineer, category,
+  support type and priority, each exportable.
+- Dashboards show the same KPIs and charts for 7 / 30 / 90 days or 12 months.
+- Scope: Admin and Support Manager see every ticket; a Support Engineer's report covers tickets assigned to
+  or closed by him (his lists show every ticket, as before); a Maker sees only the tickets he raised.
+
+8. Health check
+---------------
+http://<server>/healthz answers "Healthy" (200) when the app runs and the database answers, 503 otherwise:
+point IIS / an uptime monitor at it.

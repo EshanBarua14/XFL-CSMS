@@ -1,0 +1,426 @@
+@model XFLCSMS.Models.Admin.TicketExplorerView
+@using System.Globalization
+@using XFLCSMS.Services
+@*
+    Every ticket list and ticket report of the four roles (see CsmsController.TicketExplorer):
+    filters (query string), KPI tiles, charts and breakdowns (report), and the detailed table
+    (wwwroot/js/xfl-explorer.js: choose columns, sort, search per column, row details, Excel / PDF / CSV / print).
+*@
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["Subtitle"] = Model.Subtitle;
+    var f = Model.Filter;
+    var s = Model.Summary;
+    var report = Model.Mode == "report";
+    var ctl = Model.Controller;
+    bool presetStatus = Model.Preset == "closed" || Model.Preset == "unassigned" || Model.Preset == "mine";
+    bool filtersOpen = report || !f.IsEmpty;
+
+    string H(double? hours)
+    {
+        if (!hours.HasValue) { return "–"; }
+        var h = hours.Value;
+        if (h < 1) { return Math.Round(h * 60) + "m"; }
+        if (h < 48) { return Math.Floor(h) + "h " + Math.Round((h - Math.Floor(h)) * 60) + "m"; }
+        return Math.Floor(h / 24) + "d " + Math.Round(h % 24) + "h";
+    }
+    string P(double? pct) => pct.HasValue ? pct.Value.ToString("0.#", CultureInfo.InvariantCulture) + "%" : "–";
+    string Sel(bool on) => on ? "selected" : "";
+    var periods = new[] { ("", "Any time"), ("today", "Today"), ("7d", "Last 7 days"), ("30d", "Last 30 days"), ("90d", "Last 90 days"), ("month", "This month"), ("lastmonth", "Last month"), ("quarter", "This quarter"), ("year", "This year") };
+    var (pFrom, pTo) = TicketReportService.ResolvePeriod(f);
+    var heatMax = Math.Max(1, s.Heat.SelectMany(x => x).DefaultIfEmpty(0).Max());
+    var days = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+
+    var chartData = new
+    {
+        trend = new { unit = s.TrendUnit, labels = s.Trend.Select(t => t.Label), created = s.Trend.Select(t => t.Created), closed = s.Trend.Select(t => t.Closed) },
+        status = new { labels = s.ByStatus.Select(b => b.Name), values = s.ByStatus.Select(b => b.Total) },
+        priority = new { labels = s.ByPriority.Select(b => b.Name), open = s.ByPriority.Select(b => b.Open), closed = s.ByPriority.Select(b => b.Closed), sla = s.ByPriority.Select(b => b.SlaMetPercent) },
+        product = new { labels = s.ByProduct.Take(12).Select(b => b.Name), open = s.ByProduct.Take(12).Select(b => b.Open), closed = s.ByProduct.Take(12).Select(b => b.Closed) },
+        house = new { labels = s.ByHouse.Take(10).Select(b => b.Name), open = s.ByHouse.Take(10).Select(b => b.Open), closed = s.ByHouse.Take(10).Select(b => b.Closed) },
+        engineer = new { labels = s.ByEngineer.Take(12).Select(b => b.Name), open = s.ByEngineer.Take(12).Select(b => b.Open), closed = s.ByEngineer.Take(12).Select(b => b.Closed), sla = s.ByEngineer.Take(12).Select(b => b.SlaMetPercent) },
+        category = new { labels = s.ByCategory.Take(12).Select(b => b.Name), values = s.ByCategory.Take(12).Select(b => b.Total) },
+        aging = new { labels = s.Aging.Select(a => a.Label), values = s.Aging.Select(a => a.Count) }
+    };
+
+    var breakdowns = new List<(string Id, string Title, List<XFLCSMS.Models.Admin.BreakdownRow> Rows)>();
+    if (Model.Role != "Maker") { breakdowns.Add(("house", "Brokerage house", s.ByHouse)); }
+    breakdowns.Add(("branch", "Branch", s.ByBranch));
+    breakdowns.Add(("product", "Product", s.ByProduct));
+    breakdowns.Add(("engineer", "Engineer", s.ByEngineer));
+    breakdowns.Add(("category", "Category", s.ByCategory));
+    breakdowns.Add(("type", "Support type", s.BySupportType));
+    breakdowns.Add(("priority", "Priority", s.ByPriority));
+}
+@section Head {
+    <link rel="stylesheet" href="~/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+    <link rel="stylesheet" href="~/plugins/select2/css/select2.min.css">
+    <link rel="stylesheet" href="~/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+}
+@section PageActions {
+    @if (!string.IsNullOrEmpty(Model.CreateAction))
+    {
+        <a asp-controller="@ctl" asp-action="@Model.CreateAction" class="btn btn-primary"><i class="fas fa-plus mr-1"></i>Create Ticket</a>
+    }
+    @if (!report)
+    {
+        <a asp-controller="@ctl" asp-action="Reports" class="btn btn-outline-primary"><i class="fas fa-chart-pie mr-1"></i>Reports</a>
+    }
+}
+
+<div class="xfl-explorer" data-mode="@Model.Mode" data-role="@Model.Role" data-controller="@ctl" data-action="@Model.Action" data-preset="@(Model.Preset ?? "")"
+     data-can-delete="@(Model.CanDelete ? "1" : "0")" data-title="@Model.Title" data-generated="@Model.GeneratedOn.ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture)">
+
+    @* ---------- Filters ---------- *@
+    <div class="card xfl-filter-card">
+        <div class="card-header d-flex align-items-center">
+            <h3 class="card-title mb-0"><i class="fas fa-filter mr-2"></i>Filters</h3>
+            <div class="ml-auto d-flex align-items-center flex-wrap xfl-chips">
+                @foreach (var d in Model.FilterDescription)
+                {
+                    <span class="badge badge-pill xfl-chip">@d</span>
+                }
+                @if (Model.FilterDescription.Count == 0)
+                {
+                    <span class="text-muted small">No filter: every ticket you can see</span>
+                }
+                <button type="button" class="btn btn-tool ml-2" data-toggle="collapse" data-target="#xfl-filters" aria-expanded="@(filtersOpen ? "true" : "false")" title="Show / hide filters">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+            </div>
+        </div>
+        <div id="xfl-filters" class="collapse @(filtersOpen ? "show" : "")">
+            <form method="get" asp-controller="@ctl" asp-action="@Model.Action" class="card-body pb-1" id="xfl-filter-form">
+                <input type="hidden" name="filtered" value="1" />
+                <div class="form-row">
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-period">Period</label>
+                        <select id="f-period" name="Period" class="form-control form-control-sm">
+                            @foreach (var (val, text) in periods)
+                            {
+                                <option value="@val" selected="@(string.Equals(f.Period ?? "", val, StringComparison.OrdinalIgnoreCase) && f.From == null && f.To == null)">@text</option>
+                            }
+                            <option value="custom" selected="@(f.From != null || f.To != null)">Custom dates</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-from">From</label>
+                        <input id="f-from" type="date" name="From" class="form-control form-control-sm" value="@(pFrom?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-to">To</label>
+                        <input id="f-to" type="date" name="To" class="form-control form-control-sm" value="@(pTo?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-datefield">Dates apply to</label>
+                        <select id="f-datefield" name="DateField" class="form-control form-control-sm">
+                            <option value="created">Created</option>
+                            <option value="closed" selected="@(f.DateField == "closed")">Closed</option>
+                            <option value="updated" selected="@(f.DateField == "updated")">Last updated</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-12 col-md-6 col-xl-4">
+                        <label for="f-q">Search</label>
+                        <input id="f-q" type="search" name="Q" value="@f.Q" class="form-control form-control-sm" placeholder="Ticket number, title, raised by, engineer" />
+                    </div>
+
+                    @if (Model.ShowHouseFilter)
+                    {
+                        <div class="form-group col-12 col-md-6 col-xl-4">
+                            <label for="f-house">Brokerage house</label>
+                            <select id="f-house" name="HouseIds" multiple class="form-control form-control-sm xfl-select2" data-placeholder="All houses">
+                                @foreach (var o in Model.Houses)
+                                {
+                                    <option value="@o.Value" selected="@f.HouseIds.Contains(int.Parse(o.Value))">@o.Text</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-branch">Branch</label>
+                        <select id="f-branch" name="BranchId" class="form-control form-control-sm xfl-select2" data-placeholder="All branches" data-allow-clear="1">
+                            <option value=""></option>
+                            @foreach (var o in Model.Branches)
+                            {
+                                <option value="@o.Value" selected="@(f.BranchId?.ToString() == o.Value)">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-12 col-md-6 col-xl-3">
+                        <label for="f-product">Product</label>
+                        <select id="f-product" name="ProductIds" multiple class="form-control form-control-sm xfl-select2" data-placeholder="All products">
+                            @foreach (var o in Model.Products)
+                            {
+                                <option value="@o.Value" selected="@f.ProductIds.Contains(int.Parse(o.Value))">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    @if (!presetStatus)
+                    {
+                        <div class="form-group col-6 col-md-3 col-xl-2">
+                            <label for="f-status">Status</label>
+                            <select id="f-status" name="Statuses" multiple class="form-control form-control-sm xfl-select2" data-placeholder="Any status">
+                                @foreach (var st in TicketService.Statuses)
+                                {
+                                    <option value="@st.Value" selected="@f.Statuses.Contains(st.Value)">@st.Label</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-priority">Priority</label>
+                        <select id="f-priority" name="Priorities" multiple class="form-control form-control-sm xfl-select2" data-placeholder="Any priority">
+                            @foreach (var pr in TicketService.Priorities)
+                            {
+                                <option value="@pr" selected="@f.Priorities.Contains(pr)">@pr</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-type">Support type</label>
+                        <select id="f-type" name="SupportTypeId" class="form-control form-control-sm">
+                            <option value="">Any</option>
+                            @foreach (var o in Model.SupportTypes)
+                            {
+                                <option value="@o.Value" selected="@(f.SupportTypeId?.ToString() == o.Value)">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-cat">Category</label>
+                        <select id="f-cat" name="CategoryId" class="form-control form-control-sm">
+                            <option value="">Any</option>
+                            @foreach (var o in Model.Categories)
+                            {
+                                <option value="@o.Value" selected="@(f.CategoryId?.ToString() == o.Value)">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-subcat">Sub-category</label>
+                        <select id="f-subcat" name="SubCategoryId" class="form-control form-control-sm">
+                            <option value="">Any</option>
+                            @foreach (var o in Model.SubCategories)
+                            {
+                                <option value="@o.Value" selected="@(f.SubCategoryId?.ToString() == o.Value)">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-section">Affected section</label>
+                        <select id="f-section" name="SectionId" class="form-control form-control-sm">
+                            <option value="">Any</option>
+                            @foreach (var o in Model.Sections)
+                            {
+                                <option value="@o.Value" selected="@(f.SectionId?.ToString() == o.Value)">@o.Text</option>
+                            }
+                        </select>
+                    </div>
+                    @if (Model.ShowEngineerFilter && Model.Preset != "mine")
+                    {
+                        <div class="form-group col-6 col-md-3 col-xl-2">
+                            <label for="f-eng">Engineer</label>
+                            <select id="f-eng" name="EngineerId" class="form-control form-control-sm">
+                                <option value="">Anyone</option>
+                                <option value="-1" selected="@(f.EngineerId == -1)">Not assigned</option>
+                                @foreach (var o in Model.Engineers)
+                                {
+                                    <option value="@o.Value" selected="@(f.EngineerId?.ToString() == o.Value)">@o.Text</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-sla">SLA</label>
+                        <select id="f-sla" name="Sla" class="form-control form-control-sm">
+                            <option value="">Any</option>
+                            <option value="met" selected="@(f.Sla == "met")">Resolved within SLA</option>
+                            <option value="breached" selected="@(f.Sla == "breached")">Any SLA breached</option>
+                            <option value="response-breached" selected="@(f.Sla == "response-breached")">First response breached</option>
+                            <option value="resolution-breached" selected="@(f.Sla == "resolution-breached")">Resolution breached</option>
+                            <option value="at-risk" selected="@(f.Sla == "at-risk")">At risk (open, 75% of target used)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-age">Open longer than</label>
+                        <div class="input-group input-group-sm">
+                            <input id="f-age" type="number" min="0" max="3650" name="OlderThanDays" value="@f.OlderThanDays" class="form-control" placeholder="–" />
+                            <div class="input-group-append"><span class="input-group-text">days</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap mb-2">
+                    <button type="submit" class="btn btn-primary btn-sm mr-2"><i class="fas fa-search mr-1"></i>Apply filters</button>
+                    <a asp-controller="@ctl" asp-action="@Model.Action" asp-route-filtered="1" class="btn btn-outline-secondary btn-sm mr-2"><i class="fas fa-undo mr-1"></i>Clear</a>
+                    <span class="text-muted small align-self-center">Tip: the link of a filtered page can be bookmarked or sent to a colleague.</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* ---------- KPI tiles ---------- *@
+    <div class="row xfl-kpis">
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi"><span class="xfl-kpi-label">Tickets</span><span class="xfl-kpi-value">@s.Total</span><span class="xfl-kpi-note">matching the filters</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-blue"><span class="xfl-kpi-label">Open</span><span class="xfl-kpi-value">@(s.Total - s.Closed)</span><span class="xfl-kpi-note">@s.Open open · @s.InQueue queue · @s.InProgress in progress</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-green"><span class="xfl-kpi-label">Closed</span><span class="xfl-kpi-value">@s.Closed</span><span class="xfl-kpi-note">@(s.Total > 0 ? (100.0 * s.Closed / s.Total).ToString("0") : "0")% of tickets</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-red"><span class="xfl-kpi-label">Overdue (open)</span><span class="xfl-kpi-value">@s.OverdueOpen</span><span class="xfl-kpi-note">@s.HighOpen High open · @s.Unassigned unassigned</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-amber"><span class="xfl-kpi-label">SLA met</span><span class="xfl-kpi-value">@P(s.SlaResolutionMetPercent)</span><span class="xfl-kpi-note">resolution · response @P(s.SlaResponseMetPercent)</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-purple"><span class="xfl-kpi-label">Median resolution</span><span class="xfl-kpi-value">@H(s.MedianResolutionHours)</span><span class="xfl-kpi-note">avg 1st response @H(s.AvgFirstResponseHours)@(s.AvgRating.HasValue ? " · ★ " + s.AvgRating.Value.ToString("0.0", CultureInfo.InvariantCulture) : "")</span></div></div>
+    </div>
+
+    @if (report)
+    {
+        @* ---------- Charts ---------- *@
+        <script type="application/json" id="xfl-chart-data">@Html.Raw(Json.Serialize(chartData))</script>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card"><div class="card-header"><h3 class="card-title">Tickets created and closed per @s.TrendUnit</h3></div>
+                    <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-trend" aria-label="Created and closed tickets over time" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card"><div class="card-header"><h3 class="card-title">By status</h3></div>
+                    <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-status" aria-label="Tickets by status" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="card"><div class="card-header"><h3 class="card-title">By priority (open / closed)</h3></div>
+                    <div class="card-body"><div class="xfl-chart"><canvas id="ch-priority" aria-label="Tickets by priority" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="card"><div class="card-header"><h3 class="card-title">Open tickets by age</h3></div>
+                    <div class="card-body"><div class="xfl-chart"><canvas id="ch-aging" aria-label="Open tickets by age" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-md-12 col-xl-4">
+                <div class="card"><div class="card-header"><h3 class="card-title">By product</h3></div>
+                    <div class="card-body"><div class="xfl-chart"><canvas id="ch-product" aria-label="Tickets by product" role="img"></canvas></div></div></div>
+            </div>
+            @if (Model.Role != "Maker")
+            {
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><h3 class="card-title">Top brokerage houses</h3></div>
+                        <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-house" aria-label="Tickets by brokerage house" role="img"></canvas></div></div></div>
+                </div>
+            }
+            <div class="@(Model.Role != "Maker" ? "col-lg-6" : "col-lg-6")">
+                <div class="card"><div class="card-header"><h3 class="card-title">By engineer (open / closed, SLA met %)</h3></div>
+                    <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-engineer" aria-label="Tickets by engineer" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h3 class="card-title">By category</h3></div>
+                    <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-category" aria-label="Tickets by category" role="img"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card"><div class="card-header"><h3 class="card-title">When tickets are raised (weekday × hour)</h3></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="xfl-heat" aria-label="Tickets raised per weekday and hour">
+                                <thead><tr><th></th>@for (var hr = 0; hr < 24; hr++) { <th>@(hr % 3 == 0 ? hr.ToString("00") : "")</th> }</tr></thead>
+                                <tbody>
+                                    @for (var d = 0; d < 7; d++)
+                                    {
+                                        <tr>
+                                            <th>@days[d]</th>
+                                            @for (var hr = 0; hr < 24; hr++)
+                                            {
+                                                var v = s.Heat[d][hr];
+                                                <td style="--a:@((0.08 + 0.92 * v / heatMax).ToString("0.00", CultureInfo.InvariantCulture))" class="@(v == 0 ? "z" : "")" title="@days[d] @hr.ToString("00"):00 – @v ticket(s)"></td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Darker = more tickets raised in that hour. Useful for planning engineer shifts.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ---------- Breakdowns ---------- *@
+        <div class="card">
+            <div class="card-header p-0 border-bottom-0">
+                <ul class="nav nav-tabs" role="tablist">
+                    @for (var i = 0; i < breakdowns.Count; i++)
+                    {
+                        <li class="nav-item"><a class="nav-link @(i == 0 ? "active" : "")" data-toggle="tab" href="#bd-@breakdowns[i].Id" role="tab">@breakdowns[i].Title</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-body tab-content">
+                @for (var i = 0; i < breakdowns.Count; i++)
+                {
+                    var b = breakdowns[i];
+                    <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="bd-@b.Id" role="tabpanel">
+                        <table class="table table-sm table-hover xfl-breakdown" data-export-title="@Model.Title – by @b.Title.ToLowerInvariant()" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>@b.Title</th><th class="text-right">Total</th><th class="text-right">Open</th><th class="text-right">Closed</th>
+                                    <th class="text-right">SLA breached</th><th class="text-right">SLA met</th><th class="text-right">Avg resolution (h)</th><th class="text-right">Avg rating</th><th>Share</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in b.Rows)
+                                {
+                                    var share = s.Total > 0 ? 100.0 * r.Total / s.Total : 0;
+                                    <tr>
+                                        <td>@r.Name</td>
+                                        <td class="text-right" data-order="@r.Total">@r.Total</td>
+                                        <td class="text-right">@r.Open</td>
+                                        <td class="text-right">@r.Closed</td>
+                                        <td class="text-right @(r.Breached > 0 ? "text-danger" : "")">@r.Breached</td>
+                                        <td class="text-right" data-order="@(r.SlaMetPercent ?? -1)">@P(r.SlaMetPercent)</td>
+                                        <td class="text-right" data-order="@(r.AvgResolutionHours ?? -1)">@(r.AvgResolutionHours?.ToString("0.0", CultureInfo.InvariantCulture) ?? "–")</td>
+                                        <td class="text-right" data-order="@(r.AvgRating ?? -1)">@(r.AvgRating?.ToString("0.0", CultureInfo.InvariantCulture) ?? "–")</td>
+                                        <td data-order="@share.ToString("0.00", CultureInfo.InvariantCulture)" style="min-width:110px">
+                                            <div class="xfl-bar"><span style="width:@share.ToString("0.0", CultureInfo.InvariantCulture)%"></span></div>
+                                            <small class="text-muted">@share.ToString("0.0", CultureInfo.InvariantCulture)%</small>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @* ---------- Detailed table ---------- *@
+    <div class="card">
+        <div class="card-header d-flex align-items-center flex-wrap">
+            <h3 class="card-title mb-0"><i class="fas fa-table mr-2"></i>@(report ? "Ticket details" : "Tickets")</h3>
+            <span class="ml-2 text-muted small">
+                @if (Model.TotalMatching > Model.Rows.Count)
+                {
+                    <text>Showing the newest @Model.Rows.Count of @Model.TotalMatching tickets; narrow the filters to see the rest (the KPIs and charts count all of them).</text>
+                }
+                else
+                {
+                    <text>@Model.Rows.Count ticket(s). Click <i class="fas fa-plus-circle"></i> for details, <b>Columns</b> to show more fields, the boxes under the headings to search one column.</text>
+                }
+            </span>
+        </div>
+        <div class="card-body">
+            <script type="application/json" id="xfl-rows">@Html.Raw(Json.Serialize(Model.Rows))</script>
+            <script type="application/json" id="xfl-filters-text">@Html.Raw(Json.Serialize(Model.FilterDescription))</script>
+            <table id="xfl-tickets" class="table table-striped table-hover table-sm xfl-tickets" style="width:100%"></table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/plugins/select2/js/select2.full.min.js"></script>
+    <script src="~/plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="~/plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+    <script src="~/plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
+    <script src="~/plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+    <script src="~/plugins/datatables-buttons/js/buttons.print.min.js"></script>
+    <script src="~/plugins/jszip/jszip.min.js"></script>
+    <script src="~/plugins/pdfmake/pdfmake.min.js"></script>
+    <script src="~/plugins/pdfmake/vfs_fonts.js"></script>
+    @if (report)
+    {
+        <script src="~/lib/chart.js/chart.umd.min.js"></script>
+    }
+    <script src="~/js/xfl-charts.js" asp-append-version="true"></script>
+    <script src="~/js/xfl-explorer.js" asp-append-version="true"></script>
+}

@@ -587,6 +587,8 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("BrokerageId");
 
+                    b.HasIndex("ClosedOn");
+
                     b.HasIndex("ProductId");
 
                     b.HasIndex("SupportCatagoryId");
@@ -594,6 +596,8 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("SupportSubCatagoryId");
 
                     b.HasIndex("SupportTypeId");
+
+                    b.HasIndex("TDate");
 
                     b.HasIndex("UserId");
 
