@@ -1,4 +1,5 @@
 using XFLCSMS.Models.Notifications;
+using XFLCSMS.Models.Tiers;
 
 namespace XFLCSMS.Services.Notifications
 {
@@ -38,7 +39,8 @@ namespace XFLCSMS.Services.Notifications
                 .Where(i => i.IStatus != "Close")
                 .Select(i => new
                 {
-                    i.IssueId, i.TNumber, i.ITitle, i.Priority, i.IStatus, i.UserId, i.BrokerageId, i.ProductId, i.AssignedToUserId, i.AssignBy, i.TDate, i.FirstResponseOn
+                    i.IssueId, i.TNumber, i.ITitle, i.Priority, i.IStatus, i.UserId, i.BrokerageId, i.ProductId, i.AssignedToUserId, i.AssignBy, i.TDate, i.FirstResponseOn,
+                    i.SupportLevel, i.LevelSince
                 })
                 .ToListAsync(token);
             if (open.Count == 0) return;
@@ -47,9 +49,45 @@ namespace XFLCSMS.Services.Notifications
             var done = (await _db.SlaAlerts.AsNoTracking().Where(a => ids.Contains(a.IssueId)).Select(a => new { a.IssueId, a.EventKey }).ToListAsync(token))
                 .Select(a => (a.IssueId, a.EventKey)).ToHashSet();
 
+            var levels = await _db.SupportLevels.AsNoTracking().ToDictionaryAsync(l => l.Level, token);
             var dispatched = 0;
             foreach (var i in open)
             {
+                // time allowed at the support level (Admin > Support Levels): one "escalation due" per stay at a level
+                if (levels.TryGetValue(i.SupportLevel, out var level) && level.MaxHoursAtLevel > 0)
+                {
+                    var since = i.LevelSince ?? i.TDate;
+                    var due = since.AddHours(level.MaxHoursAtLevel);
+                    var alertKey = "EscalationDue:L" + i.SupportLevel + ":" + since.ToString("yyyyMMddHHmmss");
+                    if (now >= due && !done.Contains((i.IssueId, alertKey)))
+                    {
+                        _db.SlaAlerts.Add(new SlaAlert { IssueId = i.IssueId, EventKey = alertKey, CreatedOn = now });
+                        await _db.SaveChangesAsync(token);
+                        if (now - due <= lookback)
+                        {
+                            var data = NotificationSaveInterceptor.ForTicket(new NotificationEventData { EventKey = "EscalationDue", ActorName = "SLA monitor" }, new TicketSnapshot
+                            {
+                                IssueId = i.IssueId, TNumber = i.TNumber, Title = i.ITitle, Priority = i.Priority, Status = i.IStatus, OwnerUserId = i.UserId,
+                                BrokerageId = i.BrokerageId, ProductId = i.ProductId, EngineerUserId = i.AssignedToUserId,
+                                EngineerName = string.IsNullOrWhiteSpace(i.AssignBy) ? null : i.AssignBy
+                            });
+                            data.StaffOnly = true;
+                            data.Values["Level"] = SupportLevel.Code(i.SupportLevel);
+                            data.Values["LevelName"] = level.Name;
+                            data.Values["DueAt"] = due.ToString("dd MMM yyyy HH:mm");
+                            data.Values["Overdue"] = Duration(now - due);
+                            try
+                            {
+                                dispatched += await _dispatcher.DispatchAsync(data, token);
+                            }
+                            catch (Exception ex) when (ex is not OperationCanceledException)
+                            {
+                                _logger.LogError(ex, "Could not send EscalationDue for ticket {Ticket}.", i.TNumber);
+                            }
+                        }
+                    }
+                }
+
                 if (!targets.TryGetValue(i.Priority ?? string.Empty, out var target)) continue;
 
                 var checks = new List<(string Kind, string Warning, string Breach, DateTime Due)>();

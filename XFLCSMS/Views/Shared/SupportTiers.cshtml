@@ -1,0 +1,194 @@
+@model XFLCSMS.Models.Tiers.TiersOverviewView
+@using XFLCSMS.Models.Tiers
+@using System.Globalization
+@*
+    Support Levels overview (CsmsController.SupportTiers), for the three staff roles: open workload per level (L1-L5),
+    tickets overdue for escalation, the escalation flow, first-level resolution, engineers per level and the development pipeline.
+*@
+@{
+    Layout = Model.Layout;
+    var ctl = Model.Controller;
+    ViewData["Title"] = "Support Levels";
+    ViewData["Subtitle"] = "Where the tickets are across L1 to L5, how they move between levels, and the development pipeline.";
+    string P(double? v) => v.HasValue ? (v.Value * 100).ToString("0", CultureInfo.InvariantCulture) + "%" : "–";
+    string H(double? h) => !h.HasValue ? "–" : h < 1 ? Math.Round(h.Value * 60) + "m" : h < 48 ? h.Value.ToString("0.#", CultureInfo.InvariantCulture) + "h" : (h.Value / 24).ToString("0.#", CultureInfo.InvariantCulture) + "d";
+    string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+    var maxOpen = Math.Max(1, Model.Levels.Select(l => l.Open).DefaultIfEmpty(0).Max());
+    var totalOpen = Model.Levels.Sum(l => l.Open);
+    var totalDue = Model.Levels.Sum(l => l.EscalationDue);
+    var period = Model.Days == 365 ? "the last 12 months" : "the last " + Model.Days + " days";
+
+    var workload = new
+    {
+        type = "bar", stacked = true, unit = "", legend = true,
+        labels = Model.Levels.Select(l => SupportLevel.Code(l.Level.Level) + " " + l.Level.Name).ToArray(),
+        datasets = new object[]
+        {
+            new { label = "Assigned", color = "blue", data = Model.Levels.Select(l => (double)(l.Open - l.Unassigned)).ToArray() },
+            new { label = "Waiting in queue", color = "amber", data = Model.Levels.Select(l => (double)l.Unassigned).ToArray() }
+        }
+    };
+    var pipelineStages = DevStages.All.Where(s => s.Value != DevStages.Deployed).ToArray();
+    var pipeline = new
+    {
+        type = "bar", horizontal = true, unit = "", legend = false,
+        labels = pipelineStages.Select(s => s.Label).ToArray(),
+        datasets = new object[] { new { label = "Tickets", colors = new[] { "blue", "purple", "teal", "orange", "gold", "slate" }, data = pipelineStages.Select(s => (double)Model.DevPipeline.GetValueOrDefault(s.Value)).ToArray() } }
+    };
+}
+@section Head {
+<link rel="stylesheet" href="~/css/xfl-perf.css" asp-append-version="true" />
+}
+@section PageActions {
+    <div class="btn-group btn-group-sm mr-2" role="group" aria-label="Period">
+        @foreach (var d in new[] { 7, 30, 90, 365 })
+        {
+            <a class="btn @(d == Model.Days ? "btn-primary" : "btn-outline-primary")" asp-controller="@ctl" asp-action="SupportTiers" asp-route-days="@d">@(d == 365 ? "12 months" : d + " days")</a>
+        }
+    </div>
+    <a class="btn btn-sm btn-outline-secondary mr-1" asp-controller="@ctl" asp-action="DevTracker"><i class="fas fa-code-branch mr-1"></i>Development Tracker</a>
+    @if (Model.Role == "Admin")
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-controller="Admin" asp-action="SupportLevels"><i class="fas fa-cog mr-1"></i>Set up levels</a>
+    }
+}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="kpi-grid">
+            <div class="kpi-tile kpi-info"><div class="kpi-label">Open tickets</div><div class="kpi-value">@totalOpen</div><div class="kpi-sub">across all levels</div></div>
+            <div class="kpi-tile @(totalDue > 0 ? "kpi-bad" : "kpi-good")"><div class="kpi-label">Escalation due</div><div class="kpi-value">@totalDue</div><div class="kpi-sub">longer at a level than allowed</div></div>
+            <div class="kpi-tile @(Model.FirstLevelResolution >= .6 ? "kpi-good" : Model.FirstLevelResolution >= .4 ? "kpi-warn" : "kpi-info")"><div class="kpi-label">Solved at L1</div><div class="kpi-value">@P(Model.FirstLevelResolution)</div><div class="kpi-bar"><span style="width:@(((Model.FirstLevelResolution ?? 0) * 100).ToString("0", CultureInfo.InvariantCulture))%"></span></div><div class="kpi-sub">of tickets closed in @period</div></div>
+            <div class="kpi-tile kpi-purple"><div class="kpi-label">Escalation rate</div><div class="kpi-value">@P(Model.EscalationRate)</div><div class="kpi-sub">@Model.EscalationsInPeriod escalations · @Model.HandBacksInPeriod handed back</div></div>
+            <div class="kpi-tile kpi-info"><div class="kpi-label">In development</div><div class="kpi-value">@Model.DevPipeline.Values.Sum()</div><div class="kpi-sub">@Model.DevOverdue past their ETA</div></div>
+            <div class="kpi-tile kpi-good"><div class="kpi-label">Deployed</div><div class="kpi-value">@Model.DeployedInPeriod</div><div class="kpi-sub">in @period@(Model.AvgDaysToDeploy.HasValue ? " · avg " + Model.AvgDaysToDeploy.Value.ToString("0.#", CultureInfo.InvariantCulture) + " days" : "")</div></div>
+        </div>
+
+        <div class="xfl-tier-cards">
+            @foreach (var r in Model.Levels)
+            {
+                var l = r.Level;
+                <div class="xfl-tier-card xfl-lvl-@l.Level">
+                    <div class="xfl-tier-head">
+                        <span class="xfl-tier-code">@SupportLevel.Code(l.Level)</span>
+                        <span class="xfl-tier-name">@l.Name</span>
+                    </div>
+                    <a class="xfl-tier-big d-inline-block" asp-controller="@ctl" asp-action="Reports" asp-route-Levels="@l.Level" asp-route-Statuses="Open" asp-route-filtered="1" title="Open tickets at @SupportLevel.Code(l.Level)">@r.Open</a>
+                    <span class="small text-muted">open</span>
+                    <div class="xfl-tier-load" title="Share of the busiest level"><span style="--w:@((100.0 * r.Open / maxOpen).ToString("0", CultureInfo.InvariantCulture))%"></span></div>
+                    <div class="xfl-tier-stats">
+                        <span>Queue <b>@r.Unassigned</b></span>
+                        <span>High <b>@r.HighOpen</b></span>
+                        <span class="@(r.EscalationDue > 0 ? "text-danger" : "")">Due <b class="@(r.EscalationDue > 0 ? "text-danger" : "")">@r.EscalationDue</b></span>
+                        <span>Closed <b>@r.ClosedInPeriod</b></span>
+                        <span>Engineers <b>@r.ActiveEngineers</b></span>
+                        <span>Per engineer <b>@r.OpenPerEngineer.ToString("0.#", CultureInfo.InvariantCulture)</b></span>
+                        <span>Avg stay <b>@H(r.AvgHoursAtLevel)</b></span>
+                        <span>Limit <b>@(l.MaxHoursAtLevel > 0 ? l.MaxHoursAtLevel + "h" : "none")</b></span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title mb-0">Open workload by level</h3></div>
+                    <div class="card-body"><div class="chart-box"><canvas data-chart="@J(workload)" aria-label="Open tickets per level, assigned and waiting"></canvas></div></div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title mb-0">Escalation flow, @period</h3></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Level</th><th class="text-right" title="Escalated into this level">In ↑</th><th class="text-right" title="Escalated from this level to a higher one">Out ↑</th><th class="text-right" title="Handed back to a lower level">Back ↓</th><th class="text-right" title="Average time a ticket stayed before it moved on">Avg stay</th></tr></thead>
+                                <tbody>
+                                    @foreach (var r in Model.Levels)
+                                    {
+                                        <tr>
+                                            <td><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@r.Level.Level">@SupportLevel.Code(r.Level.Level)</span> @r.Level.Name</td>
+                                            <td class="text-right">@r.EscalatedIn</td>
+                                            <td class="text-right">@r.EscalatedOut</td>
+                                            <td class="text-right">@r.HandedBack</td>
+                                            <td class="text-right">@H(r.AvgHoursAtLevel)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">Best practice: solve as much as possible at L1 (shift-left) and escalate early with a clear reason when a ticket needs more skill. A high hand-back count means tickets are escalated too soon.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title mb-0">Engineers by level</h3></div>
+                    <div class="card-body p-0 table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead><tr><th>Engineer</th><th>Level</th><th class="text-right">Open now</th><th class="text-right">Closed in @period</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var (e, closed) in Model.Engineers.OrderByDescending(x => x.Engineer.Level).ThenBy(x => x.Engineer.Name))
+                                {
+                                    <tr>
+                                        <td><b>@e.Name</b></td>
+                                        <td><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@e.Level">@SupportLevel.Code(e.Level)</span></td>
+                                        <td class="text-right">@e.OpenTickets</td>
+                                        <td class="text-right">@closed</td>
+                                        <td class="text-right"><a asp-controller="@ctl" asp-action="Reports" asp-route-EngineerId="@e.Id" asp-route-filtered="1" class="small">tickets</a></td>
+                                    </tr>
+                                }
+                                @if (Model.Engineers.Count == 0)
+                                {
+                                    <tr><td colspan="5" class="text-muted">No active Support Engineers.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center"><h3 class="card-title mb-0">Development pipeline</h3>
+                        <a class="ml-auto small" asp-controller="@ctl" asp-action="DevTracker">open the tracker</a></div>
+                    <div class="card-body"><div class="chart-box short"><canvas data-chart="@J(pipeline)" aria-label="Tickets per development stage"></canvas></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Latest moves between levels</h3></div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>When</th><th>Ticket</th><th>Move</th><th>Engineer</th><th>Reason</th><th>By</th></tr></thead>
+                    <tbody>
+                        @foreach (var row in Model.RecentEscalations)
+                        {
+                            var e = row.Escalation;
+                            <tr>
+                                <td class="text-nowrap">@e.On.ToString("dd MMM HH:mm", CultureInfo.InvariantCulture)</td>
+                                <td class="text-nowrap"><a asp-controller="@ctl" asp-action="TicketView" asp-route-id="@e.IssueId"><b>@row.TicketNumber</b></a><div class="small text-muted text-truncate" style="max-width:220px">@row.Title</div></td>
+                                <td class="text-nowrap"><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@e.FromLevel">@SupportLevel.Code(e.FromLevel)</span> → <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@e.ToLevel">@SupportLevel.Code(e.ToLevel)</span> <span class="small text-muted">@e.Kind</span></td>
+                                <td class="small">@(e.FromEngineerName ?? "unassigned") → @(e.ToEngineerName ?? "queue")</td>
+                                <td class="small" style="max-width:360px">@e.Reason</td>
+                                <td class="small">@e.ByName</td>
+                            </tr>
+                        }
+                        @if (Model.RecentEscalations.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-muted">No ticket has been moved between levels yet. Open a ticket and use <b>Escalate</b> in its Support level panel.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+@section Scripts {
+<script src="~/lib/chart.js/chart.umd.min.js"></script>
+<script src="~/js/xfl-perf-charts.js" asp-append-version="true"></script>
+}

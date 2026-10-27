@@ -138,6 +138,12 @@ namespace XFLCSMS.Controllers
         {
             return TicketExplorer("Assigned to Me", "Your open tickets.", "list", "mine", filter);
         }
+
+        /// <summary>Unassigned open tickets at the engineer's support level or below, to pick up.</summary>
+        public Task<IActionResult> LevelQueue(TicketFilter filter)
+        {
+            return TicketExplorer("My Level Queue", "Open tickets nobody has taken yet, at your support level or below. Pick one up, or escalate it with a reason.", "list", "levelqueue", filter);
+        }
         public Task<IActionResult> UnassignedTicketList(TicketFilter filter)
         {
             return TicketExplorer("Unassigned Tickets", "Open tickets nobody is working on yet.", "list", "unassigned", filter);

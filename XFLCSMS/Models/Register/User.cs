@@ -33,6 +33,9 @@ namespace XFLCSMS.Models.Register
 
         public bool Terms { get; set; }
 
+        /// <summary>Support level of a Support Engineer, 1 to 5 (L1 ... L5). Null for everybody else; an engineer without one works at L1.</summary>
+        public int? SupportLevel { get; set; }
+
         public ICollection<IssueTable> issue { get; set; }
         public ICollection<Todo> Todos { get; set; } = new List<Todo>();
     }

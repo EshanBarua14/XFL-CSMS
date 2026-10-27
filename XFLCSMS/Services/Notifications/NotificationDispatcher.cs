@@ -74,6 +74,7 @@ namespace XFLCSMS.Services.Notifications
             var recipients = new List<(User User, string Channel, string Role)>();
             foreach (var cell in cells)
             {
+                if (data.StaffOnly && cell.Role == NotificationRole.Maker) continue;
                 IEnumerable<User> candidates;
                 if (cell.Audience == NotificationAudience.All)
                 {

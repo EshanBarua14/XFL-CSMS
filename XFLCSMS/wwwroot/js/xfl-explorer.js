@@ -142,6 +142,12 @@
         { data: 'resolutionSla', title: 'Resolution SLA', className: 'xfl-select-filter', render: function (v, type, r) { return type === 'display' ? badge(v, slaClass[v]) + '<div class="small text-muted">target ' + dur(r.resolutionTargetHours) + '</div>' : v; } },
         { data: 'rating', title: 'Rating', visible: false, className: 'text-nowrap', render: function (v, type) { return type === 'display' ? stars(v) : (v || ''); } },
         { data: 'attachments', title: 'Files', visible: false, className: 'text-right' },
+        // support level and development (added after the older columns so their positions stay the same)
+        { data: 'levelCode', title: 'Level', visible: !maker, className: 'xfl-select-filter text-nowrap' + (maker ? ' no-colvis' : ''), render: function (v, type, r) { return type === 'display' ? '<span class="xfl-lvl xfl-lvl-sm xfl-lvl-' + r.level + '">' + esc(v) + '</span>' : v; } },
+        { data: 'escalations', title: 'Escalations', visible: false, className: 'text-right' },
+        { data: 'devStage', title: 'Development', visible: !maker, className: 'xfl-select-filter', render: function (v, type, r) { return type === 'display' && v ? '<span class="xfl-dev-chip' + (r.devOverdue ? ' text-danger' : '') + '">' + esc(v) + '</span>' : v; } },
+        { data: 'devOwner', title: 'Dev owner', visible: false, className: 'xfl-select-filter' },
+        { data: 'devEta', title: 'Dev ETA', visible: false, className: 'text-nowrap', render: function (v, type, r) { return type === 'display' || type === 'export' ? (v ? fmtDate(v).slice(0, 11) + (r.devOverdue && type === 'display' ? ' <span class="badge badge-danger">late</span>' : '') : '') : (v || ''); } },
         {
             data: null, title: 'Actions', orderable: false, searchable: false, className: 'text-nowrap no-export no-colvis',
             render: function (v, type, r) {
@@ -168,7 +174,7 @@
         }
 
         var order = [[14, 'desc']];
-        if (root.getAttribute('data-preset') === 'mine' || root.getAttribute('data-preset') === 'unassigned') { order = [[21, 'desc']]; }   // oldest first
+        if (['mine', 'unassigned', 'levelqueue'].indexOf(root.getAttribute('data-preset')) >= 0) { order = [[21, 'desc']]; }   // oldest first
         if (root.getAttribute('data-preset') === 'closed') { order = [[19, 'desc']]; }
 
         var dt = $table.DataTable({
@@ -240,7 +246,9 @@
                 ['Age', dur(r.ageHours)], ['Resolution time', dur(r.resolutionHours)],
                 ['Response SLA', r.responseSla + ' (target ' + dur(r.responseTargetHours) + ')'],
                 ['Resolution SLA', r.resolutionSla + ' (target ' + dur(r.resolutionTargetHours) + ')'],
-                ['Client rating', r.rating ? r.rating + ' / 5' : 'Not rated'], ['Attachments', r.attachments]
+                ['Client rating', r.rating ? r.rating + ' / 5' : 'Not rated'], ['Attachments', r.attachments],
+                ['Support level', r.levelCode + (r.escalations ? ' (escalated ' + r.escalations + '×)' : '')],
+                ['Development', r.devStage ? r.devStage + (r.devOwner ? ' · ' + r.devOwner : '') + (r.devEta ? ' · ETA ' + fmtDate(r.devEta).slice(0, 11) : '') : 'None']
             ];
             row.child('<dl class="row xfl-detail mb-0">' + f.map(function (x) {
                 return '<dt class="col-sm-4 col-lg-2">' + esc(x[0]) + '</dt><dd class="col-sm-8 col-lg-4">' + (esc(x[1]) || '<span class="text-muted">–</span>') + '</dd>';
@@ -293,5 +301,15 @@
             { label: 'SLA met %', data: d.engineer.sla, color: K.purple, percent: true }
         ], { stacked: true });
         X.bar('ch-category', d.category.labels, [{ label: 'Tickets', data: d.category.values, color: K.teal }], { horizontal: true });
+        if (d.level) {
+            X.bar('ch-level', d.level.labels, [
+                { label: 'Open', data: d.level.open, color: K.amber },
+                { label: 'Closed', data: d.level.closed, color: K.green },
+                { label: 'SLA met %', data: d.level.sla, color: K.purple, percent: true }
+            ], { stacked: true });
+        }
+        if (d.dev) {
+            X.bar('ch-dev', d.dev.labels, [{ label: 'Tickets', data: d.dev.values, color: K.purple }], { horizontal: true });
+        }
     }
 })();

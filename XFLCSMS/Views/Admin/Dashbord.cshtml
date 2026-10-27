@@ -72,6 +72,7 @@
                     </div>
                     <!-- /.row -->
                     <partial name="_WorkflowStrip" model="Model" />
+                    @await Component.InvokeAsync("TierStrip")
                     <!-- Main row -->
                     <div class="row">
                         <section class="col-md-6 connectedSortable">

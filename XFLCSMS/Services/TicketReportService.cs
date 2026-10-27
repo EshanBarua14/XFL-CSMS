@@ -2,6 +2,7 @@ using System.Globalization;
 using XFLCSMS.Models.Admin;
 using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Register;
+using XFLCSMS.Models.Tiers;
 
 namespace XFLCSMS.Services
 {
@@ -50,6 +51,10 @@ namespace XFLCSMS.Services
                 case "engineer":
                     // an engineer's report: tickets assigned to or closed by him, any status
                     return issues.Where(i => i.AssignedToUserId == user.Id || (i.AssignedToUserId == null && i.AssignBy == user.FullName) || i.ClosedBy == user.FullName);
+                case "levelqueue":
+                    // a Support Engineer's queue: nobody took these yet and they are at the engineer's level or below
+                    var level = SupportLevel.Clamp(user.SupportLevel);
+                    return issues.Where(i => i.AssignedToUserId == null && (i.AssignBy == null || i.AssignBy == "") && i.IStatus != "Close" && i.SupportLevel <= level);
                 case "mine":
                     return issues.Where(i => (i.AssignedToUserId == user.Id || (i.AssignedToUserId == null && i.AssignBy == user.FullName)) && i.IStatus != "Close");
                 default:
@@ -131,6 +136,20 @@ namespace XFLCSMS.Services
                 issues = issues.Where(i => i.AssignedToUserId == id || (i.AssignedToUserId == null && i.AssignBy == name));
             }
 
+            var levels = f.Levels.Where(l => l >= SupportLevel.Min && l <= SupportLevel.Max).Distinct().ToList();
+            if (levels.Count > 0) { issues = issues.Where(i => levels.Contains(i.SupportLevel)); }
+
+            var dev = f.Dev.Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
+            if (dev.Count > 0)
+            {
+                var stages = dev.Where(DevStages.IsValid).ToList();
+                var any = dev.Contains("any");
+                var active = dev.Contains("active");
+                var none = dev.Contains("none");
+                issues = issues.Where(i => (any && i.DevStage != null) || (active && i.DevStage != null && i.DevStage != DevStages.Deployed)
+                    || (none && i.DevStage == null) || (i.DevStage != null && stages.Contains(i.DevStage)));
+            }
+
             if (!string.IsNullOrWhiteSpace(f.Q))
             {
                 var q = f.Q.Trim();
@@ -159,7 +178,8 @@ namespace XFLCSMS.Services
                     i.IssueId, i.TNumber, i.ITitle, i.IStatus, i.Priority, i.ProductId, i.BrokerageId,
                     OwnerName = i.Users.FullName, OwnerBranch = i.Users.Branch, OwnerHouse = i.Users.BrokerageHouseName,
                     i.SupportTypeId, i.SupportCatagoryId, i.SupportSubCatagoryId, i.AffectedSectionId,
-                    i.AssignedToUserId, i.AssignBy, i.TDate, i.AssignOn, i.FirstResponseOn, i.UpdatedOn, i.UpdatedBy, i.ClosedOn, i.ClosedBy
+                    i.AssignedToUserId, i.AssignBy, i.TDate, i.AssignOn, i.FirstResponseOn, i.UpdatedOn, i.UpdatedBy, i.ClosedOn, i.ClosedBy,
+                    i.SupportLevel, i.DevStage, i.DevOwnerUserId, i.DevEta
                 })
                 .ToListAsync();
 
@@ -177,8 +197,14 @@ namespace XFLCSMS.Services
             // ratings and attachment counts for these tickets only (in chunks: SQL Server allows ~2100 parameters)
             var ratings = new Dictionary<int, int>();
             var attachments = new Dictionary<int, int>();
+            var escalations = new Dictionary<int, int>();
             foreach (var chunk in ids.Chunk(1500))
             {
+                foreach (var e in await _context.TicketEscalations.AsNoTracking().Where(e => chunk.Contains(e.IssueId) && e.ToLevel > e.FromLevel).GroupBy(e => e.IssueId).Select(g => new { g.Key, Count = g.Count() }).ToListAsync())
+                {
+                    escalations[e.Key] = e.Count;
+                }
+
                 foreach (var r in await _context.TicketRatings.AsNoTracking().Where(r => chunk.Contains(r.IssueId)).Select(r => new { r.IssueId, r.Stars }).ToListAsync())
                 {
                     ratings[r.IssueId] = r.Stars;
@@ -252,7 +278,14 @@ namespace XFLCSMS.Services
                         ? (age <= resolutionTarget ? "Met" : "Breached")
                         : (age > resolutionTarget ? "Breached" : age > resolutionTarget * 0.75 ? "At risk" : "On track"),
                     Rating = ratings.TryGetValue(d.IssueId, out var stars) ? stars : null,
-                    Attachments = attachments.TryGetValue(d.IssueId, out var count) ? count : 0
+                    Attachments = attachments.TryGetValue(d.IssueId, out var count) ? count : 0,
+                    Level = SupportLevel.Clamp(d.SupportLevel),
+                    LevelCode = SupportLevel.Code(SupportLevel.Clamp(d.SupportLevel)),
+                    Escalations = escalations.TryGetValue(d.IssueId, out var esc) ? esc : 0,
+                    DevStage = d.DevStage == null ? string.Empty : DevStages.Label(d.DevStage),
+                    DevOwner = d.DevOwnerUserId.HasValue && staff.TryGetValue(d.DevOwnerUserId.Value, out var owner) ? owner : string.Empty,
+                    DevEta = d.DevEta,
+                    DevOverdue = d.DevEta.HasValue && DevStages.IsActive(d.DevStage) && d.DevEta.Value.Date < now.Date
                 });
             }
 
@@ -312,6 +345,10 @@ namespace XFLCSMS.Services
             s.ByEngineer = GroupBy(rows, r => r.Engineer, "(unassigned)");
             s.ByCategory = GroupBy(rows, r => r.Category, "(no category)");
             s.BySupportType = GroupBy(rows, r => r.SupportType, "(no support type)");
+            s.ByLevel = Enumerable.Range(SupportLevel.Min, SupportLevel.Max).Select(l => Group(SupportLevel.Code(l), rows.Where(r => r.Level == l))).ToList();
+            s.ByDevStage = DevStages.All.Select(st => Group(st.Label, rows.Where(r => r.DevStage == st.Label))).Where(b => b.Total > 0).ToList();
+            s.Escalated = rows.Count(r => r.Escalations > 0);
+            s.InDevelopment = rows.Count(r => r.DevStage != string.Empty && r.DevStage != DevStages.Label(DevStages.Deployed));
 
             var open = rows.Where(r => !r.IsClosed).ToList();
             s.Aging = new List<(string, int)>
@@ -415,6 +452,12 @@ namespace XFLCSMS.Services
         public async Task<TicketExplorerView> BuildAsync(User user, string role, string controller, string action, string mode,
             string? preset, TicketFilter filter)
         {
+            if (preset == "levelqueue")
+            {
+                // the level may have changed since the engineer signed in
+                user.SupportLevel = await _context.Users.AsNoTracking().Where(u => u.Id == user.Id).Select(u => u.SupportLevel).FirstOrDefaultAsync();
+            }
+
             var issues = ApplyPreset(Scope(user, role), preset, user);
             issues = ApplyFilter(issues, filter);
             var rows = await RowsAsync(issues, filter);
@@ -481,6 +524,8 @@ namespace XFLCSMS.Services
                 .Where(u => u.UType && (u.Department == "Support Engineer" || u.Department == "Support Maneger"))
                 .OrderBy(u => u.FullName)
                 .Select(u => new Option(u.Id.ToString(), u.FullName + (u.UStatus ? "" : " (disabled)"))).ToListAsync();
+            view.Levels = await _context.SupportLevels.AsNoTracking().OrderBy(l => l.Level)
+                .Select(l => new Option(l.Level.ToString(), "L" + l.Level + " · " + l.Name)).ToListAsync();
         }
 
         private static List<string> Describe(TicketExplorerView v, DateTime? from, DateTime? to)
@@ -509,6 +554,11 @@ namespace XFLCSMS.Services
             else if (f.EngineerId.HasValue) { list.Add("Engineer: " + Names(new[] { f.EngineerId.Value.ToString() }, v.Engineers)); }
             if (!string.IsNullOrEmpty(f.Sla)) { list.Add("SLA: " + f.Sla.Replace('-', ' ')); }
             if (f.OlderThanDays.HasValue) { list.Add("Open longer than " + f.OlderThanDays + " days"); }
+            if (f.Levels.Count > 0) { list.Add("Level: " + string.Join(", ", f.Levels.OrderBy(l => l).Select(l => SupportLevel.Code(l)))); }
+            if (f.Dev.Count > 0)
+            {
+                list.Add("Development: " + string.Join(", ", f.Dev.Select(d => d switch { "any" => "tracked", "active" => "in progress", "none" => "none", _ => DevStages.Label(d) })));
+            }
             if (!string.IsNullOrWhiteSpace(f.Q)) { list.Add("Search: \"" + f.Q.Trim() + "\""); }
             return list;
         }

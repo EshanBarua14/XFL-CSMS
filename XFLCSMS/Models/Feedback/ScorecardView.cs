@@ -29,6 +29,11 @@ namespace XFLCSMS.Models.Feedback
 
         /// <summary>Team KPIs of the six months up to the selected one.</summary>
         public List<KpiPoint> Trend { get; set; } = new();
+
+        /// <summary>Support level filter (1-5) of the ranking, the levels and every engineer's level.</summary>
+        public int? Level { get; set; }
+        public List<XFLCSMS.Models.Tiers.SupportLevel> Levels { get; set; } = new();
+        public Dictionary<int, int> EngineerLevels { get; set; } = new();
     }
 
     /// <summary>One engineer's performance: month KPIs, six-month trend, client feedback in depth.</summary>

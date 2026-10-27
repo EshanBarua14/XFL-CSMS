@@ -11,6 +11,7 @@ using XFLCSMS.Models.DataTable;
 using XFLCSMS.Models.Todos;
 using XFLCSMS.Models.Feedback;
 using XFLCSMS.Models.Notifications;
+using XFLCSMS.Models.Tiers;
 
 namespace XFLCSMS.Data
 {
@@ -47,6 +48,10 @@ namespace XFLCSMS.Data
         public DbSet<NotificationOptOut> NotificationOptOuts => Set<NotificationOptOut>();
         public DbSet<NotificationMessage> NotificationMessages => Set<NotificationMessage>();
         public DbSet<SlaAlert> SlaAlerts => Set<SlaAlert>();
+
+        public DbSet<SupportLevel> SupportLevels => Set<SupportLevel>();
+        public DbSet<TicketEscalation> TicketEscalations => Set<TicketEscalation>();
+        public DbSet<TicketDevUpdate> TicketDevUpdates => Set<TicketDevUpdate>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -100,6 +105,24 @@ namespace XFLCSMS.Data
             });
             modelBuilder.Entity<SlaAlert>().HasIndex(a => new { a.IssueId, a.EventKey }).IsUnique();
             modelBuilder.Entity<SlaAlert>().HasOne<IssueTable>().WithMany().HasForeignKey(a => a.IssueId).OnDelete(DeleteBehavior.Cascade);
+
+            // support levels L1-L5 and development tracking
+            modelBuilder.Entity<SupportLevel>().HasData(SupportLevel.Defaults);
+            modelBuilder.Entity<IssueTable>().Property(i => i.SupportLevel).HasDefaultValue(1);
+            modelBuilder.Entity<IssueTable>().HasIndex(i => i.SupportLevel);
+            modelBuilder.Entity<IssueTable>().HasIndex(i => i.DevStage);
+            modelBuilder.Entity<IssueTable>().HasOne<User>().WithMany().HasForeignKey(i => i.DevOwnerUserId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<TicketEscalation>(e =>
+            {
+                e.HasOne<IssueTable>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.IssueId, x.On });
+                e.HasIndex(x => x.On);
+            });
+            modelBuilder.Entity<TicketDevUpdate>(e =>
+            {
+                e.HasOne<IssueTable>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.IssueId, x.On });
+            });
         }
 
 

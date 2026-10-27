@@ -10,6 +10,9 @@
     string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
     double? Pct(double? v) => v.HasValue ? Math.Round(v.Value * 100, 1) : null;
     var ranked = Model.Rows.Where(r => r.Rank != null).OrderBy(r => r.Rank).ToList();
+    // with a level chosen, positions are counted within that level (the team rank is shown next to it)
+    int Pos(MonthlyEngineerScore r) => Model.Level == null ? r.Rank ?? 0 : ranked.IndexOf(r) + 1;
+    int Lvl(int engineerId) => Model.EngineerLevels.TryGetValue(engineerId, out var l) ? l : 1;
     var notRanked = Model.Rows.Where(r => r.Rank == null).ToList();
     var a = Model.Award;
     var monthKey = Model.Month.ToString("yyyy-MM");
@@ -34,7 +37,7 @@
     var leaderboard = new
     {
         type = "bar", horizontal = true, stacked = true, unit = "pts", max = 100, legend = true,
-        labels = ranked.Select(r => "#" + r.Rank + " " + r.EngineerName).ToArray(),
+        labels = ranked.Select(r => "#" + Pos(r) + " " + r.EngineerName).ToArray(),
         datasets = ScorecardService.Measures.Select((m, i) => new { label = m, color = colors[i], data = ranked.Select(r => ScorecardService.ContributionOf(r, s)[i]).ToArray() }).ToArray()
     };
     var trend = new
@@ -77,13 +80,28 @@
                 <option value="@m.ToString("yyyy-MM")" selected="@(m == Model.Month)">@m.ToString("MMMM yyyy")</option>
             }
         </select>
-        <a class="btn btn-outline-secondary mr-1" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>CSV</a>
+        <select name="level" class="form-control mr-2" onchange="this.form.submit()" aria-label="Support level">
+            <option value="">All levels</option>
+            @foreach (var l in Model.Levels)
+            {
+                <option value="@l.Level" selected="@(l.Level == Model.Level)">@XFLCSMS.Models.Tiers.SupportLevel.Code(l.Level) · @l.Name</option>
+            }
+        </select>
+        <a class="btn btn-outline-secondary mr-1" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey" asp-route-level="@Model.Level" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>CSV</a>
         <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print mr-1"></i>Print</button>
     </form>
 }
 
 <section class="content">
     <div class="container-fluid">
+        @if (Model.Level != null)
+        {
+            <div class="alert alert-info py-2 d-flex align-items-center flex-wrap">
+                <span class="xfl-lvl xfl-lvl-@Model.Level mr-2">@XFLCSMS.Models.Tiers.SupportLevel.Code(Model.Level) · @Model.Levels.FirstOrDefault(l => l.Level == Model.Level)?.Name</span>
+                The ranking shows only the engineers of this level, numbered within the level (team rank in grey). The team figures and the award cover everybody.
+                <a class="ml-auto" asp-controller="@Model.Controller" asp-action="Scorecard" asp-route-month="@monthKey">Show all levels</a>
+            </div>
+        }
         <div class="kpi-grid">
             <div class="kpi-tile kpi-info"><div class="kpi-label">Tickets closed</div><div class="kpi-value">@Model.TeamClosed</div><div class="kpi-sub">@Html.Raw(Delta(Model.TeamClosed, prev?.Closed, false))</div></div>
             <div class="kpi-tile @Tone(Model.TeamSla, s.AwardMinSla, 0.7)"><div class="kpi-label">SLA met</div><div class="kpi-value">@P(Model.TeamSla)</div><div class="kpi-bar"><span style="width:@((Model.TeamSla ?? 0) * 100)%"></span></div><div class="kpi-sub">@Html.Raw(Delta(Model.TeamSla, prev?.Sla, true))</div></div>
@@ -109,7 +127,7 @@
                                         <div class="avatar">@Initials(r.EngineerName)</div>
                                         <div class="who" title="@r.EngineerName"><a asp-controller="@Model.Controller" asp-action="EngineerProfile" asp-route-id="@r.EngineerUserId" asp-route-month="@monthKey">@r.EngineerName</a></div>
                                         <div class="pts">@r.Score.ToString("0.0") pts</div>
-                                        <div class="block">@r.Rank</div>
+                                        <div class="block">@Pos(r)</div>
                                     </div>
                                 }
                             </div>
@@ -235,9 +253,10 @@
                             Model.PreviousRanks.TryGetValue(r.EngineerUserId, out var prevRank);
                             var isWinner = a?.EngineerUserId == r.EngineerUserId && a.Status != EngineerAward.NoWinner;
                             <tr class="@(isWinner ? "table-warning" : "")">
-                                <td><b>@r.Rank</b></td>
+                                <td><b>@Pos(r)</b>@if (Model.Level != null) { <div class="small text-muted" title="Rank in the whole team">team #@r.Rank</div> }</td>
                                 <td>
                                     <a asp-controller="@Model.Controller" asp-action="EngineerProfile" asp-route-id="@r.EngineerUserId" asp-route-month="@monthKey"><b>@r.EngineerName</b></a>
+                                    <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@Lvl(r.EngineerUserId)" title="Support level">@XFLCSMS.Models.Tiers.SupportLevel.Code(Lvl(r.EngineerUserId))</span>
                                     @if (isWinner)
                                     {
                                         <i class="fas fa-trophy text-warning" title="Best Support Engineer of the Month"></i>
@@ -299,7 +318,7 @@
                         <tbody>
                             @foreach (var r in notRanked)
                             {
-                                <tr><td><a asp-controller="@Model.Controller" asp-action="EngineerProfile" asp-route-id="@r.EngineerUserId" asp-route-month="@monthKey">@r.EngineerName</a></td><td class="text-right">@r.TicketsClosed</td><td class="text-right">@r.RatingsCount</td><td class="text-right">@N(r.AverageStars, "0.00")</td><td class="text-right">@P(r.SlaCompliance)</td><td class="text-right">@P(r.ReopenRate)</td></tr>
+                                <tr><td><a asp-controller="@Model.Controller" asp-action="EngineerProfile" asp-route-id="@r.EngineerUserId" asp-route-month="@monthKey">@r.EngineerName</a> <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@Lvl(r.EngineerUserId)">@XFLCSMS.Models.Tiers.SupportLevel.Code(Lvl(r.EngineerUserId))</span></td><td class="text-right">@r.TicketsClosed</td><td class="text-right">@r.RatingsCount</td><td class="text-right">@N(r.AverageStars, "0.00")</td><td class="text-right">@P(r.SlaCompliance)</td><td class="text-right">@P(r.ReopenRate)</td></tr>
                             }
                         </tbody>
                     </table>

@@ -1,0 +1,37 @@
+@model XFLCSMS.Models.Tiers.TierStripView
+@using XFLCSMS.Models.Tiers
+@* Support level strip of the staff dashboards (ViewComponents/TierStripViewComponent). *@
+@{
+    var m = Model;
+    var max = Math.Max(1, m.Levels.Select(l => l.Open).DefaultIfEmpty(0).Max());
+}
+<div class="card xfl-tierstrip">
+    <div class="card-header d-flex align-items-center flex-wrap">
+        <h3 class="card-title mb-0"><i class="fas fa-layer-group mr-2"></i>Support levels</h3>
+        <span class="ml-auto d-flex align-items-center flex-wrap" style="gap:8px">
+            @if (m.MyLevel.HasValue)
+            {
+                <span class="xfl-lvl xfl-lvl-@m.MyLevel">You work at @SupportLevel.Code(m.MyLevel)</span>
+                <a class="btn btn-sm btn-primary" asp-controller="@m.Controller" asp-action="LevelQueue"><i class="fas fa-inbox mr-1"></i>@m.MyQueue in your level queue</a>
+            }
+            <a class="btn btn-sm btn-outline-primary" asp-controller="@m.Controller" asp-action="DevTracker"><i class="fas fa-code-branch mr-1"></i>@m.InDevelopment in development@(m.DevOverdue > 0 ? " · " + m.DevOverdue + " late" : "")</a>
+            <a class="btn btn-sm btn-outline-secondary" asp-controller="@m.Controller" asp-action="SupportTiers">Overview</a>
+        </span>
+    </div>
+    <div class="card-body pb-2">
+        <div class="xfl-tier-cards mb-0">
+            @foreach (var (l, open, queue, due) in m.Levels)
+            {
+                <a class="xfl-tier-card xfl-lvl-@l.Level text-reset text-decoration-none" asp-controller="@m.Controller" asp-action="Reports" asp-route-Levels="@l.Level" asp-route-Statuses="Open" asp-route-filtered="1" title="@l.Description">
+                    <div class="xfl-tier-head"><span class="xfl-tier-code">@SupportLevel.Code(l.Level)</span><span class="xfl-tier-name">@l.Name</span></div>
+                    <span class="xfl-tier-big">@open</span> <span class="small text-muted">open</span>
+                    <div class="xfl-tier-load"><span style="--w:@((100.0 * open / max).ToString("0", System.Globalization.CultureInfo.InvariantCulture))%"></span></div>
+                    <div class="xfl-tier-stats">
+                        <span>Queue <b>@queue</b></span>
+                        <span class="@(due > 0 ? "text-danger" : "")">Due <b class="@(due > 0 ? "text-danger" : "")">@due</b></span>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+</div>

@@ -39,6 +39,9 @@ namespace XFLCSMS.Services.Notifications
 
         /// <summary>Ticket fields captured when the event happened (names are looked up by the dispatcher).</summary>
         public TicketSnapshot? Ticket { get; set; }
+
+        /// <summary>Internal events (e.g. an internal development note): never sent to brokerage house users.</summary>
+        public bool StaffOnly { get; set; }
     }
 
     public sealed class TicketSnapshot
