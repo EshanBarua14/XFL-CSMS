@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build current version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Restore
+        run: dotnet restore XFLCSMS.sln
+
+      - name: Build
+        run: dotnet build XFLCSMS.sln -c Release --no-restore
+
+      - name: Test
+        # No test project yet: this runs any added to the solution later.
+        run: dotnet test XFLCSMS.sln -c Release --no-build
+
+      - name: Publish
+        run: dotnet publish XFLCSMS/XFLCSMS.csproj -c Release --no-build -o publish
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xflcsms-${{ github.sha }}
+          path: publish
+          retention-days: 30
+
+  original:
+    name: Build first stable version (v1-original)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1-original
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build
+        run: dotnet build XFLCSMS.sln -c Release

@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 # machine-specific settings and secrets (mail password, connection string)
 appsettings.Local.json
+
+# Frozen earlier versions exported by scripts/run-original.sh
+.original/
