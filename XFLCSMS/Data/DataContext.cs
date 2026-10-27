@@ -10,6 +10,7 @@ using XFLCSMS.Models.Login;
 using XFLCSMS.Models.DataTable;
 using XFLCSMS.Models.Todos;
 using XFLCSMS.Models.Feedback;
+using XFLCSMS.Models.Notifications;
 
 namespace XFLCSMS.Data
 {
@@ -39,6 +40,13 @@ namespace XFLCSMS.Data
         public DbSet<TicketRating> TicketRatings => Set<TicketRating>();
         public DbSet<MonthlyEngineerScore> MonthlyEngineerScores => Set<MonthlyEngineerScore>();
         public DbSet<EngineerAward> EngineerAwards => Set<EngineerAward>();
+
+        public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+        public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+        public DbSet<NotificationSetting> NotificationSettings => Set<NotificationSetting>();
+        public DbSet<NotificationOptOut> NotificationOptOuts => Set<NotificationOptOut>();
+        public DbSet<NotificationMessage> NotificationMessages => Set<NotificationMessage>();
+        public DbSet<SlaAlert> SlaAlerts => Set<SlaAlert>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -77,6 +85,21 @@ namespace XFLCSMS.Data
                 .HasIndex(a => a.Month).IsUnique();
 
             modelBuilder.Entity<SlaTarget>().HasData(SlaTarget.Defaults);
+
+            modelBuilder.Entity<NotificationRule>().HasIndex(r => new { r.EventKey, r.Channel, r.Role }).IsUnique();
+            modelBuilder.Entity<NotificationTemplate>().HasIndex(t => new { t.EventKey, t.Channel }).IsUnique();
+            modelBuilder.Entity<NotificationOptOut>().HasIndex(o => new { o.UserId, o.EventKey, o.Channel }).IsUnique();
+            modelBuilder.Entity<NotificationOptOut>().HasOne<User>().WithMany().HasForeignKey(o => o.UserId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<NotificationMessage>(e =>
+            {
+                e.HasIndex(m => new { m.Status, m.NextAttemptOn });
+                e.HasIndex(m => new { m.UserId, m.Channel, m.ReadOn });
+                e.HasIndex(m => m.CreatedOn);
+                // the log keeps messages of deleted users
+                e.HasOne<User>().WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.SetNull);
+            });
+            modelBuilder.Entity<SlaAlert>().HasIndex(a => new { a.IssueId, a.EventKey }).IsUnique();
+            modelBuilder.Entity<SlaAlert>().HasOne<IssueTable>().WithMany().HasForeignKey(a => a.IssueId).OnDelete(DeleteBehavior.Cascade);
         }
 
 

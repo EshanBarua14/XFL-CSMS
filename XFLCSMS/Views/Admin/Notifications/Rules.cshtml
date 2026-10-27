@@ -1,0 +1,93 @@
+@using XFLCSMS.Models.Notifications
+@using XFLCSMS.Services.Notifications
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notifications";
+    ViewData["Subtitle"] = "Choose, for every step of the workflow, which roles are told and on which channel. \"Related\" means only the people the step is about (ticket owner, assigned engineer, the edited user); \"Everyone\" means every active user of the role (brokerage house users: only those of the ticket's house).";
+    var rules = (List<NotificationRule>)ViewBag.Rules;
+    var active = (List<string>)ViewBag.ActiveChannels;
+}
+@section PageActions {
+    <form asp-action="Notifications" method="post" class="d-inline" onsubmit="return confirm('Put every switch back to the built-in defaults?');">
+        @Html.AntiForgeryToken()
+        <button type="submit" name="reset" value="all" class="btn btn-outline-secondary"><i class="fas fa-undo mr-1"></i>Reset to defaults</button>
+    </form>
+}
+<partial name="~/Views/Admin/Notifications/_Tabs.cshtml" />
+
+@if (active.Count < NotificationChannel.All.Length)
+{
+    <div class="alert alert-info">
+        Switched off under <a asp-action="NotificationSettings">Providers &amp; test</a>:
+        <b>@string.Join(", ", NotificationChannel.All.Except(active).Select(NotificationChannel.Label))</b>. Those columns are kept but nothing is sent on them.
+    </div>
+}
+
+<form asp-action="Notifications" method="post">
+    @Html.AntiForgeryToken()
+    <ul class="nav nav-pills mb-3" role="tablist">
+        @foreach (var role in NotificationRole.All)
+        {
+            <li class="nav-item"><a class="nav-link @(role == NotificationRole.Admin ? "active" : "")" data-toggle="pill" href="#role-@role" role="tab">@NotificationRole.Label(role)</a></li>
+        }
+    </ul>
+    <div class="tab-content">
+        @foreach (var role in NotificationRole.All)
+        {
+            <div class="tab-pane fade @(role == NotificationRole.Admin ? "show active" : "")" id="role-@role" role="tabpanel">
+                @foreach (var group in NotificationCatalog.Grouped())
+                {
+                    <div class="card">
+                        <div class="card-header py-2"><h3 class="card-title">@group.Key</h3></div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-sm table-hover mb-0 xfl-rule-table">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:240px">Step</th>
+                                        @foreach (var c in NotificationChannel.All)
+                                        {
+                                            <th class="text-center @(active.Contains(c) ? "" : "text-muted")" style="width:90px"><i class="@NotificationChannel.Icon(c)"></i> @NotificationChannel.Label(c)</th>
+                                        }
+                                        <th style="width:150px">Who of the role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var e in group)
+                                    {
+                                        var audience = NotificationDispatcher.Rule(e, NotificationChannel.InApp, role, rules).Audience;
+                                        var firstStored = rules.FirstOrDefault(r => r.EventKey == e.Key && r.Role == role);
+                                        if (firstStored != null) { audience = firstStored.Audience; }
+                                        <tr>
+                                            <td><b>@e.Name</b><div class="small text-muted">@e.Description</div></td>
+                                            @foreach (var c in NotificationChannel.All)
+                                            {
+                                                var on = NotificationDispatcher.Rule(e, c, role, rules).Enabled;
+                                                <td class="text-center align-middle">
+                                                    <input type="checkbox" class="xfl-rule" name="r|@e.Key|@c|@role" @(on ? "checked" : "") aria-label="@e.Name - @NotificationChannel.Label(c)" />
+                                                </td>
+                                            }
+                                            <td class="align-middle">
+                                                <select name="a|@e.Key|@role" class="form-control form-control-sm">
+                                                    <option value="@NotificationAudience.Related" selected="@(audience == NotificationAudience.Related)">Related</option>
+                                                    <option value="@NotificationAudience.All" selected="@(audience == NotificationAudience.All)">Everyone</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    <div class="xfl-sticky-save py-2">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save</button>
+        <span class="text-muted small ml-2">Users can still switch off what they do not want under their menu &gt; Notification settings.</span>
+    </div>
+</form>
+<style>
+    .xfl-rule { width: 18px; height: 18px; cursor: pointer; }
+    .xfl-sticky-save { position: sticky; bottom: 0; background: var(--xfl-surface, #fff); z-index: 5; }
+</style>

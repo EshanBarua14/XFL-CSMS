@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using XFLCSMS.EmailService;
+using Microsoft.AspNetCore.DataProtection;
 using XFLCSMS.Infrastructure;
 using XFLCSMS.Services;
+using XFLCSMS.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,9 +70,24 @@ builder.Services.AddSingleton<LoginThrottle>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Connection string 'DefaultConnection' is missing. Add it under ConnectionStrings in appsettings.json.");
-builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(connectionString));
-
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+// Notifications (in-app toasts, e-mail, WhatsApp, SMS): see Services/Notifications and NOTIFICATIONS.md.
+// Every SaveChanges of a web request is watched by NotificationSaveInterceptor; NotificationWorker sends.
+builder.Services.AddDataProtection().SetApplicationName("XFLCSMS");
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("notifications", c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<NotificationQueue>();
+builder.Services.AddSingleton<NotificationSaveInterceptor>();
+builder.Services.AddSingleton<NotificationSettingsStore>();
+builder.Services.AddScoped<NotificationDispatcher>();
+builder.Services.AddScoped<NotificationSender>();
+builder.Services.AddScoped<SlaMonitor>();
+builder.Services.AddHostedService<NotificationWorker>();
+
+builder.Services.AddDbContext<DataContext>((services, options) =>
+    options.UseSqlServer(connectionString).AddInterceptors(services.GetRequiredService<NotificationSaveInterceptor>()));
 
 var app = builder.Build();
 
@@ -135,6 +152,8 @@ app.UseRouting();
 
 app.UseSession();
 app.UseAuthorization();
+
+app.MapHub<NotificationHub>(NotificationHub.Path);
 
 // Liveness for IIS / monitoring: 200 when the app runs and the database answers, 503 otherwise.
 app.MapGet("/healthz", async (DataContext db) =>

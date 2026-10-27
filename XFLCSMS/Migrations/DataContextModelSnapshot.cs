@@ -36,7 +36,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("AffectedSectionId");
 
-                    b.ToTable("AffectedSectionss");
+                    b.ToTable("AffectedSectionss", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Branch.Branchh", b =>
@@ -58,7 +58,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("BrokerageId");
 
-                    b.ToTable("Branchhs");
+                    b.ToTable("Branchhs", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Brocarage.Brokerage", b =>
@@ -79,7 +79,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("BrokerageId");
 
-                    b.ToTable("Brokerages");
+                    b.ToTable("Brokerages", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.DataTable.Customer", b =>
@@ -111,7 +111,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Cust_Id");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.EngineerAward", b =>
@@ -163,7 +163,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("Month")
                         .IsUnique();
 
-                    b.ToTable("EngineerAwards");
+                    b.ToTable("EngineerAwards", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.MonthlyEngineerScore", b =>
@@ -277,7 +277,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("Month", "EngineerUserId")
                         .IsUnique();
 
-                    b.ToTable("MonthlyEngineerScores");
+                    b.ToTable("MonthlyEngineerScores", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.SlaTarget", b =>
@@ -294,7 +294,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Priority");
 
-                    b.ToTable("SlaTargets");
+                    b.ToTable("SlaTargets", (string)null);
 
                     b.HasData(
                         new
@@ -424,7 +424,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("EngineerUserId", "CreatedOn");
 
-                    b.ToTable("TicketRatings");
+                    b.ToTable("TicketRatings", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketStatusHistory", b =>
@@ -463,7 +463,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("IssueId", "ChangedOn");
 
-                    b.ToTable("TicketStatusHistories");
+                    b.ToTable("TicketStatusHistories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Issue.Attachment", b =>
@@ -489,7 +489,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("IssueId");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("Attachments", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Issue.IssueTable", b =>
@@ -587,8 +587,6 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("BrokerageId");
 
-                    b.HasIndex("ClosedOn");
-
                     b.HasIndex("ProductId");
 
                     b.HasIndex("SupportCatagoryId");
@@ -597,11 +595,248 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("SupportTypeId");
 
-                    b.HasIndex("TDate");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("Issues");
+                    b.ToTable("Issues", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("NextAttemptOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("ReadOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("SentOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Subject")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedOn");
+
+                    b.HasIndex("Status", "NextAttemptOn");
+
+                    b.HasIndex("UserId", "Channel", "ReadOn");
+
+                    b.ToTable("NotificationMessages", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationOptOut", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "EventKey", "Channel")
+                        .IsUnique();
+
+                    b.ToTable("NotificationOptOuts", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventKey", "Channel", "Role")
+                        .IsUnique();
+
+                    b.ToTable("NotificationRules", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsSecret")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("NotificationSettings", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Subject")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventKey", "Channel")
+                        .IsUnique();
+
+                    b.ToTable("NotificationTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.SlaAlert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("IssueId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssueId", "EventKey")
+                        .IsUnique();
+
+                    b.ToTable("SlaAlerts", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Product.Product", b =>
@@ -632,7 +867,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("ProductName")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Register.User", b =>
@@ -712,7 +947,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportCatagory", b =>
@@ -730,7 +965,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportCatagoryId");
 
-                    b.ToTable("SupportCatagories");
+                    b.ToTable("SupportCatagories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportSubCatagory", b =>
@@ -748,7 +983,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportSubCatagoryId");
 
-                    b.ToTable("SupportSubCatagories");
+                    b.ToTable("SupportSubCatagories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportType", b =>
@@ -766,7 +1001,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportTypeId");
 
-                    b.ToTable("SupportTypes");
+                    b.ToTable("SupportTypes", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Todos.Todo", b =>
@@ -798,7 +1033,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Todos");
+                    b.ToTable("Todos", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Branch.Branchh", b =>
@@ -911,6 +1146,32 @@ namespace XFLCSMS.Migrations
                     b.Navigation("supportCatagorys");
 
                     b.Navigation("supportTypes");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationMessage", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationOptOut", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Notifications.SlaAlert", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Issue.IssueTable", null)
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Todos.Todo", b =>

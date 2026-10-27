@@ -1040,16 +1040,8 @@ namespace XFLCSMS.Controllers
                     return View(form);
                 }
 
-                var wasFollowUp = state.Rating?.NeedsFollowUp == true;
+                // a rating that needs follow-up alerts admins / managers through the notification system
                 var error = await feedback.SaveAsync(issue, CurrentUser!, form);
-                if (error == null && !wasFollowUp)
-                {
-                    var saved = (await feedback.GetStateAsync(issue)).Rating;
-                    if (saved != null && saved.NeedsFollowUp)
-                    {
-                        NotifyLowRating(issue, saved);
-                    }
-                }
                 if (error != null)
                 {
                     TempData["ErrorMessage"] = error;

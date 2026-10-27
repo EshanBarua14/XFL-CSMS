@@ -1,0 +1,103 @@
+@model XFLCSMS.Models.Notifications.NotificationLogView
+@using XFLCSMS.Models.Notifications
+@using XFLCSMS.Services.Notifications
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notification delivery log";
+    ViewData["Subtitle"] = "Every message on every channel. Failed messages are retried automatically (1, 5, 15, 60, 240 minutes); \"Retry\" puts them back in the queue now.";
+    var pages = Math.Max(1, (int)Math.Ceiling(Model.Total / (double)Model.PageSize));
+    string Badge(string s) => s switch { "Sent" => "badge-success", "Failed" => "badge-danger", "Pending" => "badge-warning", _ => "badge-secondary" };
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+@section PageActions {
+    @if (Model.Counts.GetValueOrDefault(NotificationStatus.Failed) > 0)
+    {
+        <form asp-action="NotificationRetry" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button class="btn btn-outline-danger"><i class="fas fa-redo mr-1"></i>Retry all failed</button>
+        </form>
+    }
+}
+<partial name="~/Views/Admin/Notifications/_Tabs.cshtml" />
+<div class="card d-print-none">
+    <div class="card-body py-2">
+        <form method="get" asp-action="NotificationLog" class="form-row align-items-end">
+            <div class="col-6 col-md-2"><label class="small mb-0">Channel</label>
+                <select name="channel" class="form-control form-control-sm"><option value="">All</option>
+                    @foreach (var c in NotificationChannel.All) { <option value="@c" selected="@(c == Model.Channel)">@NotificationChannel.Label(c)</option> }
+                </select></div>
+            <div class="col-6 col-md-2"><label class="small mb-0">Status</label>
+                <select name="status" class="form-control form-control-sm"><option value="">All</option>
+                    @foreach (var s in NotificationStatus.All) { <option value="@s" selected="@(s == Model.Status)">@s (@Model.Counts.GetValueOrDefault(s))</option> }
+                </select></div>
+            <div class="col-12 col-md-3"><label class="small mb-0">Step</label>
+                <select name="eventKey" class="form-control form-control-sm"><option value="">All</option>
+                    @foreach (var e in NotificationCatalog.Events) { <option value="@e.Key" selected="@(e.Key == Model.EventKey)">@e.Group - @e.Name</option> }
+                    <option value="Test" selected="@(Model.EventKey == "Test")">Test messages</option>
+                </select></div>
+            <div class="col-6 col-md-1"><label class="small mb-0">From</label><input type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+            <div class="col-6 col-md-1"><label class="small mb-0">To</label><input type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+            <div class="col-8 col-md-2"><label class="small mb-0">Search</label><input name="search" value="@Model.Search" class="form-control form-control-sm" placeholder="name, address, text" /></div>
+            <div class="col-4 col-md-1"><button class="btn btn-sm btn-primary btn-block"><i class="fas fa-filter"></i> Filter</button></div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-sm table-hover mb-0">
+            <thead><tr><th>Time</th><th>Step</th><th>Channel</th><th>To</th><th>Message</th><th>Status</th><th>Tries</th><th></th></tr></thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">Nothing found.</td></tr>
+                }
+                @foreach (var m in Model.Items)
+                {
+                    var e = NotificationCatalog.Find(m.EventKey);
+                    <tr>
+                        <td class="text-nowrap small">@m.CreatedOn.ToString("dd MMM yy HH:mm:ss")</td>
+                        <td class="small">@(e?.Name ?? m.EventKey)@if (m.IsTest) { <span class="badge badge-light border ml-1">test</span> }</td>
+                        <td class="text-nowrap"><i class="@NotificationChannel.Icon(m.Channel)"></i> @NotificationChannel.Label(m.Channel)</td>
+                        <td class="small">@m.RecipientName<div class="text-muted">@m.Address</div></td>
+                        <td class="small" style="max-width:380px">
+                            <b>@m.Subject</b>
+                            <div class="text-muted text-truncate" style="max-width:380px">@NotificationSaveInterceptor.HtmlToText(m.Body, 200)</div>
+                            @if (!string.IsNullOrEmpty(m.LastError)) { <div class="text-danger">@m.LastError</div> }
+                        </td>
+                        <td>
+                            <span class="badge @Badge(m.Status)">@m.Status</span>
+                            @if (m.Status == NotificationStatus.Sent && m.SentOn != null) { <div class="small text-muted">@m.SentOn.Value.ToString("HH:mm:ss")</div> }
+                            @if (m.Status == NotificationStatus.Pending && m.Attempts > 0) { <div class="small text-muted">next @m.NextAttemptOn.ToString("HH:mm")</div> }
+                        </td>
+                        <td>@m.Attempts</td>
+                        <td>
+                            @if (m.Status == NotificationStatus.Failed && !m.IsTest)
+                            {
+                                <form asp-action="NotificationRetry" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@m.Id" /><input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button class="btn btn-xs btn-outline-primary" title="Send again"><i class="fas fa-redo"></i></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="small text-muted">@Model.Total message(s) - page @Model.Page of @pages</span>
+        <div>
+            @if (Model.Page > 1) { <a class="btn btn-sm btn-outline-secondary" asp-action="NotificationLog" asp-all-route-data="@(Route(Model.Page - 1))">Previous</a> }
+            @if (Model.Page < pages) { <a class="btn btn-sm btn-outline-secondary" asp-action="NotificationLog" asp-all-route-data="@(Route(Model.Page + 1))">Next</a> }
+        </div>
+    </div>
+</div>
+@functions {
+    Dictionary<string, string> Route(int page) => new()
+    {
+        ["channel"] = Model.Channel ?? "", ["status"] = Model.Status ?? "", ["eventKey"] = Model.EventKey ?? "", ["search"] = Model.Search ?? "",
+        ["from"] = Model.From?.ToString("yyyy-MM-dd") ?? "", ["to"] = Model.To?.ToString("yyyy-MM-dd") ?? "", ["page"] = page.ToString()
+    };
+}

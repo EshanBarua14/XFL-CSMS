@@ -18,7 +18,7 @@ using XFLCSMS.Services;
 
 namespace XFLCSMS.Controllers
 {
-    public class AdminController : CsmsController
+    public partial class AdminController : CsmsController
     {
         private readonly DataContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -267,12 +267,9 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                var closedNow = Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
+                // closing the ticket notifies the client (rating link) through the notification system
+                Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
                 await _context.SaveChangesAsync();
-                if (closedNow)
-                {
-                    NotifyTicketClosed(issue);
-                }
 
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)
@@ -2674,7 +2671,7 @@ namespace XFLCSMS.Controllers
                 }
                 else
                 {
-                    NotifyClientReply(rating);
+                    // the client is told through the notification system (step "Reply to client feedback")
                     TempData["SuccessMessage"] = "Your reply was sent to the client.";
                 }
 

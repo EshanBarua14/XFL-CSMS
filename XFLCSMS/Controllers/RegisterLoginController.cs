@@ -5,6 +5,7 @@ using XFLCSMS.Models.Email;
 using XFLCSMS.Models.Login;
 using XFLCSMS.Models.Register;
 using XFLCSMS.Services;
+using XFLCSMS.Services.Notifications;
 using Newtonsoft.Json;
 
 namespace XFLCSMS.Controllers
@@ -283,6 +284,15 @@ namespace XFLCSMS.Controllers
                 PasswordHash = Array.Empty<byte>(),
                 PasswordSalt = Array.Empty<byte>()
             });
+
+            // security alert "signed in" (off unless the administrator turns it on)
+            var signedIn = new NotificationEventData
+            {
+                EventKey = "UserSignedIn", ActorUserId = user.Id, ActorName = user.FullName, SubjectUserId = user.Id,
+                HouseId = user.BrokerageHouseName, BaseUrl = NotificationSaveInterceptor.BaseUrl(HttpContext), LinkPath = "/RegisterLogin/Login"
+            };
+            signedIn.RelatedUserIds.Add(user.Id);
+            HttpContext.RequestServices.GetRequiredService<NotificationQueue>().Publish(signedIn);
 
             if (user.UCatagory)
             {

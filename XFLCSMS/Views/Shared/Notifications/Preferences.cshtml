@@ -1,0 +1,70 @@
+@model XFLCSMS.Models.Notifications.PreferencesView
+@using XFLCSMS.Models.Notifications
+@{
+    Layout = Model.Layout;
+    ViewData["Title"] = "Notification settings";
+    ViewData["Subtitle"] = "Switch off the messages you do not want. The list shows what the administrator turned on for your role (" + NotificationRole.Label(Model.Role) + ").";
+}
+@section PageActions {
+    <a asp-controller="@Model.Controller" asp-action="MyNotifications" class="btn btn-outline-secondary"><i class="fas fa-bell mr-1"></i>My notifications</a>
+}
+@if (!Model.HasEmail && Model.ActiveChannels.Contains(NotificationChannel.Email))
+{
+    <div class="alert alert-warning">Your profile has no e-mail address, so e-mails cannot reach you.</div>
+}
+@if (!Model.HasPhone && (Model.ActiveChannels.Contains(NotificationChannel.Sms) || Model.ActiveChannels.Contains(NotificationChannel.WhatsApp)))
+{
+    <div class="alert alert-warning">Your profile has no valid mobile number, so SMS / WhatsApp cannot reach you.</div>
+}
+<form asp-controller="@Model.Controller" asp-action="NotificationPreferences" method="post">
+    @Html.AntiForgeryToken()
+    <div class="card">
+        <div class="card-header py-2"><h3 class="card-title">Mute a whole channel</h3></div>
+        <div class="card-body">
+            @foreach (var c in Model.ActiveChannels)
+            {
+                <div class="custom-control custom-switch d-inline-block mr-4">
+                    <input type="checkbox" class="custom-control-input" id="mute-@c" name="on" value="*|@c" @(Model.OptedOut.Contains("*|" + c) ? "checked" : "") />
+                    <label class="custom-control-label" for="mute-@c">Mute all <i class="@NotificationChannel.Icon(c)"></i> @NotificationChannel.Label(c)</label>
+                </div>
+            }
+        </div>
+    </div>
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="card"><div class="card-body text-muted">No notifications are turned on for your role.</div></div>
+    }
+    @foreach (var group in Model.Rows.GroupBy(r => r.Group))
+    {
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title">@group.Key</h3></div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Step</th>@foreach (var c in Model.ActiveChannels) { <th class="text-center" style="width:110px"><i class="@NotificationChannel.Icon(c)"></i> @NotificationChannel.Label(c)</th> }</tr></thead>
+                    <tbody>
+                        @foreach (var r in group)
+                        {
+                            <tr>
+                                <td><b>@r.Name</b><div class="small text-muted">@r.Description</div></td>
+                                @foreach (var c in Model.ActiveChannels)
+                                {
+                                    <td class="text-center align-middle">
+                                        @if (r.Channels.Contains(c))
+                                        {
+                                            <input type="checkbox" name="on" value="@r.EventKey|@c" style="width:18px;height:18px" @(Model.OptedOut.Contains(r.EventKey + "|" + c) ? "" : "checked") aria-label="@r.Name - @NotificationChannel.Label(c)" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted" title="Not sent to your role">-</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save</button>
+</form>

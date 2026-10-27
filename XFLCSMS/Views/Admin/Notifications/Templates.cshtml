@@ -1,0 +1,36 @@
+@using XFLCSMS.Models.Notifications
+@using XFLCSMS.Services.Notifications
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notification templates";
+    ViewData["Subtitle"] = "The text of every message, per channel. Unchanged texts use the built-in default; changed ones are marked.";
+    var custom = new HashSet<string>((List<string>)ViewBag.Custom);
+}
+<partial name="~/Views/Admin/Notifications/_Tabs.cshtml" />
+@foreach (var group in NotificationCatalog.Grouped())
+{
+    <div class="card">
+        <div class="card-header py-2"><h3 class="card-title">@group.Key</h3></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <tbody>
+                    @foreach (var e in group)
+                    {
+                        <tr>
+                            <td style="min-width:240px"><b>@e.Name</b><div class="small text-muted">@e.Description</div></td>
+                            @foreach (var c in NotificationChannel.All)
+                            {
+                                var changed = custom.Contains(e.Key + "|" + c);
+                                <td class="align-middle text-nowrap" style="width:150px">
+                                    <a asp-action="EditNotificationTemplate" asp-route-id="@e.Key" asp-route-channel="@c" class="btn btn-sm @(changed ? "btn-info" : "btn-outline-secondary")" title="@(changed ? "Changed" : "Built-in text")">
+                                        <i class="@NotificationChannel.Icon(c) mr-1"></i>@NotificationChannel.Label(c)@if (changed) {<i class="fas fa-pen ml-1"></i>}
+                                    </a>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

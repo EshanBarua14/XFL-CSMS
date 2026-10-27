@@ -1,0 +1,15 @@
+@{
+    var action = (ViewContext.RouteData.Values["action"] as string) ?? "";
+    var tabs = new[] {
+        ("Notifications", "fas fa-sliders-h", "Who gets what"),
+        ("NotificationTemplates", "fas fa-file-alt", "Templates"),
+        ("NotificationSettings", "fas fa-plug", "Providers & test"),
+        ("NotificationLog", "fas fa-history", "Delivery log") };
+}
+<ul class="nav nav-tabs mb-3 d-print-none">
+    @foreach (var (a, icon, label) in tabs)
+    {
+        var active = string.Equals(a, action, StringComparison.OrdinalIgnoreCase) || (a == "NotificationTemplates" && action == "EditNotificationTemplate");
+        <li class="nav-item"><a class="nav-link @(active ? "active" : "")" asp-controller="Admin" asp-action="@a"><i class="@icon mr-1"></i>@label</a></li>
+    }
+</ul>
