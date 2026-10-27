@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1-original
+          ref: 49b1f77c8479586a315ae6cf4a9463a157a1d63e  # v1-original
 
       - uses: actions/setup-dotnet@v4
         with:

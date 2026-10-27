@@ -133,9 +133,11 @@ point IIS / an uptime monitor at it.
 
 9. Earlier versions side by side
 --------------------------------
-Two git tags keep the earlier code for good:
-   v1-original      first stable version (before the 2026 rework: ratings, notifications, new layout)
-   vendor-original  the code exactly as handed over by the vendor
+Two earlier versions are kept for good (commits on main, pinned in scripts/run-original.sh):
+   v1-original      49b1f77  first stable version (before the 2026 rework: ratings, notifications, new layout)
+   vendor-original  c60ff0b  the code exactly as handed over by the vendor
+To also see them as tags on GitHub (optional):
+   git tag v1-original 49b1f77 && git tag vendor-original c60ff0b && git push origin v1-original vendor-original
 Run them from Git Bash in this folder, next to the current version (no second clone: the tag is exported
 into the git-ignored folder .original/ and built there, so this checkout is not touched):
    scripts/run-current.sh                   current version  http://localhost:5200  database CSMS_Old

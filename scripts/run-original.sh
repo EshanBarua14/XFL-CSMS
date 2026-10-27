@@ -3,6 +3,7 @@
 #
 #   scripts/run-original.sh                 # v1-original (first stable version) on http://localhost:5201, DB CSMS_Original
 #   scripts/run-original.sh vendor-original # code as handed over by the vendor,  on http://localhost:5202, DB CSMS_Original
+#   scripts/run-original.sh <tag or commit>  # any other version, on http://localhost:5201
 #
 # Overrides: CSMS_DB=<database>  CSMS_SERVER=<sql server>  CSMS_PORT=<port>
 #
@@ -21,16 +22,26 @@ case "$TAG" in
 esac
 CONN="Server=$SERVER;Database=$DB;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
 
+# Both versions are commits on main, pinned here; a git tag of the same name is used when present.
+case "$TAG" in
+  v1-original)     PINNED=49b1f77c8479586a315ae6cf4a9463a157a1d63e ;;
+  vendor-original) PINNED=c60ff0b5bbcfc0e0ba58dfa1fea61747100ce705 ;;
+  *)               PINNED="$TAG" ;;
+esac
+
 cd "$ROOT"
-if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-  git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+if git rev-parse -q --verify "refs/tags/$TAG^{commit}" >/dev/null; then
+  REF="refs/tags/$TAG"
+else
+  REF="$PINNED"
 fi
+git rev-parse -q --verify "$REF^{commit}" >/dev/null || { echo "Unknown version: $TAG"; exit 1; }
 
 DEST="$ROOT/.original/$TAG"
 if [ ! -f "$DEST/XFLCSMS/XFLCSMS.csproj" ]; then
   echo "Exporting $TAG to .original/$TAG ..."
   mkdir -p "$DEST"
-  git archive "$TAG" | tar -x -C "$DEST"
+  git archive "$REF" | tar -x -C "$DEST"
 fi
 
 if [ "$TAG" = "vendor-original" ]; then
