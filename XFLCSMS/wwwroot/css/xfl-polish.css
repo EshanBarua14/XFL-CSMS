@@ -232,7 +232,8 @@ html:has(> body.login-page), html:has(> body.register-page) { background: transp
 .xfl-page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .xfl-page-actions:empty { display: none; }
 
-.content-wrapper > .content.xfl-content { padding: 16px var(--xfl-gutter) var(--xfl-gutter); }
+/* the last box brings its own 20 px bottom margin */
+.content-wrapper > .content.xfl-content { padding: 16px var(--xfl-gutter) max(0px, calc(var(--xfl-gutter) - 20px)); }
 /* pages written for the old shell bring their own wrappers: they must not add a second gutter */
 .xfl-content > .content, .xfl-content > section.content, .xfl-content > .content-header,
 .xfl-content > .content > .container-fluid, .xfl-content > .container-fluid, .xfl-content > .xfl-dashboard > .container-fluid,
@@ -240,7 +241,6 @@ html:has(> body.login-page), html:has(> body.register-page) { background: transp
 .xfl-content > .content, .xfl-content > section.content { padding-top: 0; padding-bottom: 0; }
 .xfl-content > .content-header { padding-top: 0; }
 .xfl-content .card { margin-bottom: 20px; }
-.xfl-content > :last-child .card:last-child, .xfl-content > .card:last-child { margin-bottom: 0; }
 .xfl-content > .alert { margin-bottom: 16px; }
 
 /* card bodies: a table card keeps its table flush, but DataTables' search / paging get the same inner space */
@@ -315,3 +315,31 @@ html[data-theme="dark"] .xfl-product-badge { background: rgba(59, 139, 235, .18)
 .xfl-card-like select#rowsPerPageSelect { border: 1px solid var(--xfl-field-line); border-radius: 6px; padding: 2px 6px; background: var(--xfl-field); color: var(--xfl-ink); }
 .xfl-card-like #paginationRow { padding: 12px 20px 16px; border-top: 1px solid var(--xfl-line); }
 .xfl-card-like #paginationRow .row { align-items: center; }
+
+/* ======================================================================
+   One grid for every page: 20 px between boxes, side by side and stacked,
+   boxes in the same row equally tall, outer edges on the page gutter
+   ====================================================================== */
+:root { --xfl-gap: 20px; }
+/* old wrappers inside pages (also inside forms) add no extra indent */
+.xfl-content .container-fluid:not(.card .container-fluid), .xfl-content .container:not(.card .container) { padding-left: 0; padding-right: 0; max-width: none; }
+.xfl-content .row:not(.card .row):not(.xfl-card-like .row) { margin-left: calc(var(--xfl-gap) / -2); margin-right: calc(var(--xfl-gap) / -2); }
+.xfl-content .row:not(.card .row):not(.xfl-card-like .row) > [class*="col"] { padding-left: calc(var(--xfl-gap) / 2); padding-right: calc(var(--xfl-gap) / 2); }
+/* a column holding one box: the box fills the column, so boxes in a row end on the same line */
+.xfl-content .row:not(.card .row) > [class*="col"]:has(> .card:only-child),
+.xfl-content .row:not(.card .row) > [class*="col"]:has(> .small-box:only-child) { display: flex; flex-direction: column; }
+.xfl-content .row:not(.card .row) > [class*="col"] > .card:only-child,
+.xfl-content .row:not(.card .row) > [class*="col"] > .small-box:only-child { flex: 1 1 auto; }
+.xfl-content .card, .xfl-content .small-box, .xfl-content > section.content.xfl-card-like { margin-bottom: var(--xfl-gap); }
+.xfl-content .card .card { margin-bottom: 0; box-shadow: none; }
+/* the coloured header of a form card lines up with its fields */
+.card-primary > .card-header, .card-success > .card-header, .card-info > .card-header { padding: 14px 20px; }
+.card-body > .form-group:last-child, .card-body > :last-child > .form-group:last-child { margin-bottom: 0; }
+/* text placed straight in a card or a result area keeps the inner padding */
+.card > p, .card-body.p-0 > p, #searchResults > p, #searchResults > .btn, #searchResults > h1, #searchResults > h2, #searchResults > h3, #searchResults > h4, #searchResults > h5 { margin-left: 20px; margin-right: 20px; }
+#searchResults > p:first-child { margin-top: 16px; }
+#searchResults > .btn:last-child { margin-bottom: 16px; }
+/* several bodies in one card read as one: no double padding between them */
+.card > .card-body + .card-body { padding-top: 0; }
+.note-editor.note-frame { margin-bottom: 1rem; }
+.main-footer { padding: 14px var(--xfl-gutter); }
