@@ -1,0 +1,41 @@
+@model XFLCSMS.Models.Notifications.MyNotificationsView
+@{
+    Layout = Model.Layout;
+    ViewData["Title"] = "My notifications";
+    ViewData["Subtitle"] = Model.Unread == 0 ? "Everything is read." : Model.Unread + " unread.";
+}
+@section PageActions {
+    <a asp-controller="@Model.Controller" asp-action="NotificationPreferences" class="btn btn-outline-secondary"><i class="fas fa-sliders-h mr-1"></i>Notification settings</a>
+    @if (Model.Unread > 0)
+    {
+        <form asp-controller="@Model.Controller" asp-action="NotificationRead" method="post" class="d-inline" onsubmit="event.preventDefault(); xflNotify.markAll().then(function(){ location.reload(); });">
+            <button class="btn btn-primary"><i class="fas fa-check-double mr-1"></i>Mark all read</button>
+        </form>
+    }
+}
+<div class="card">
+    <div class="list-group list-group-flush">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="list-group-item text-center text-muted py-5"><i class="far fa-bell-slash fa-2x mb-2 d-block"></i>No notifications yet.</div>
+        }
+        @foreach (var m in Model.Items)
+        {
+            <a asp-controller="@Model.Controller" asp-action="OpenNotification" asp-route-id="@m.Id" class="list-group-item list-group-item-action @(m.ReadOn == null ? "xfl-unread" : "")">
+                <div class="d-flex justify-content-between">
+                    <b>@if (m.ReadOn == null) {<i class="fas fa-circle text-primary mr-2" style="font-size:.5rem;vertical-align:middle"></i>}@m.Subject</b>
+                    <small class="text-muted text-nowrap ml-2">@m.CreatedOn.ToString("dd MMM yyyy HH:mm")</small>
+                </div>
+                <div class="small text-muted">@m.Body</div>
+            </a>
+        }
+    </div>
+    @if (Model.Page > 1 || Model.HasMore)
+    {
+        <div class="card-footer">
+            @if (Model.Page > 1) { <a class="btn btn-sm btn-outline-secondary" asp-controller="@Model.Controller" asp-action="MyNotifications" asp-route-page="@(Model.Page - 1)">Newer</a> }
+            @if (Model.HasMore) { <a class="btn btn-sm btn-outline-secondary" asp-controller="@Model.Controller" asp-action="MyNotifications" asp-route-page="@(Model.Page + 1)">Older</a> }
+        </div>
+    }
+</div>
+<style>.xfl-unread { background: rgba(0,123,255,.06); }</style>

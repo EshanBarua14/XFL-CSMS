@@ -1,0 +1,115 @@
+@model XFLCSMS.Models.Notifications.TemplateEditView
+@using XFLCSMS.Models.Notifications
+@using XFLCSMS.Services.Notifications
+@{
+    Layout = "_Layout";
+    var e = NotificationCatalog.Find(Model.EventKey)!;
+    var isEmail = Model.Channel == NotificationChannel.Email;
+    var hasSubject = Model.Channel is NotificationChannel.Email or NotificationChannel.InApp;
+    ViewData["Title"] = e.Name + " - " + NotificationChannel.Label(Model.Channel);
+    ViewData["Subtitle"] = e.Description;
+}
+@section PageActions {
+    <a asp-action="NotificationTemplates" class="btn btn-outline-secondary"><i class="fas fa-arrow-left mr-1"></i>All templates</a>
+}
+<partial name="~/Views/Admin/Notifications/_Tabs.cshtml" />
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="EditNotificationTemplate" method="post" id="tplForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="EventKey" />
+                    <input type="hidden" asp-for="Channel" />
+                    <p class="mb-2">
+                        @if (Model.IsCustom) { <span class="badge badge-info">Changed by an administrator</span> }
+                        else { <span class="badge badge-secondary">Built-in text</span> }
+                    </p>
+                    @if (hasSubject)
+                    {
+                        <div class="form-group">
+                            <label asp-for="Subject">@(isEmail ? "Subject" : "Toast title")</label>
+                            <input asp-for="Subject" class="form-control xfl-tpl" maxlength="300" />
+                        </div>
+                    }
+                    <div class="form-group">
+                        <label asp-for="Body">@(isEmail ? "Body (HTML)" : "Text")</label>
+                        <textarea asp-for="Body" class="form-control xfl-tpl text-monospace" rows="@(isEmail ? 12 : 5)"></textarea>
+                        <span asp-validation-for="Body" class="text-danger"></span>
+                        @if (Model.Channel == NotificationChannel.Sms)
+                        {
+                            <small class="form-text text-muted">Keep it short: 160 characters is one SMS (70 with Bangla). The text is cut at 480 characters.</small>
+                        }
+                        @if (Model.Channel == NotificationChannel.WhatsApp)
+                        {
+                            <small class="form-text text-muted">*bold*, _italic_. With a Meta template the whole text becomes the template's {{1}} on one line.</small>
+                        }
+                    </div>
+                    <button type="submit" class="btn btn-primary" name="command" value="save"><i class="fas fa-save mr-1"></i>Save</button>
+                    <button type="submit" class="btn btn-outline-primary" name="command" value="preview"><i class="fas fa-eye mr-1"></i>Preview</button>
+                    @if (Model.IsCustom)
+                    {
+                        <button type="submit" class="btn btn-outline-danger float-right" name="command" value="reset" formnovalidate onclick="return confirm('Use the built-in text again?');"><i class="fas fa-undo mr-1"></i>Reset</button>
+                    }
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title">Placeholders</h3></div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Click to insert at the cursor.</p>
+                @foreach (var p in e.Placeholders)
+                {
+                    <button type="button" class="btn btn-sm btn-light border mb-1 xfl-ph" data-ph="{{@p}}">{{@p}}</button>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title">Preview with sample data</h3></div>
+            <div class="card-body">
+                @if (hasSubject) { <p><b>@Model.PreviewSubject</b></p> }
+                @if (isEmail)
+                {
+                    <iframe sandbox="" class="w-100 border rounded bg-white" style="height:320px" srcdoc="@Model.PreviewBody"></iframe>
+                }
+                else
+                {
+                    <pre class="mb-0" style="white-space:pre-wrap">@Model.PreviewBody</pre>
+                }
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title">Send me a test</h3></div>
+            <div class="card-body">
+                <form asp-action="NotificationTest" method="post" class="form-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="channel" value="@Model.Channel" />
+                    <input type="hidden" name="eventKey" value="@Model.EventKey" />
+                    @if (Model.Channel != NotificationChannel.InApp)
+                    {
+                        <input name="address" class="form-control form-control-sm mr-2 mb-2" placeholder="@(isEmail ? "my e-mail" : "my mobile number")" />
+                    }
+                    <button type="submit" class="btn btn-sm btn-success mb-2"><i class="fas fa-paper-plane mr-1"></i>Send saved text to me</button>
+                </form>
+                <small class="text-muted">Uses the saved text with sample values. Empty address: the one in your profile.</small>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        (function () {
+            var last = document.querySelector('textarea.xfl-tpl');
+            document.querySelectorAll('.xfl-tpl').forEach(function (el) { el.addEventListener('focus', function () { last = el; }); });
+            document.querySelectorAll('.xfl-ph').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    var t = last, v = b.getAttribute('data-ph'), s = t.selectionStart || t.value.length, en = t.selectionEnd || s;
+                    t.value = t.value.slice(0, s) + v + t.value.slice(en);
+                    t.focus(); t.selectionStart = t.selectionEnd = s + v.length;
+                });
+            });
+        })();
+    </script>
+}

@@ -47,6 +47,11 @@
                 ("Sub-Categories", "fas fa-tag", "SupportSubCatagoryList"),
                 ("Affected Sections", "fas fa-puzzle-piece", "AffectedSectionList"),
                 ("SLA Targets", "fas fa-stopwatch", "SlaTargets") }));
+            menu.Add(("Notifications", "fas fa-bell", null, new[] {
+                ("Who Gets What", "fas fa-sliders-h", "Notifications"),
+                ("Templates", "fas fa-file-alt", "NotificationTemplates"),
+                ("Providers & Test", "fas fa-plug", "NotificationSettings"),
+                ("Delivery Log", "fas fa-history", "NotificationLog") }));
             menu.Add(todo);
             menu.Add(("Team To-Dos", "fas fa-clipboard-list", null, new[] {
                 ("All Users' To-Dos", "fas fa-clipboard-check", "ViewAllTodo"),
@@ -112,6 +117,7 @@
         if (action.Equals("TicketView", StringComparison.OrdinalIgnoreCase) || action.Equals("EditTicket", StringComparison.OrdinalIgnoreCase) || action.Equals("RateTicket", StringComparison.OrdinalIgnoreCase)) { current = allTickets; }
         else if (action.Equals("EngineerProfile", StringComparison.OrdinalIgnoreCase)) { current = "Scorecard"; }
         else if (action.Contains("Todo", StringComparison.OrdinalIgnoreCase)) { current = "ViewTodo"; }
+        else if (action.Equals("EditNotificationTemplate", StringComparison.OrdinalIgnoreCase)) { current = "NotificationTemplates"; }
         else
         {
             var stem = Stem(action);
@@ -140,6 +146,8 @@
             <div class="dropdown-menu">
                 <a class="dropdown-item" asp-controller="@controller" asp-action="Profile" asp-route-id="@(profile?.Id)"><i class="fas fa-id-badge mr-2"></i>My Profile</a>
                 <a class="dropdown-item" asp-controller="@controller" asp-action="ChangePassword"><i class="fas fa-key mr-2"></i>Change Password</a>
+                <a class="dropdown-item" asp-controller="@controller" asp-action="MyNotifications"><i class="fas fa-bell mr-2"></i>My Notifications</a>
+                <a class="dropdown-item" asp-controller="@controller" asp-action="NotificationPreferences"><i class="fas fa-sliders-h mr-2"></i>Notification Settings</a>
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item text-danger" asp-controller="@controller" asp-action="Logout"><i class="fas fa-sign-out-alt mr-2"></i>Log Out</a>
             </div>

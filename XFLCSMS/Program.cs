@@ -3,7 +3,9 @@ global using XFLCSMS.Models;
 global using XFLCSMS.Data;
 global using XFLCSMS.Services.EmailService;
 using XFLCSMS.EmailService;
+using Microsoft.AspNetCore.DataProtection;
 using XFLCSMS.Services;
+using XFLCSMS.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,9 +36,24 @@ builder.Services.AddScoped<ScorecardService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Connection string 'DefaultConnection' is missing. Add it under ConnectionStrings in appsettings.json.");
-builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(connectionString));
-
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+// Notifications (in-app toasts, e-mail, WhatsApp, SMS): see Services/Notifications and NOTIFICATIONS.md.
+// Every SaveChanges of a web request is watched by NotificationSaveInterceptor; NotificationWorker sends.
+builder.Services.AddDataProtection().SetApplicationName("XFLCSMS");
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("notifications", c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<NotificationQueue>();
+builder.Services.AddSingleton<NotificationSaveInterceptor>();
+builder.Services.AddSingleton<NotificationSettingsStore>();
+builder.Services.AddScoped<NotificationDispatcher>();
+builder.Services.AddScoped<NotificationSender>();
+builder.Services.AddScoped<SlaMonitor>();
+builder.Services.AddHostedService<NotificationWorker>();
+
+builder.Services.AddDbContext<DataContext>((services, options) =>
+    options.UseSqlServer(connectionString).AddInterceptors(services.GetRequiredService<NotificationSaveInterceptor>()));
 
 var app = builder.Build();
 
@@ -72,6 +89,8 @@ app.UseRouting();
 
 app.UseSession();
 app.UseAuthorization();
+
+app.MapHub<NotificationHub>(NotificationHub.Path);
 
 app.MapControllerRoute(
     name: "default",

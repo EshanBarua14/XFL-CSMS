@@ -1,0 +1,38 @@
+@* The bell in the top bar: unread count, the latest notifications, and real-time toasts over SignalR. *@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@using Microsoft.AspNetCore.DataProtection
+@using XFLCSMS.Services.Notifications
+@inject IDataProtectionProvider Protection
+@inject NotificationSettingsStore NotificationSettings
+@{
+    var controller = (ViewContext.RouteData.Values["controller"] as string) ?? "";
+    var profile = ViewBag.Profile as XFLCSMS.Models.Register.User;
+}
+@if (profile != null && controller is "Admin" or "SupportManegar" or "SupportEngineer" or "Maker")
+{
+    <li class="nav-item dropdown" id="xflBell"
+        data-feed="@Url.Action("NotificationFeed", controller)" data-read="@Url.Action("NotificationRead", controller)"
+        data-open="@Url.Action("OpenNotification", controller)" data-hub="@Url.Content("~" + NotificationHub.Path)"
+        data-token="@(NotificationSettings.GetBool(SettingKeys.InAppEnabled) ? NotificationHub.CreateToken(Protection, profile.Id) : "")"
+        data-csrf="@Xsrf.GetAndStoreTokens(Context).RequestToken">
+        <a class="nav-link" data-toggle="dropdown" href="#" title="Notifications" aria-label="Notifications">
+            <i class="far fa-bell"></i>
+            <span class="badge badge-danger navbar-badge d-none" id="xflBellCount">0</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right xfl-bell-menu">
+            <div class="dropdown-item dropdown-header d-flex justify-content-between align-items-center">
+                <span id="xflBellTitle">Notifications</span>
+                <a href="#" class="small" id="xflBellMarkAll">Mark all read</a>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div id="xflBellList"><span class="dropdown-item text-muted small">Loading…</span></div>
+            <div class="dropdown-divider"></div>
+            <div class="d-flex">
+                <a asp-controller="@controller" asp-action="MyNotifications" class="dropdown-item dropdown-footer">See all</a>
+                <a asp-controller="@controller" asp-action="NotificationPreferences" class="dropdown-item dropdown-footer"><i class="fas fa-sliders-h mr-1"></i>Settings</a>
+            </div>
+        </div>
+    </li>
+    <script src="~/lib/signalr/signalr.min.js" defer></script>
+    <script src="~/js/xfl-notify.js" asp-append-version="true" defer></script>
+}

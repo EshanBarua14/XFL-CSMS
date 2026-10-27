@@ -1,0 +1,168 @@
+@using XFLCSMS.Models.Notifications
+@using XFLCSMS.Services.Notifications
+@inject NotificationSettingsStore Store
+@inject NotificationSender Sender
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notification providers";
+    ViewData["Subtitle"] = "Channel switches, SMTP, WhatsApp and SMS accounts. Passwords, tokens and API keys are stored encrypted and never shown again; leave a secret empty to keep it. A value set as an environment variable (Notifications__<key>) wins over this page.";
+    var groups = SettingKeys.Fields.GroupBy(f => f.Group);
+}
+<partial name="~/Views/Admin/Notifications/_Tabs.cshtml" />
+<div class="row">
+    <div class="col-xl-8">
+        <form asp-action="NotificationSettings" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
+            @foreach (var g in groups)
+            {
+                <div class="card" id="grp-@g.Key.Split(' ')[0]">
+                    <div class="card-header py-2"><h3 class="card-title">@g.Key</h3></div>
+                    <div class="card-body">
+                        @if (g.Key == SettingKeys.Sms)
+                        {
+                            <div class="form-group xfl-only" data-when="Sms.Provider=Http">
+                                <label>Fill in for a gateway</label>
+                                <select id="smsPreset" class="form-control">
+                                    <option value="">- choose to fill URL / method / body -</option>
+                                    <option value="bulksmsbd">BulkSMSBD (bulksmsbd.net)</option>
+                                    <option value="sslwireless">SSL Wireless (smsplus)</option>
+                                    <option value="alpha">Alpha SMS (api.sms.net.bd)</option>
+                                    <option value="infobip">Infobip</option>
+                                </select>
+                                <small class="text-muted">Then check the values against your gateway's API document and enter your key / sender ID.</small>
+                            </div>
+                        }
+                        @foreach (var f in g)
+                        {
+                            var value = f.Secret ? null : Store.Get(f.Key);
+                            var fromConfig = Store.IsFromConfiguration(f.Key);
+                            var prefix = f.Key.Contains(".Meta.") ? f.Key.Split('.')[0] + ".Provider=Meta"
+                                       : f.Key.Contains(".Twilio.") ? f.Key.Split('.')[0] + ".Provider=Twilio"
+                                       : f.Key.Contains(".Http.") ? "Sms.Provider=Http" : null;
+                            <div class="form-group @(prefix != null ? "xfl-only" : "")" data-when="@prefix">
+                                @if (f.Type == "bool")
+                                {
+                                    <div class="custom-control custom-switch">
+                                        <input type="hidden" name="@f.Key" value="false" />
+                                        <input type="checkbox" class="custom-control-input" id="@f.Key" name="@f.Key" value="true" @(value == "true" ? "checked" : "") />
+                                        <label class="custom-control-label" for="@f.Key">@f.Label</label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <label for="@f.Key">@f.Label</label>
+                                    @if (f.Type == "select")
+                                    {
+                                        <select class="form-control" id="@f.Key" name="@f.Key">
+                                            @foreach (var o in f.Options!)
+                                            {
+                                                <option value="@o" selected="@(o == value)">@o</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (f.Type == "textarea")
+                                    {
+                                        <textarea class="form-control text-monospace" id="@f.Key" name="@f.Key" rows="3">@value</textarea>
+                                    }
+                                    else if (f.Secret)
+                                    {
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="@f.Key" name="@f.Key" autocomplete="new-password"
+                                                   placeholder="@(Store.HasStoredValue(f.Key) ? "•••••••• saved - type to replace" : "not set")" />
+                                            @if (Store.HasStoredValue(f.Key))
+                                            {
+                                                <div class="input-group-append"><label class="input-group-text mb-0"><input type="checkbox" name="clear" value="@f.Key" class="mr-1" />remove</label></div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <input type="@(f.Type == "number" ? "number" : "text")" class="form-control" id="@f.Key" name="@f.Key" value="@value" />
+                                    }
+                                }
+                                @if (!string.IsNullOrEmpty(f.Help)) { <small class="form-text text-muted">@f.Help</small> }
+                                @if (fromConfig) { <small class="form-text text-warning"><i class="fas fa-lock mr-1"></i>Set by the server configuration (Notifications__@(f.Key)); this field is ignored.</small> }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            <div class="xfl-sticky-save py-2"><button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save settings</button></div>
+        </form>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title"><i class="fas fa-vial mr-1"></i>Test send</h3></div>
+            <div class="card-body">
+                <p class="small text-muted">Save first. The test goes out at once (not through the queue) and the provider's answer is shown at the top of the page and in the delivery log.</p>
+                @foreach (var c in NotificationChannel.All)
+                {
+                    <form asp-action="NotificationTest" method="post" class="mb-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="channel" value="@c" />
+                        <label class="mb-1"><i class="@NotificationChannel.Icon(c) mr-1"></i>@NotificationChannel.Label(c)</label>
+                        <div class="input-group input-group-sm">
+                            @if (c != NotificationChannel.InApp)
+                            {
+                                <input name="address" class="form-control" placeholder="@(c == NotificationChannel.Email ? "e-mail (empty: mine)" : "mobile, e.g. 017XXXXXXXX (empty: mine)")" />
+                            }
+                            else
+                            {
+                                <input class="form-control" value="a toast to me" disabled />
+                            }
+                            <div class="input-group-append"><button type="submit" class="btn btn-success"><i class="fas fa-paper-plane"></i> Send</button></div>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header py-2"><h3 class="card-title"><i class="fas fa-info-circle mr-1"></i>What you need</h3></div>
+            <div class="card-body small">
+                <p><b>E-mail:</b> an SMTP account. Gmail / Google Workspace: turn on 2-step verification and create an <i>app password</i> (smtp.gmail.com, 587, StartTls). Microsoft 365: smtp.office365.com, 587, with SMTP AUTH allowed for the mailbox.</p>
+                <p><b>WhatsApp (Meta Cloud API):</b> a Meta Business account, a WhatsApp Business app in developers.facebook.com, a phone number registered to it, its <i>phone number ID</i>, a permanent System User access token, and an approved <i>Utility</i> template (e.g. <code>csms_notification</code>, body <code>{{1}}</code>).</p>
+                <p><b>WhatsApp (Twilio):</b> Account SID, Auth token, a WhatsApp-enabled sender (or the sandbox number for testing).</p>
+                <p><b>SMS:</b> a Bangladeshi gateway account (BulkSMSBD, SSL Wireless, Alpha SMS ...) with an API key and an approved sender ID / masking, or Twilio.</p>
+                <p class="mb-0">See NOTIFICATIONS.md in the project for step-by-step instructions.</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body small">
+                <b>Status</b>
+                <ul class="mb-0 pl-3">
+                    <li>E-mail: @(Sender.EmailConfigured ? "SMTP server set" : "no SMTP server")</li>
+                    <li>WhatsApp: @(Store.Get(SettingKeys.WaProvider) ?? "None")</li>
+                    <li>SMS: @(Store.Get(SettingKeys.SmsProvider) ?? "None")</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<style>.xfl-sticky-save { position: sticky; bottom: 0; background: var(--xfl-surface, #fff); z-index: 5; }</style>
+@section Scripts {
+    <script>
+        (function () {
+            function refresh() {
+                document.querySelectorAll('.xfl-only').forEach(function (el) {
+                    var w = (el.getAttribute('data-when') || '').split('=');
+                    var sel = document.getElementById(w[0]);
+                    el.style.display = !sel || sel.value === w[1] ? '' : 'none';
+                });
+            }
+            ['WhatsApp.Provider', 'Sms.Provider'].forEach(function (id) { var s = document.getElementById(id); if (s) s.addEventListener('change', refresh); });
+            refresh();
+
+            var presets = {
+                bulksmsbd: { 'Sms.Http.Method': 'GET', 'Sms.Http.Url': 'http://bulksmsbd.net/api/smsapi?api_key={apikey}&type=text&number={to}&senderid={senderid}&message={message}', 'Sms.Http.Body': '', 'Sms.Http.Headers': '', 'Sms.Http.SuccessContains': '202', 'Sms.Http.NumberFormat': '880XXXXXXXXXX' },
+                sslwireless: { 'Sms.Http.Method': 'POST_JSON', 'Sms.Http.Url': 'https://smsplus.sslwireless.com/api/v3/send-sms', 'Sms.Http.Body': '{"api_token":"{apikey}","sid":"{senderid}","msisdn":"{to}","sms":"{message}","csms_id":"{id}"}', 'Sms.Http.Headers': '', 'Sms.Http.SuccessContains': 'SUCCESS', 'Sms.Http.NumberFormat': '880XXXXXXXXXX' },
+                alpha: { 'Sms.Http.Method': 'POST_FORM', 'Sms.Http.Url': 'https://api.sms.net.bd/sendsms', 'Sms.Http.Body': 'api_key={apikey}&msg={message}&to={to}&sender_id={senderid}', 'Sms.Http.Headers': '', 'Sms.Http.SuccessContains': '"error":0', 'Sms.Http.NumberFormat': '880XXXXXXXXXX' },
+                infobip: { 'Sms.Http.Method': 'POST_JSON', 'Sms.Http.Url': 'https://YOUR-BASE-URL.api.infobip.com/sms/2/text/advanced', 'Sms.Http.Body': '{"messages":[{"from":"{senderid}","destinations":[{"to":"{to}"}],"text":"{message}"}]}', 'Sms.Http.Headers': 'Authorization: App {apikey}', 'Sms.Http.SuccessContains': '', 'Sms.Http.NumberFormat': '880XXXXXXXXXX' }
+            };
+            var p = document.getElementById('smsPreset');
+            if (p) p.addEventListener('change', function () {
+                var v = presets[p.value]; if (!v) return;
+                Object.keys(v).forEach(function (k) { var el = document.getElementById(k); if (el) el.value = v[k]; });
+            });
+        })();
+    </script>
+}
