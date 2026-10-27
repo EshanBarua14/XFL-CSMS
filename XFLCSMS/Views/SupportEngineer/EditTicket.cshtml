@@ -191,8 +191,9 @@
 
                 </div>
             </div>
-            <div class="card-body">
-                <label>Attached Files</label>
+            <div class="card card-primary">
+                <div class="card-header"><h3 class="card-title">Attached Files</h3></div>
+                <div class="card-body">
                 <div class="row">
                     <div class="col-12">
                         @if (Model.Attachments.Count != 0)
@@ -221,12 +222,10 @@
 
                     </div>
                 </div>
-
-
-            </div>
-            <div>
-                <br />
-                <input type="submit" value="Upload" class="btn btn-primary " />
+                </div>
+                <div class="card-footer xfl-form-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save changes</button>
+                </div>
             </div>
 
 
