@@ -79,10 +79,9 @@ The encryption keys live in the Windows user profile of the account that runs th
 - **Microsoft 365:** `smtp.office365.com`, `587`, `StartTls`; the mailbox needs "Authenticated SMTP" enabled.
 - **Any other mail server:** host, port, user name, password from your mail admin.
 
-> `appsettings.json` still contains the old Gmail app password (`EmailPassword`) and it is in the git history.
-> Revoke it in the Google account, create a new one and enter it on the Providers page; then remove
-> `EmailPassword` from `appsettings.json`. Empty SMTP fields on the page fall back to `EmailHost`,
-> `EmailUsername` and `EmailPassword` from `appsettings.json`, so e-mail keeps working until you switch.
+> Empty SMTP fields on the page fall back to `EmailHost`, `EmailPort`, `EmailUsername` and `EmailPassword` from
+> `appsettings.json` / `appsettings.Local.json` / environment variables, so existing setups keep working.
+> The old Gmail app password is still in the git history: revoke it in the Google account if not done yet.
 
 ### WhatsApp - Meta WhatsApp Cloud API (recommended, no middleman)
 

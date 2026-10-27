@@ -97,3 +97,13 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 `Views/Shared/_XflHead.cshtml`, `wwwroot/js/xfl-theme.js`, `wwwroot/lib/summernote/*` (MIT), `wwwroot/lib/chart.js/*` (MIT),
 `Views/Shared/_AppLayout.cshtml`, `Views/Shared/_Sidebar.cshtml`, `Views/Shared/_ProductBadge.cshtml`, `Models/Product/Product.cs`,
 `Views/Admin/ProductList|CreateProduct|EditProduct|ViewProduct|_ProductFields.cshtml`, `Migrations/20261027092109_AddProducts*.cs`, `wwwroot/img/xfl-logo-centered.png`
+
+## 9. Gap analysis, detailed reports and tables, charts, installable app
+
+Full list of gaps with what was done or why it was deferred: [`docs/GAP-ANALYSIS.md`](docs/GAP-ANALYSIS.md). In short:
+
+- **Security:** anti-forgery check on every POST / DELETE (`wwwroot/js/xfl-csrf.js` adds the token to AJAX / fetch); sign-in lockout after 5 wrong passwords; 64-bit reset / verify tokens valid 2 h; "forgot password" no longer reveals accounts; PBKDF2 password hashing with automatic upgrade at sign-in; one password rule (8+, upper, lower, digit, symbol); browser security headers; 10 MB attachment limit; mail password moved out of `appsettings.json` (now `appsettings.Local.json`, git-ignored); legacy API and scaffolding controllers removed.
+- **Tickets and reports:** one page for every ticket list and report of every role (`Views/Shared/TicketExplorer.cshtml`, `Services/TicketReportService.cs`, `wwwroot/js/xfl-explorer.js`) with 15 filters, KPIs, charts, breakdowns and a 28-column table (column chooser, per-column search, row details, Copy / CSV / Excel / PDF / Print).
+- **Dashboards:** Insights block with KPIs and charts for 7 / 30 / 90 days / 12 months (`ViewComponents/TicketInsightsViewComponent.cs`).
+- **Installable app (PWA):** `wwwroot/manifest.webmanifest`, `wwwroot/sw.js`, `wwwroot/icons/*`, `wwwroot/js/xfl-pwa.js`, offline page. See `read me.txt` section 6 for HTTPS on phones.
+- **Other:** priority validated, ticket numbers allocated one at a time, Unassigned lists show open tickets only, "Assigned to me" by user id, friendly 404 page, 30-minute session with keep-alive, `/healthz`, indexes on ticket dates (migration `TicketDateIndexes`).

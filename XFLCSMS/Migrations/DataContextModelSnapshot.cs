@@ -36,7 +36,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("AffectedSectionId");
 
-                    b.ToTable("AffectedSectionss");
+                    b.ToTable("AffectedSectionss", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Branch.Branchh", b =>
@@ -58,7 +58,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("BrokerageId");
 
-                    b.ToTable("Branchhs");
+                    b.ToTable("Branchhs", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Brocarage.Brokerage", b =>
@@ -79,7 +79,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("BrokerageId");
 
-                    b.ToTable("Brokerages");
+                    b.ToTable("Brokerages", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.DataTable.Customer", b =>
@@ -111,7 +111,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Cust_Id");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.EngineerAward", b =>
@@ -163,7 +163,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("Month")
                         .IsUnique();
 
-                    b.ToTable("EngineerAwards");
+                    b.ToTable("EngineerAwards", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.MonthlyEngineerScore", b =>
@@ -277,7 +277,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("Month", "EngineerUserId")
                         .IsUnique();
 
-                    b.ToTable("MonthlyEngineerScores");
+                    b.ToTable("MonthlyEngineerScores", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.SlaTarget", b =>
@@ -294,7 +294,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Priority");
 
-                    b.ToTable("SlaTargets");
+                    b.ToTable("SlaTargets", (string)null);
 
                     b.HasData(
                         new
@@ -424,7 +424,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("EngineerUserId", "CreatedOn");
 
-                    b.ToTable("TicketRatings");
+                    b.ToTable("TicketRatings", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Feedback.TicketStatusHistory", b =>
@@ -463,7 +463,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("IssueId", "ChangedOn");
 
-                    b.ToTable("TicketStatusHistories");
+                    b.ToTable("TicketStatusHistories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Issue.Attachment", b =>
@@ -489,7 +489,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("IssueId");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("Attachments", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Issue.IssueTable", b =>
@@ -597,7 +597,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Issues");
+                    b.ToTable("Issues", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationMessage", b =>
@@ -680,7 +680,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("UserId", "Channel", "ReadOn");
 
-                    b.ToTable("NotificationMessages");
+                    b.ToTable("NotificationMessages", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationOptOut", b =>
@@ -709,7 +709,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("UserId", "EventKey", "Channel")
                         .IsUnique();
 
-                    b.ToTable("NotificationOptOuts");
+                    b.ToTable("NotificationOptOuts", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationRule", b =>
@@ -748,7 +748,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("EventKey", "Channel", "Role")
                         .IsUnique();
 
-                    b.ToTable("NotificationRules");
+                    b.ToTable("NotificationRules", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationSetting", b =>
@@ -768,7 +768,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Key");
 
-                    b.ToTable("NotificationSettings");
+                    b.ToTable("NotificationSettings", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.NotificationTemplate", b =>
@@ -809,7 +809,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("EventKey", "Channel")
                         .IsUnique();
 
-                    b.ToTable("NotificationTemplates");
+                    b.ToTable("NotificationTemplates", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Notifications.SlaAlert", b =>
@@ -836,7 +836,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("IssueId", "EventKey")
                         .IsUnique();
 
-                    b.ToTable("SlaAlerts");
+                    b.ToTable("SlaAlerts", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Product.Product", b =>
@@ -867,7 +867,7 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("ProductName")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Register.User", b =>
@@ -947,7 +947,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportCatagory", b =>
@@ -965,7 +965,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportCatagoryId");
 
-                    b.ToTable("SupportCatagories");
+                    b.ToTable("SupportCatagories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportSubCatagory", b =>
@@ -983,7 +983,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportSubCatagoryId");
 
-                    b.ToTable("SupportSubCatagories");
+                    b.ToTable("SupportSubCatagories", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Support.SupportType", b =>
@@ -1001,7 +1001,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasKey("SupportTypeId");
 
-                    b.ToTable("SupportTypes");
+                    b.ToTable("SupportTypes", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Todos.Todo", b =>
@@ -1033,7 +1033,7 @@ namespace XFLCSMS.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Todos");
+                    b.ToTable("Todos", (string)null);
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Branch.Branchh", b =>

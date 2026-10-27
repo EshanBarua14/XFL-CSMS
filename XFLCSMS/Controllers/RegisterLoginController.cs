@@ -15,12 +15,22 @@ namespace XFLCSMS.Controllers
         private readonly DataContext _context;
         private readonly IEmailServices _emailServices;
         private readonly ILogger<RegisterLoginController> _logger;
+        private readonly LoginThrottle _throttle;
 
-        public RegisterLoginController(DataContext context, IEmailServices emailServices, ILogger<RegisterLoginController> logger)
+        public RegisterLoginController(DataContext context, IEmailServices emailServices, ILogger<RegisterLoginController> logger, LoginThrottle throttle)
         {
             _context = context;
             _emailServices = emailServices;
             _logger = logger;
+            _throttle = throttle;
+        }
+
+        // Keeps the session alive while a long form is open (called by xfl-ui.js every few minutes).
+        [HttpGet]
+        public IActionResult KeepAlive()
+        {
+            var signedIn = SessionAuthorizeAttribute.AllKeys.Any(k => !string.IsNullOrEmpty(HttpContext.Session.GetString(k)));
+            return signedIn ? NoContent() : Unauthorized();
         }
 
         public IActionResult Index()
@@ -172,10 +182,19 @@ namespace XFLCSMS.Controllers
 
             var token = verify.Token.Trim();
             var login = verify.Email.Trim();
+            var ip = LoginThrottle.Ip(HttpContext);
+            var wait = _throttle.BlockedMinutes("verify:" + login, ip);
+            if (wait > 0)
+            {
+                ViewBag.Message = "Too many wrong attempts. Please try again in " + wait + " minute(s).";
+                return View(verify);
+            }
+
             var user = await _context.Users.FirstOrDefaultAsync(u => (u.VerificationToken == token) &&
                 (u.Email == login || u.UserName == login));
             if (user == null)
             {
+                _throttle.Fail("verify:" + login, ip);
                 ViewBag.Message = "Invalid token or Email";
                 return View(verify);
             }
@@ -199,12 +218,35 @@ namespace XFLCSMS.Controllers
             }
 
             var login = request.UserId.Trim();
+            var ip = LoginThrottle.Ip(HttpContext);
+
+            // Password guessing: 5 wrong passwords for one account (or 20 from one address) lock it for 15 minutes.
+            var wait = _throttle.BlockedMinutes("login:" + login, ip);
+            if (wait > 0)
+            {
+                _logger.LogWarning("Sign-in for {Login} from {Ip} refused: too many failed attempts.", login, ip);
+                return LoginFailed(request, "Too many failed sign-in attempts. Please try again in " + wait + " minute(s) or reset your password.");
+            }
+
             var user = await _context.Users.FirstOrDefaultAsync(u => (u.Email == login || u.UserName == login));
 
             // Same message for "no such user" and "wrong password" so the form does not reveal who is registered.
             if (user == null || !PasswordHasher.Verify(request.Password, user.PasswordHash, user.PasswordSalt))
             {
+                _throttle.Fail("login:" + login, ip);
+                _logger.LogWarning("Failed sign-in for {Login} from {Ip}.", login, ip);
                 return LoginFailed(request, "Invalid user name or password.");
+            }
+
+            _throttle.Reset("login:" + login);
+
+            // accounts from before the PBKDF2 change get the stronger hash now, while the password is known
+            if (PasswordHasher.NeedsUpgrade(user.PasswordSalt))
+            {
+                PasswordHasher.Create(request.Password, out var upgradedHash, out var upgradedSalt);
+                user.PasswordHash = upgradedHash;
+                user.PasswordSalt = upgradedSalt;
+                await _context.SaveChangesAsync();
             }
 
             if (user.VerifiedAt == null)
@@ -294,12 +336,14 @@ namespace XFLCSMS.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => (u.Email == login) || (u.UserName == login));
             if (user == null)
             {
-                ViewBag.Message = "User not found.";
-                return View(verify);
+                // Same answer as for a real account, so this form cannot be used to find out who is registered.
+                _logger.LogInformation("Password reset asked for unknown login {Login}.", login);
+                TempData["Message"] = "If that account exists, we emailed it a reset token. Enter it below together with your new password.";
+                return RedirectToAction("ResetPassword");
             }
 
             user.PasswordResetToken = CreateRandomToken();
-            user.ResetTokenExpires = DateTime.Now.AddDays(1);
+            user.ResetTokenExpires = DateTime.Now.AddHours(2);
             await _context.SaveChangesAsync();
 
             try
@@ -309,7 +353,7 @@ namespace XFLCSMS.Controllers
                     // Always the address on file: the form also accepts a user name, which is not an email address.
                     To = user.Email,
                     Subject = "Password Reset Token",
-                    Body = "Your Password Reset Token is: <b>" + user.PasswordResetToken + "</b><br/>It is valid for 24 hours."
+                    Body = "Your Password Reset Token is: <b>" + user.PasswordResetToken + "</b><br/>It is valid for 2 hours."
                 });
             }
             catch (Exception ex)
@@ -319,7 +363,7 @@ namespace XFLCSMS.Controllers
                 return View(verify);
             }
 
-            TempData["Message"] = "We emailed you a reset token. Enter it below together with your new password.";
+            TempData["Message"] = "If that account exists, we emailed it a reset token. Enter it below together with your new password.";
             return RedirectToAction("ResetPassword");
         }
 
@@ -333,9 +377,18 @@ namespace XFLCSMS.Controllers
             }
 
             var token = request.Token.Trim();
+            var ip = LoginThrottle.Ip(HttpContext);
+            var wait = _throttle.BlockedMinutes(ip);
+            if (wait > 0)
+            {
+                ViewBag.Message = "Too many wrong attempts. Please try again in " + wait + " minute(s).";
+                return View(request);
+            }
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token);
             if (user == null || user.ResetTokenExpires < DateTime.Now)
             {
+                _throttle.Fail(ip);
                 ViewBag.Message = "Invalid or expired token.";
                 return View(request);
             }
@@ -348,6 +401,7 @@ namespace XFLCSMS.Controllers
             user.ResetTokenExpires = null;
 
             await _context.SaveChangesAsync();
+            _throttle.Reset("login:" + user.UserName, "login:" + user.Email);
 
             TempData["Message"] = "Your password was changed. You can sign in now.";
             return RedirectToAction("Login");
@@ -371,9 +425,10 @@ namespace XFLCSMS.Controllers
             return Json(branches);
         }
 
+        // 6 hex characters (16 million values) could be guessed by a script; 8 random bytes cannot.
         private string CreateRandomToken()
         {
-            return Convert.ToHexString(RandomNumberGenerator.GetBytes(3));
+            return Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
         }
     }
 }

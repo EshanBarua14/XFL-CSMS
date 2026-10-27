@@ -248,6 +248,8 @@
                             <!-- /.card -->
                         </section>
                     </div>
+                    @* KPIs and charts for 7 / 30 / 90 days / 12 months (ViewComponents/TicketInsightsViewComponent) *@
+                    @await Component.InvokeAsync("TicketInsights")
                 </div>
                 <!-- /.container-fluid -->
 

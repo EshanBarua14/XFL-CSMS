@@ -1,0 +1,99 @@
+@model XFLCSMS.Models.Admin.TicketSummary
+@using System.Globalization
+@{
+    var s = Model;
+    int days = ViewBag.Days;
+    string ctl = ViewBag.Controller;
+    string role = ViewBag.Role;
+    string P(double? pct) => pct.HasValue ? pct.Value.ToString("0", CultureInfo.InvariantCulture) + "%" : "–";
+    string H(double? h) => !h.HasValue ? "–" : h < 1 ? Math.Round(h.Value * 60) + "m" : h < 48 ? h.Value.ToString("0.#", CultureInfo.InvariantCulture) + "h" : (h.Value / 24).ToString("0.#", CultureInfo.InvariantCulture) + "d";
+    var period = days switch { 7 => "7d", 90 => "90d", 365 => "year", _ => "30d" };
+    var data = new
+    {
+        trend = new { labels = s.Trend.Select(t => t.Label), created = s.Trend.Select(t => t.Created), closed = s.Trend.Select(t => t.Closed) },
+        status = new { labels = s.ByStatus.Select(b => b.Name), values = s.ByStatus.Select(b => b.Total) },
+        priority = new { labels = s.ByPriority.Select(b => b.Name), open = s.ByPriority.Select(b => b.Open), closed = s.ByPriority.Select(b => b.Closed), sla = s.ByPriority.Select(b => b.SlaMetPercent) },
+        aging = new { labels = s.Aging.Select(a => a.Label), values = s.Aging.Select(a => a.Count) },
+        product = new { labels = s.ByProduct.Take(8).Select(b => b.Name), values = s.ByProduct.Take(8).Select(b => b.Total) },
+        house = new { labels = s.ByHouse.Take(8).Select(b => b.Name), open = s.ByHouse.Take(8).Select(b => b.Open), closed = s.ByHouse.Take(8).Select(b => b.Closed) },
+        category = new { labels = s.ByCategory.Take(8).Select(b => b.Name), values = s.ByCategory.Take(8).Select(b => b.Total) },
+        sla = new { met = s.SlaResolutionMetPercent }
+    };
+}
+<div class="xfl-insights mt-2">
+    <div class="d-flex align-items-center flex-wrap mb-2">
+        <h2 class="h5 mb-0 mr-3"><i class="fas fa-chart-line mr-2 text-primary"></i>Insights <small class="text-muted">· @ViewBag.Scope</small></h2>
+        <div class="btn-group btn-group-sm my-1" role="group" aria-label="Period">
+            @foreach (var d in new[] { 7, 30, 90, 365 })
+            {
+                <a class="btn @(d == days ? "btn-primary" : "btn-outline-primary")" href="?days=@d">@(d == 365 ? "12 months" : d + " days")</a>
+            }
+        </div>
+        <a class="btn btn-sm btn-outline-secondary ml-auto my-1" asp-controller="@ctl" asp-action="Reports" asp-route-Period="@period" asp-route-filtered="1"><i class="fas fa-file-alt mr-1"></i>Full report</a>
+    </div>
+
+    <div class="row xfl-kpis">
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-blue"><span class="xfl-kpi-label">Raised</span><span class="xfl-kpi-value">@s.Total</span><span class="xfl-kpi-note">last @(days == 365 ? "12 months" : days + " days")</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-green"><span class="xfl-kpi-label">Closed</span><span class="xfl-kpi-value">@s.Closed</span><span class="xfl-kpi-note">of the tickets raised</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-amber"><span class="xfl-kpi-label">SLA met</span><span class="xfl-kpi-value">@P(s.SlaResolutionMetPercent)</span><span class="xfl-kpi-note">first response @P(s.SlaResponseMetPercent)</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-purple"><span class="xfl-kpi-label">Median resolution</span><span class="xfl-kpi-value">@H(s.MedianResolutionHours)</span><span class="xfl-kpi-note">avg first response @H(s.AvgFirstResponseHours)</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-red"><span class="xfl-kpi-label">Overdue now</span><span class="xfl-kpi-value">@s.OverdueOpen</span><span class="xfl-kpi-note">@s.HighOpen High open · @s.Unassigned unassigned</span></div></div>
+        <div class="col-6 col-md-4 col-xl-2"><div class="xfl-kpi xfl-kpi-teal"><span class="xfl-kpi-label">Client rating</span><span class="xfl-kpi-value">@(s.AvgRating.HasValue ? "★ " + s.AvgRating.Value.ToString("0.0", CultureInfo.InvariantCulture) : "–")</span><span class="xfl-kpi-note">@s.Rated rated ticket(s)</span></div></div>
+    </div>
+
+    <script type="application/json" id="xfl-insights-data">@Html.Raw(Json.Serialize(data))</script>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card"><div class="card-header"><h3 class="card-title">Created vs closed per @s.TrendUnit</h3></div>
+                <div class="card-body"><div class="xfl-chart"><canvas id="in-trend" role="img" aria-label="Created and closed tickets"></canvas></div></div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card"><div class="card-header"><h3 class="card-title">Status of these tickets</h3></div>
+                <div class="card-body"><div class="xfl-chart"><canvas id="in-status" role="img" aria-label="Tickets by status"></canvas></div></div></div>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <div class="card"><div class="card-header"><h3 class="card-title">Open backlog by age</h3></div>
+                <div class="card-body"><div class="xfl-chart"><canvas id="in-aging" role="img" aria-label="Open tickets by age"></canvas></div></div></div>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <div class="card"><div class="card-header"><h3 class="card-title">Priority and SLA met %</h3></div>
+                <div class="card-body"><div class="xfl-chart"><canvas id="in-priority" role="img" aria-label="Tickets by priority"></canvas></div></div></div>
+        </div>
+        <div class="col-md-12 col-xl-4">
+            <div class="card"><div class="card-header"><h3 class="card-title">By product</h3></div>
+                <div class="card-body"><div class="xfl-chart"><canvas id="in-product" role="img" aria-label="Tickets by product"></canvas></div></div></div>
+        </div>
+        @if (role == "Admin" || role == "SupportManager")
+        {
+            <div class="col-12">
+                <div class="card"><div class="card-header"><h3 class="card-title">Busiest brokerage houses</h3></div>
+                    <div class="card-body"><div class="xfl-chart"><canvas id="in-house" role="img" aria-label="Tickets by brokerage house"></canvas></div></div></div>
+            </div>
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card"><div class="card-header"><h3 class="card-title">By category</h3></div>
+                    <div class="card-body"><div class="xfl-chart"><canvas id="in-category" role="img" aria-label="Tickets by category"></canvas></div></div></div>
+            </div>
+        }
+    </div>
+</div>
+<script src="~/js/xfl-charts.js" asp-append-version="true"></script>
+<script>
+    (function () {
+        var el = document.getElementById('xfl-insights-data');
+        if (!el || !window.XflCharts || !window.Chart) { return; }
+        var d = JSON.parse(el.textContent), X = window.XflCharts, K = X.colors;
+        X.line('in-trend', d.trend.labels, [{ label: 'Created', data: d.trend.created, color: K.blue }, { label: 'Closed', data: d.trend.closed, color: K.green }]);
+        X.doughnut('in-status', d.status.labels, d.status.values, d.status.labels.map(X.statusColor));
+        X.bar('in-aging', d.aging.labels, [{ label: 'Open tickets', data: d.aging.values, colors: [K.green, K.teal, K.amber, K.orange, K.red] }]);
+        X.bar('in-priority', d.priority.labels, [
+            { label: 'Open', data: d.priority.open, colors: d.priority.labels.map(X.priorityColor) },
+            { label: 'Closed', data: d.priority.closed, color: K.slate },
+            { label: 'SLA met %', data: d.priority.sla, color: K.green, percent: true }], { stacked: true });
+        X.bar('in-product', d.product.labels, [{ label: 'Tickets', data: d.product.values, color: K.indigo }], { horizontal: true });
+        X.bar('in-house', d.house.labels, [{ label: 'Open', data: d.house.open, color: K.blue }, { label: 'Closed', data: d.house.closed, color: K.green }], { stacked: true });
+        X.bar('in-category', d.category.labels, [{ label: 'Tickets', data: d.category.values, color: K.teal }]);
+    })();
+</script>
