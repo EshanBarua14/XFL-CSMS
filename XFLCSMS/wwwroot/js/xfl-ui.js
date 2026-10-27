@@ -1,5 +1,8 @@
 /* XFL CSMS - small helpers for every page:
-   marks the menu entry of the page that is open (also for view / edit / create pages of a list). */
+   - marks the menu entry of the page that is open (also for view / edit / create pages of a list)
+   - adds the light / dark switch (the theme itself is set by xfl-theme.js)
+   - turns <textarea id="editor"> into the rich-text editor (Summernote, MIT licence, served from wwwroot/lib)
+   - makes #issuesTable searchable / sortable (DataTables) */
 (function () {
     'use strict';
 
@@ -46,5 +49,104 @@
         }
     }
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', markMenu); } else { markMenu(); }
+    function themeButton() {
+        if (!window.xflTheme || document.querySelector('.xfl-theme-toggle')) { return; }
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'xfl-theme-toggle';
+        function paint() {
+            var dark = window.xflTheme.get() === 'dark';
+            btn.innerHTML = '<i class="fas ' + (dark ? 'fa-sun' : 'fa-moon') + '"></i><span class="xfl-theme-label">' + (dark ? 'Light' : 'Dark') + '</span>';
+            btn.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+            btn.setAttribute('aria-label', btn.title);
+            btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        }
+        btn.addEventListener('click', function () { window.xflTheme.toggle(); });
+        document.addEventListener('xfl-theme', paint);
+        paint();
+
+        var bar = document.querySelector('.main-header .navbar-nav.ml-auto');
+        if (bar) {
+            var li = document.createElement('li');
+            li.className = 'nav-item';
+            btn.classList.add('nav-link');
+            li.appendChild(btn);
+            bar.insertBefore(li, bar.firstChild);
+        } else {
+            // sign-in, registration and password pages have no top bar
+            btn.classList.add('xfl-theme-floating');
+            document.body.appendChild(btn);
+        }
+    }
+
+    function editors() {
+        var $ = window.jQuery;
+        if (!$ || !$.fn.summernote) { return; }
+        $('textarea#editor').each(function () {
+            var $t = $(this);
+            if ($t.next('.note-editor').length) { return; }
+            var readOnly = $t.prop('readonly') || $t.prop('disabled');
+            $t.summernote({
+                height: readOnly ? null : 240,
+                minHeight: 140,
+                placeholder: $t.attr('placeholder') || 'Describe the issue: what happened, where, and the steps to see it again.',
+                dialogsInBody: true,
+                disableDragAndDrop: readOnly,
+                maximumImageFileSize: 1024 * 1024,      // pasted pictures are kept inside the text; 1 MB each at most
+                toolbar: readOnly ? [] : [
+                    ['style', ['style']],
+                    ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['table', 'link', 'picture', 'hr']],
+                    ['view', ['undo', 'redo', 'fullscreen']]
+                ],
+                callbacks: {
+                    onImageUploadError: function () { window.alert('The picture is larger than 1 MB. Please attach it as a file instead.'); }
+                }
+            });
+            if (readOnly) { $t.summernote('disable'); }
+        });
+    }
+
+    function tables() {
+        var $ = window.jQuery;
+        if (!$ || !$.fn.DataTable) { return; }
+        $('#issuesTable').each(function () {
+            if (!$.fn.DataTable.isDataTable(this)) { $(this).DataTable(); }
+        });
+    }
+
+    // Chart.js picks its text and grid colours from its defaults: follow the theme
+    function charts() {
+        var C = window.Chart;
+        if (!C || !C.defaults) { return; }
+        var dark = window.xflTheme && window.xflTheme.get() === 'dark';
+        C.defaults.color = dark ? '#c9d3dd' : '#5b6b7d';
+        C.defaults.borderColor = dark ? 'rgba(255, 255, 255, .12)' : 'rgba(0, 0, 0, .1)';
+        var list = C.instances ? Object.keys(C.instances).map(function (k) { return C.instances[k]; }) : [];
+        list.forEach(function (chart) {
+            try {
+                var scales = chart.options.scales || {};
+                Object.keys(scales).forEach(function (id) {
+                    var sc = scales[id];
+                    if (sc.ticks) { sc.ticks.color = C.defaults.color; }
+                    if (sc.grid) { sc.grid.color = C.defaults.borderColor; }
+                });
+                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) { chart.options.plugins.legend.labels.color = C.defaults.color; }
+                chart.update('none');
+            } catch (e) { /* a chart that failed to draw */ }
+        });
+    }
+
+    function init() {
+        markMenu();
+        themeButton();
+        editors();
+        tables();
+        charts();
+        document.addEventListener('xfl-theme', charts);
+    }
+
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
 })();

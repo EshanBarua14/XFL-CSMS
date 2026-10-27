@@ -58,13 +58,25 @@ What was wrong and what was changed. File names are relative to `XFLCSMS/`.
 
 - **`appsettings.json` contains a Gmail app password and it is in the git history.** Revoke it and keep the new one in user-secrets / an environment variable.
 - .NET 6 is out of support (since Nov 2024). The project still targets `net6.0` with the same packages.
-- Pages load jQuery/Bootstrap/DataTables/CKEditor from public CDNs, so they need internet access.
+- Only the Google font and the Ionicons on the dashboards still come from the internet; without it the pages fall back to the system font and the dashboard box icons are missing. Everything else is served from `wwwroot` (section 7).
 - Passwords are a single salted HMAC-SHA512 (kept so existing accounts keep working).
 - The AJAX delete calls and some POST forms carry no anti-forgery token.
 - The old scaffolding controllers/views were kept (admin-only now); `api/UserControllers/*` is still public.
+
+## 7. Look and feel, editor, dark mode
+
+- **Rich-text editor: CKEditor 4.16.2 replaced by Summernote 0.9.1.** CKEditor 4.16.2 is out of support and has published security fixes after it (the warning on every ticket page). Its only maintained 4.x release, 4.25.x-lts, is a commercial build that needs a paid licence key; CKEditor 5 is free only under GPL (or a paid licence) and needs its own build. Summernote is MIT-licensed, maintained, built for Bootstrap 4 / jQuery like the rest of the app, and is served from `wwwroot/lib/summernote` (no CDN). Existing ticket text (HTML) opens and saves unchanged. The server-side sanitizer still cleans everything that is saved. Pasted pictures are limited to 1 MB each (larger files go in as attachments).
+- **Ticket View** shows the details as formatted text instead of a read-only editor.
+- **Light / dark mode.** A Dark / Light switch is in the top bar of every page (top right corner on the sign-in pages). The choice is remembered in the browser; with no choice yet the Windows / browser setting is used. Charts, tables, forms, dialogs and the editor follow the theme.
+- **One set of scripts per page.** Pages used to load jQuery up to three times (3.3.1 slim, 3.5.1, 3.6.0, 3.6.4), Bootstrap 4.3.1 and 5.3.0 JavaScript together, Bootstrap 5 CSS on top of AdminLTE (Bootstrap 4), and DataTables / CKEditor / Chart.js from CDNs. Each reload of jQuery dropped the plugins loaded before it. Every page now loads the same set from `Views/Shared/_XflHead.cshtml`, all from `wwwroot`: jQuery 3.6, Bootstrap 4.6, AdminLTE 3.2, DataTables 1.11 (Bootstrap 4 style), Summernote, Font Awesome; Chart.js 4.6 (`wwwroot/lib/chart.js`) on the dashboards. Unused AdminLTE demo scripts (jqvmap, knob, daterangepicker, tempusdominus, overlayScrollbars, `demo.js`) removed from the dashboards.
+- To-do edit dialog used Bootstrap 5 markup (`btn-close`, `data-bs-dismiss`); now Bootstrap 4.
+- "Sowing 1 to 10 form 25 items" -> "Showing 1 to 10 of 25 items"; "Shows:" -> "Show:".
+- On phones, wide tables scroll sideways inside their card. The registration page scrolls instead of being cut off at the top.
+- Removed `Controllers/_SupportEngineerLayout.cshtml` (+ `.css`): an unused old copy of the engineer layout that still referenced CKEditor 4.16.2.
 
 ## New files
 
 `Controllers/CsmsController.cs`, `Infrastructure/SessionAuthorizeAttribute.cs`, `Services/TicketService.cs`,
 `Services/PasswordHasher.cs`, `Services/HtmlSanitizer.cs`, `Data/DbInitializer.cs`,
-`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`, `Data/DemoDataSeeder.cs` (sample data, Development only)
+`Views/SupportEngineer/Profile.cshtml`, `Views/SupportManegar/Profile.cshtml`, `Data/DemoDataSeeder.cs` (sample data, Development only),
+`Views/Shared/_XflHead.cshtml`, `wwwroot/js/xfl-theme.js`, `wwwroot/lib/summernote/*` (MIT), `wwwroot/lib/chart.js/*` (MIT)

@@ -141,11 +141,7 @@
             <div class="card-body">
                 <label>Ticket Details</label>
 
-                <textarea class="form-control" rows="3" placeholder="Details Regarding Ticket from input" id="editor" readonly>
-
-                    @Html.Raw(XFLCSMS.Services.HtmlSanitizer.Sanitize(Model.TicketDetails))
-
-                            </textarea>
+                <div class="xfl-ticket-details">@Html.Raw(XFLCSMS.Services.HtmlSanitizer.Sanitize(Model.TicketDetails))</div>
 
             </div>
 
