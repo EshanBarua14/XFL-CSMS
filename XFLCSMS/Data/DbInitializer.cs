@@ -27,6 +27,8 @@ namespace XFLCSMS.Data
                     db.Database.Migrate();
                 }
 
+                SeedProducts(db, logger);
+
                 if (db.Users.Any())
                 {
                     DemoDataSeeder.Seed(db, configuration, logger);
@@ -95,5 +97,30 @@ namespace XFLCSMS.Data
                 logger.LogError(ex, "Could not initialise the database. Check ConnectionStrings:DefaultConnection in appsettings.json and that SQL Server is running.");
             }
         }
+    
+        /// <summary>The XFL products tickets are raised for. Added once, when the product list is empty;
+        /// after that the admin manages them under Setup > Products.</summary>
+        public static readonly string[] DefaultProducts =
+        {
+            "OST", "Smart Trade", "Xpert Trading OMS", "Xpert BO Account Opening Portal", "Xpert eKYC", "Xpert DMS"
+        };
+
+        private static void SeedProducts(DataContext db, ILogger logger)
+        {
+            if (db.Products.Any())
+            {
+                return;
+            }
+
+            var order = 0;
+            foreach (var name in DefaultProducts)
+            {
+                db.Products.Add(new XFLCSMS.Models.Product.Product { ProductName = name, IsActive = true, SortOrder = ++order * 10 });
+            }
+
+            db.SaveChanges();
+            logger.LogInformation("Added the {Count} default products.", DefaultProducts.Length);
+        }
     }
+
 }

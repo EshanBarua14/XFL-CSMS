@@ -1,0 +1,31 @@
+@model XFLCSMS.Models.Product.Product
+@{
+    ViewData["Title"] = Model.ProductName;
+    ViewData["Subtitle"] = "Product #" + Model.ProductId;
+    var tickets = (int)(ViewBag.TicketCount ?? 0);
+}
+@section PageActions {
+    <a class="btn btn-outline-secondary" asp-action="ProductList"><i class="fas fa-arrow-left mr-1"></i>Back to list</a>
+    <a class="btn btn-primary" asp-action="EditProduct" asp-route-id="@Model.ProductId"><i class="fas fa-pencil-alt mr-1"></i>Edit</a>
+    <button type="button" class="btn btn-outline-danger" data-delete-url="/Admin/DeleteProduct/@Model.ProductId" data-delete-name="@Model.ProductName" data-delete-done="@Url.Action("ProductList", "Admin")"><i class="fas fa-trash-alt mr-1"></i>Delete</button>
+}
+<div class="row">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card xfl-form-card">
+            <div class="card-body">
+                <dl class="row xfl-details mb-0">
+                    <dt class="col-sm-4">Product name</dt>
+                    <dd class="col-sm-8">@Model.ProductName</dd>
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Description) ? "-" : Model.Description)</dd>
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">@if (Model.IsActive) { <span class="badge badge-success">Active</span> } else { <span class="badge badge-secondary">Inactive</span> }</dd>
+                    <dt class="col-sm-4">Display order</dt>
+                    <dd class="col-sm-8">@Model.SortOrder</dd>
+                    <dt class="col-sm-4">Tickets</dt>
+                    <dd class="col-sm-8">@tickets</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

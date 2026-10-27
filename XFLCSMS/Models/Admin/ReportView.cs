@@ -7,6 +7,7 @@ namespace XFLCSMS.Models.Admin
     {
         public ICollection<string>? EmployeeNames { get; set; }
         public ICollection<Brokerage>? brocarages { get; set; }
+        public List<XFLCSMS.Models.Product.Product> Products { get; set; } = new();
         public Search? search { get; set; }
         public HeaderInfo? HeaderInfo { get; set; }
         public SESearch? SESearch { get; set; }

@@ -3,6 +3,7 @@
     public class Search
     {
         public int? BrokerageId { get; set; }
+        public int? ProductId { get; set; }
         public string? Priority { get; set; }
         public string? AStatus { get; set; }
         

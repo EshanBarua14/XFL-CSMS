@@ -2,7 +2,8 @@
    - marks the menu entry of the page that is open (also for view / edit / create pages of a list)
    - adds the light / dark switch (the theme itself is set by xfl-theme.js)
    - turns <textarea id="editor"> into the rich-text editor (Summernote, MIT licence, served from wwwroot/lib)
-   - makes #issuesTable searchable / sortable (DataTables) */
+   - makes #issuesTable searchable / sortable (DataTables)
+   - Delete buttons: <button data-delete-url="/Admin/DeleteX/5" data-delete-name="..."> asks, sends DELETE and removes the row */
 (function () {
     'use strict';
 
@@ -15,6 +16,8 @@
             return href && href !== '#' && href.indexOf('javascript:') !== 0;
         });
         if (!links.length) { return; }
+        // the side menu marks its entry on the server; this is only for menus that do not
+        if (document.querySelector('.nav-sidebar a.nav-link.active')) { return; }
 
         var here = norm(location.pathname);
         var parts = here.split('/');                       // "", controller, action, id
@@ -113,7 +116,33 @@
         var $ = window.jQuery;
         if (!$ || !$.fn.DataTable) { return; }
         $('#issuesTable').each(function () {
-            if (!$.fn.DataTable.isDataTable(this)) { $(this).DataTable(); }
+            if (!$.fn.DataTable.isDataTable(this)) { $(this).DataTable({ columnDefs: [{ orderable: false, targets: 'no-sort' }] }); }
+        });
+    }
+
+    function deletes() {
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest ? e.target.closest('[data-delete-url]') : null;
+            if (!btn) { return; }
+            e.preventDefault();
+            var name = btn.getAttribute('data-delete-name');
+            if (!window.confirm('Delete ' + (name ? '"' + name + '"' : 'this item') + '? This cannot be undone.')) { return; }
+            btn.disabled = true;
+            fetch(btn.getAttribute('data-delete-url'), { method: 'DELETE', credentials: 'same-origin' })
+                .then(function (r) {
+                    if (r.ok) {
+                        var row = btn.closest('tr');
+                        var $ = window.jQuery;
+                        var table = row && $ && $.fn.DataTable && $(row).closest('table');
+                        if (table && $.fn.DataTable.isDataTable(table[0])) { table.DataTable().row(row).remove().draw(false); }
+                        else if (row) { row.parentNode.removeChild(row); }
+                        else if (btn.getAttribute('data-delete-done')) { location.href = btn.getAttribute('data-delete-done'); }
+                        return;
+                    }
+                    btn.disabled = false;
+                    return r.text().then(function (m) { window.alert(m || ('Delete failed: ' + r.status)); });
+                })
+                .catch(function () { btn.disabled = false; window.alert('Delete failed: the server could not be reached.'); });
         });
     }
 
@@ -144,6 +173,7 @@
         themeButton();
         editors();
         tables();
+        deletes();
         charts();
         document.addEventListener('xfl-theme', charts);
     }

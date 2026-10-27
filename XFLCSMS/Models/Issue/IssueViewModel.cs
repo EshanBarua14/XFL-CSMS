@@ -10,6 +10,7 @@ namespace XFLCSMS.Models.Issue
     public class IssueViewModel
     {
 
+        public List<XFLCSMS.Models.Product.Product> Products { get; set; } = new();
         public List<SupportType> SupportTypes { get; set; }
         public List<SupportCatagory> SupportCatagories { get; set;}
         public List<SupportSubCatagory> SupportSubCatagories { get;set;}

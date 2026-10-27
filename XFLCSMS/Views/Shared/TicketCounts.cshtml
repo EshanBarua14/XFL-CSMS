@@ -2,22 +2,14 @@
 @{
     Layout = Model.Layout;
     string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    ViewData["Title"] = "Ticket Counts";
+    ViewData["Subtitle"] = "Tickets raised: " + Model.PeriodText + ". All time: " + Model.AllTime + " tickets, " + Model.AllTimeNotClosed + " not closed.";
     var periods = new[] { ("today", "Today"), ("week", "Last 7 days"), ("30", "Last 30 days"), ("month", "This month"), ("year", "This year"), ("all", "All time") };
 }
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-7">
-                <h1>Ticket Counts</h1>
-                <p class="text-muted mb-0">Tickets raised: @Model.PeriodText. All time: @Model.AllTime tickets, @Model.AllTimeNotClosed not closed.</p>
-            </div>
-            <div class="col-sm-5 text-sm-right d-print-none">
-                <a class="btn btn-default btn-sm" asp-controller="@Model.Controller" asp-action="TicketCounts" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)" asp-route-period="@(Model.From == null && Model.To == null ? "all" : null)" asp-route-export="csv"><i class="fas fa-file-csv"></i> Download (CSV)</a>
-                <button type="button" class="btn btn-default btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
-            </div>
-        </div>
-    </div>
-</section>
+@section PageActions {
+    <a class="btn btn-outline-secondary d-print-none" asp-controller="@Model.Controller" asp-action="TicketCounts" asp-route-from="@D(Model.From)" asp-route-to="@D(Model.To)" asp-route-period="@(Model.From == null && Model.To == null ? "all" : null)" asp-route-export="csv"><i class="fas fa-file-csv mr-1"></i>Download (CSV)</a>
+    <button type="button" class="btn btn-outline-secondary d-print-none" onclick="window.print()"><i class="fas fa-print mr-1"></i>Print</button>
+}
 
 <section class="content">
     <div class="card d-print-none">
@@ -87,7 +79,7 @@
 
     <div class="row">
         @foreach (var (title, first, counts) in new[] {
-            ("By Engineer", "Engineer", Model.Engineers), ("By Support Type", "Support Type", Model.SupportTypes),
+            ("By Product", "Product", Model.Products), ("By Engineer", "Engineer", Model.Engineers), ("By Support Type", "Support Type", Model.SupportTypes),
             ("By Priority", "Priority", Model.Priorities), ("Raised By (top 15)", "User", Model.RaisedBy),
             ("By " + Model.TimelineUnit, Model.TimelineUnit, Model.Timeline) })
         {

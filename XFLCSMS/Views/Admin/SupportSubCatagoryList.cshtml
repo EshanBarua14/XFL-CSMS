@@ -1,132 +1,35 @@
 ﻿@model IEnumerable<XFLCSMS.Models.Support.SupportSubCatagory>
-<h1>Support Sub-Category</h1>
-<!-- Main content -->
-<section class="content">
-
-    <!-- Default box -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <button type="button" class="btn btn-tool" data-card-widget="remove" title="Remove">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <a class="btn btn-outline-success" asp-controller="Admin" asp-action="CreateSupportSubCatagory">
-                <i class="fas fa-plus"></i> Create
-            </a>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-striped projects" id="issuesTable">
-                <thead>
+@{
+    ViewData["Title"] = "Sub-Categories";
+    ViewData["Subtitle"] = "Ticket sub-categories.";
+}
+@section PageActions {
+    <a class="btn btn-primary" asp-controller="Admin" asp-action="CreateSupportSubCatagory"><i class="fas fa-plus mr-1"></i>Add Sub-Category</a>
+}
+<div class="card xfl-table-card">
+    <div class="card-body">
+        <table class="table table-hover xfl-table" id="issuesTable">
+            <thead>
+                <tr>
+                    <th style="width:80px">ID</th>
+                    <th>Sub-category</th>
+                    <th class="text-right no-sort" style="width:260px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
                     <tr>
-                        <th style="width:10%">
-                            Support Sub-Category ID
-                        </th>
-                        <th style="width: 30%">
-                            Support Sub-Category Name
-                        </th>
-
-                        <th style="width: 30%; text-align: center;">
-                            Modify
-                        </th>
-
-
+                        <td>@item.SupportSubCatagoryId</td>
+                        <td>@item.SubCatagory</td>
+                        <td class="text-right text-nowrap">
+                            <a class="btn btn-outline-primary btn-sm" asp-controller="Admin" asp-action="ViewSupportSubCatagory" asp-route-id="@item.SupportSubCatagoryId"><i class="fas fa-eye mr-1"></i>View</a>
+                            <a class="btn btn-outline-info btn-sm" asp-controller="Admin" asp-action="EditSupportSubCatagory" asp-route-id="@item.SupportSubCatagoryId"><i class="fas fa-pencil-alt mr-1"></i>Edit</a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-delete-url="/Admin/DeleteSupportSubCatagory/@item.SupportSubCatagoryId" data-delete-name="@item.SubCatagory"><i class="fas fa-trash-alt mr-1"></i>Delete</button>
+                        </td>
                     </tr>
-                </thead>
-
-                <tbody>
-                    @foreach (var item in Model)
-                    {
-
-
-                        <tr id="row-@item.SupportSubCatagoryId">
-                            <!-- Your table cells -->
-                            <td>@Html.DisplayFor(modelItem => @item.SupportSubCatagoryId)</td>
-                            <td>@Html.DisplayFor(modelItem => item.SubCatagory)</td>
-
-                            <td class="project-actions text-right">
-                                <a class="btn btn-outline-primary btn-sm" asp-controller="Admin" asp-action="ViewSupportSubCatagory" asp-route-id="@item.SupportSubCatagoryId">
-                                    <i class="fas fa-folder"></i> View
-                                </a>
-                                <a class="btn btn-outline-info btn-sm" asp-controller="Admin" asp-action="EditSupportSubCatagory" asp-route-id="@item.SupportSubCatagoryId">
-                                    <i class="fas fa-pencil-alt"></i> Edit
-                                </a>
-                                <a class="btn btn-outline-danger btn-sm" href="#" data-issue-id="@item.SupportSubCatagoryId">
-                                    <i class="fas fa-trash-alt"></i>
-                                    Delete
-                                </a>
-                            </td>
-                        </tr>
-                        <!-- Additional rows go here -->
-                    }
-
-
-                </tbody>
-            </table>
-        </div>
-        <!-- /.card-body -->
-    </div>
-    <!-- /.card -->
-
-</section>
-<!-- /.content -->
-      
-
-
-    <!-- Your JavaScript/jQuery code -->
-    <script>
-    document.querySelectorAll('.btn-outline-danger').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault();
-
-                var issueId = this.getAttribute('data-issue-id');
-                var rowToDelete = this.closest('tr');
-
-                // Show confirmation dialog
-                var isConfirmed = confirm('Are you sure you want to delete this item?');
-
-                if (isConfirmed) {
-                    // Perform the DELETE request using JavaScript
-                    fetch(`/Admin/DeleteSupportSubCatagory/${issueId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json'
-                            // Add any additional headers as needed, e.g., for CSRF protection
-                        }
-                    })
-                        .then(response => {
-                            if (response.ok) {
-                                // Remove the deleted row from the table
-                                rowToDelete.remove();
-                            } else {
-                                // Handle errors, e.g., show an error message
-                                response.text().then(function (message) {
-                                    alert(message || ('Delete failed: ' + response.statusText));
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                        });
                 }
-            });
-        });
-    </script>
-<script type="text/javascript">
-    // Define a function named preventback
-    function preventback() {
-        // Forward the browser's history by one step, effectively preventing the user from going back
-        window.history.forward();
-    }
-
-    // Set a timeout to call the preventback function immediately after the script is executed
-    // back button allowed
-
-    // When the window loads, assign a null function to the onload event to effectively do nothing
-    window.onload = function () { null };
-</script>
+            </tbody>
+        </table>
+    </div>
+</div>

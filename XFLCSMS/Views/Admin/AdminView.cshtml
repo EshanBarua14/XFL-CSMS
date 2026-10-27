@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<XFLCSMS.Models.Issue.IssueTable>
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "All Tickets";
     var P = ViewBag.pager;
     int i = 1;
     int start = 0;
@@ -22,11 +22,13 @@
 
     int[] rows_per_page = { 5, 10, 20, 50, 100 };
 }
+@section PageActions {
+    <a asp-controller="Admin" asp-action="IssueRaiseFrom" class="btn btn-primary"><i class="fas fa-plus mr-1"></i>Create Ticket</a>
+}
 
 
 <!-- Main content -->
-<section class="content">
-    <div class="px-3 pt-2 pb-1"><a asp-controller="Admin" asp-action="IssueRaiseFrom" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Create Ticket</a></div>
+<section class="content xfl-card-like">
 
     <div class="card-header">
         <div class="row">
@@ -276,7 +278,7 @@
                         <td>
                             <a>
                                 <b>@Html.DisplayFor(modelItem => item.ITitle)</b>
-                            </a>
+                            </a> <partial name="_ProductBadge" model="item.ProductId" />
                             <br />
                             <small>
                                 <b>Created on:</b> @Html.DisplayFor(modelItem => item.TDate)

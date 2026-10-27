@@ -14,6 +14,8 @@ namespace XFLCSMS.Models.Issue
         [Required(ErrorMessage ="Title I required")]
         public string ITitle { get; set; } = string.Empty;
 
+        /// <summary>The product the ticket is about (required for new tickets).</summary>
+        public int? ProductId { get; set; }
         public int? SupportTypeId { get; set; }
         public int? SupportCatagoryId { get; set; }
         public int? SupportSubCatagoryID { get; set; }

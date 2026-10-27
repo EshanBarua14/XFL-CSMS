@@ -387,6 +387,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -438,6 +441,9 @@ namespace XFLCSMS.Controllers
                     CreatedBy = UserName(issueWithAttachments.UserId),
                     AssgnOn = issueWithAttachments.AssignOn,
                     AssgnBy = issueWithAttachments.AssignBy,
+                    Product = Tickets.ProductName(issueWithAttachments.ProductId),
+                    ProductId = issueWithAttachments.ProductId,
+                    Products = Tickets.AllProducts(),
                     SupportType = SupportTypeName(issueWithAttachments.SupportTypeId),
                     SupportCatagory = SupportCatagoryName(issueWithAttachments.SupportCatagoryId),
                     SupportSubCatagory = SupportSubCatagoryName(issueWithAttachments.SupportSubCatagoryId),
@@ -524,6 +530,7 @@ namespace XFLCSMS.Controllers
 
                 var viewModel = new IssueViewModel
                 {
+                    Products = Tickets.ActiveProducts(),
                     SupportTypes = _context.SupportTypes.ToList(),
                     SupportCatagories = _context.SupportCatagories.ToList(),
                     SupportSubCatagories = _context.SupportSubCatagories.ToList(),
@@ -1047,6 +1054,7 @@ namespace XFLCSMS.Controllers
 
                 var reportview = new ReportView
                 {
+                Products = Tickets.AllProducts(),
                     EmployeeNames = supportEngineer,
                     brocarages = BrocarageHouse,
 
@@ -1076,6 +1084,8 @@ namespace XFLCSMS.Controllers
 
             if (reportView.search.BrokerageId.HasValue)
                 searchResults = searchResults.Where(x => x.BrokerageId == reportView.search.BrokerageId).ToList();
+            if (reportView.search.ProductId.HasValue)
+                searchResults = searchResults.Where(x => x.ProductId == reportView.search.ProductId).ToList();
             if (!String.IsNullOrEmpty(reportView.search.Priority))
                 searchResults = searchResults.Where(x => x.Priority.Contains(reportView.search.Priority)).ToList();
             if (!String.IsNullOrEmpty(reportView.search.AStatus))

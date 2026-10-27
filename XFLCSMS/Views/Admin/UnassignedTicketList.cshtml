@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<XFLCSMS.Models.Issue.IssueTable>
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Unassigned Tickets";
     var P = ViewBag.pager;
     int i = 1;
     int start = 0;
@@ -25,7 +25,7 @@
 
 
 <!-- Main content -->
-<section class="content">
+<section class="content xfl-card-like">
 
     <div class="card-header">
         <div class="row">
@@ -275,7 +275,7 @@
                         <td>
                             <a>
                                 <b>@Html.DisplayFor(modelItem => item.ITitle)</b>
-                            </a>
+                            </a> <partial name="_ProductBadge" model="item.ProductId" />
                             <br />
                             <small>
                                 <b>Created on:</b> @Html.DisplayFor(modelItem => item.TDate)

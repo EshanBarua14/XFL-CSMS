@@ -1,4 +1,8 @@
 ﻿@model XFLCSMS.Models.Admin.ReportView;
+@{
+    ViewData["Title"] = "Ticket Reports";
+    ViewData["Subtitle"] = "Filter tickets and export the result.";
+}
 <!-- Main content -->
 <section class="content">
 
@@ -27,6 +31,18 @@
                                     </div>
                                 </div>
 
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="ProductFilter">Product</label>
+                                        <select class="form-control" name="search.ProductId" id="ProductFilter">
+                                            <option value="">All</option>
+                                            @foreach (var product in Model.Products)
+                                            {
+                                                <option value="@product.ProductId">@product.ProductName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="col-4">
                                     <div class="form-group">
                                         <label for="Priority">Priority</label>

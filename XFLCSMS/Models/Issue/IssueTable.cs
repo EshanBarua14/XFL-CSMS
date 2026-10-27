@@ -53,6 +53,10 @@ namespace XFLCSMS.Models.Issue
         public AffectedSection? affecteds { get; set; }
         
 
+        [ForeignKey("Product")]
+        public int? ProductId { get; set; }
+        public XFLCSMS.Models.Product.Product? Product { get; set; }
+
         public string Priority { get; set; }=string.Empty;
         public string? ITitle { get; set; } = string.Empty;
         public string? Details { get; set; } 

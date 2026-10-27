@@ -1,0 +1,56 @@
+@model IEnumerable<XFLCSMS.Models.Product.Product>
+@{
+    ViewData["Title"] = "Products";
+    ViewData["Subtitle"] = "The XFL products tickets are raised for. Inactive products stay on their tickets but are not offered for new ones.";
+    var counts = ViewBag.TicketCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+}
+@section PageActions {
+    <a class="btn btn-primary" asp-controller="Admin" asp-action="CreateProduct"><i class="fas fa-plus mr-1"></i>Add Product</a>
+}
+<div class="card xfl-table-card">
+    <div class="card-body">
+        <table class="table table-hover xfl-table" id="issuesTable">
+            <thead>
+                <tr>
+                    <th style="width:80px">Order</th>
+                    <th>Product</th>
+                    <th style="width:110px">Status</th>
+                    <th style="width:100px">Tickets</th>
+                    <th class="text-right no-sort" style="width:260px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var n = counts.TryGetValue(item.ProductId, out var c) ? c : 0;
+                    <tr>
+                        <td>@item.SortOrder</td>
+                        <td>
+                            <div class="font-weight-bold">@item.ProductName</div>
+                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                            {
+                                <div class="text-muted small">@item.Description</div>
+                            }
+                        </td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Inactive</span>
+                            }
+                        </td>
+                        <td>@n</td>
+                        <td class="text-right text-nowrap">
+                            <a class="btn btn-outline-primary btn-sm" asp-controller="Admin" asp-action="ViewProduct" asp-route-id="@item.ProductId"><i class="fas fa-eye mr-1"></i>View</a>
+                            <a class="btn btn-outline-info btn-sm" asp-controller="Admin" asp-action="EditProduct" asp-route-id="@item.ProductId"><i class="fas fa-pencil-alt mr-1"></i>Edit</a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-delete-url="/Admin/DeleteProduct/@item.ProductId" data-delete-name="@item.ProductName"><i class="fas fa-trash-alt mr-1"></i>Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
