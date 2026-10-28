@@ -61,10 +61,7 @@
                                         @* keep the current assignee selectable even if he is no longer in the engineer list *@
                                         <option value="@Model.AssgnBy">@Model.AssgnBy</option>
                                     }
-                                    @foreach (var item in Model.SupportEngineers ?? new List<XFLCSMS.Models.Register.User>())
-                                    {
-                                        <option value="@item.FullName">@item.FullName</option>
-                                    }
+                                    <partial name="_EngineerOptions" model="Model" />
                                 </select>
                             </div>
 

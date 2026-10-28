@@ -1,0 +1,129 @@
+/* XFL CSMS - support levels (L1-L5) and development tracking: level badges, the level ladder and timelines of the
+   Ticket Details panel (Views/Shared/Components/TicketWork), the Support Levels overview and the Development Tracker.
+   Colours come from the glass variables (xfl-glass.css), so light and dark follow the theme. */
+
+:root {
+    --lvl-1: #1769c2; --lvl-1b: #5b8cff;
+    --lvl-2: #0e9f8a; --lvl-2b: #3fd0b5;
+    --lvl-3: #7a5af5; --lvl-3b: #b08cff;
+    --lvl-4: #e07a00; --lvl-4b: #ffb547;
+    --lvl-5: #d6336c; --lvl-5b: #ff7aa2;
+}
+.xfl-lvl-1 { --lvl: var(--lvl-1); --lvl-b: var(--lvl-1b); }
+.xfl-lvl-2 { --lvl: var(--lvl-2); --lvl-b: var(--lvl-2b); }
+.xfl-lvl-3 { --lvl: var(--lvl-3); --lvl-b: var(--lvl-3b); }
+.xfl-lvl-4 { --lvl: var(--lvl-4); --lvl-b: var(--lvl-4b); }
+.xfl-lvl-5 { --lvl: var(--lvl-5); --lvl-b: var(--lvl-5b); }
+
+/* ---- level badge ---- */
+.xfl-lvl { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: .78rem;
+    color: #fff; background: linear-gradient(135deg, var(--lvl, #6c757d), var(--lvl-b, #adb5bd)); box-shadow: 0 2px 8px rgba(15, 42, 71, .15); white-space: nowrap; }
+.xfl-lvl-sm { padding: 0 7px; font-size: .7rem; }
+
+/* ---- development chip ---- */
+.xfl-dev-chip { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap;
+    background: var(--glass-bg-strong); border: 1px solid var(--xfl-line); color: var(--xfl-ink); }
+.xfl-dev-analysis { --dev: #1769c2; } .xfl-dev-development { --dev: #7a5af5; } .xfl-dev-codereview { --dev: #0e9f8a; }
+.xfl-dev-testing { --dev: #e07a00; } .xfl-dev-readytodeploy { --dev: #3b82f6; } .xfl-dev-deployed { --dev: #1f915a; }
+.xfl-dev-onhold { --dev: #6c757d; } .xfl-dev-none { --dev: #adb5bd; }
+.xfl-dev-chip[class*="xfl-dev-"] { border-color: var(--dev); color: var(--dev); }
+html[data-theme="dark"] .xfl-dev-chip[class*="xfl-dev-"] { color: #fff; background: color-mix(in srgb, var(--dev) 35%, transparent); }
+
+/* ---- Ticket Details panel ---- */
+.xfl-work-card .card-header .card-title { font-weight: 700; }
+.xfl-work-col + .xfl-work-col { border-left: 1px solid var(--xfl-line); }
+@media (max-width: 991.98px) { .xfl-work-col + .xfl-work-col { border-left: 0; border-top: 1px solid var(--xfl-line); padding-top: 16px; margin-top: 8px; } }
+.xfl-work-facts { font-size: .88rem; }
+.xfl-work-facts dt { font-weight: 600; color: var(--xfl-muted); }
+.xfl-work-facts dd { margin-bottom: .3rem; }
+.xfl-work-sub { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--xfl-muted); margin: 6px 0 10px; }
+.xfl-work-form > summary { list-style: none; display: inline-block; cursor: pointer; }
+.xfl-work-form > summary::-webkit-details-marker { display: none; }
+.xfl-work-form[open] > summary { background: var(--xfl-hover); }
+.xfl-work-form > form { padding: 12px; border-radius: 12px; background: var(--glass-bg-soft); border: 1px solid var(--xfl-line); animation: xfl-tier-in .35s var(--xfl-ease, ease) both; }
+
+/* the L1-L5 ladder: rungs rise from left to right, the current one glows */
+.xfl-ladder { list-style: none; margin: 0 0 14px; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: end; }
+.xfl-rung { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; gap: 2px;
+    padding: 8px 4px 6px; border-radius: 12px; border: 1px solid var(--xfl-line); background: var(--glass-bg-soft); color: var(--xfl-muted);
+    transition: transform .3s var(--xfl-ease, ease), box-shadow .3s ease; animation: xfl-tier-rise .5s var(--xfl-ease, ease) both; }
+.xfl-rung:nth-child(1) { min-height: 54px; animation-delay: .05s; } .xfl-rung:nth-child(2) { min-height: 64px; animation-delay: .1s; }
+.xfl-rung:nth-child(3) { min-height: 74px; animation-delay: .15s; } .xfl-rung:nth-child(4) { min-height: 84px; animation-delay: .2s; }
+.xfl-rung:nth-child(5) { min-height: 94px; animation-delay: .25s; }
+.xfl-rung-code { font-weight: 800; font-size: 1rem; line-height: 1; }
+.xfl-rung-name { font-size: .68rem; line-height: 1.15; }
+.xfl-rung.is-visited { border-color: var(--lvl); color: var(--lvl); }
+.xfl-rung.is-current { color: #fff; border-color: transparent; background: linear-gradient(160deg, var(--lvl), var(--lvl-b));
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--lvl) 40%, transparent); transform: translateY(-3px); }
+.xfl-rung.is-current::after { content: ""; position: absolute; inset: -4px; border-radius: 15px; border: 2px solid var(--lvl); opacity: .5; animation: xfl-tier-pulse 2.2s ease-out 1s infinite; }
+@media (max-width: 575.98px) { .xfl-rung-name { display: none; } }
+
+/* development stepper: six stages, reuses the ticket stepper (xfl-glass.css) */
+.xfl-dev-stepper { margin-bottom: 14px; }
+.xfl-dev-stepper .xfl-step-dot { width: 38px; height: 38px; font-size: 14px; }
+.xfl-dev-stepper::before, .xfl-dev-stepper::after { top: 17px; }
+.xfl-dev-stepper .xfl-step-label { font-size: .72rem; }
+.xfl-dev-stepper.is-hold::after { background: linear-gradient(90deg, #6c757d, #adb5bd); box-shadow: none; }
+
+/* timelines (escalations, development updates) */
+.xfl-timeline { list-style: none; margin: 0; padding: 0 0 0 4px; position: relative; }
+.xfl-timeline::before { content: ""; position: absolute; left: 15px; top: 6px; bottom: 6px; width: 2px; background: var(--xfl-line); }
+.xfl-tl-item { position: relative; display: flex; gap: 10px; padding: 0 0 12px; animation: xfl-tier-in .45s var(--xfl-ease, ease) both; }
+.xfl-tl-item:nth-child(2) { animation-delay: .06s; } .xfl-tl-item:nth-child(3) { animation-delay: .12s; } .xfl-tl-item:nth-child(n+4) { animation-delay: .18s; }
+.xfl-tl-dot { flex: 0 0 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; z-index: 1;
+    background: linear-gradient(135deg, var(--lvl, var(--dev, #6c757d)), var(--lvl-b, var(--dev, #adb5bd))); box-shadow: 0 0 0 3px var(--glass-bg-strong); }
+.xfl-tl-body { font-size: .86rem; min-width: 0; }
+.xfl-tl-note { white-space: pre-wrap; word-break: break-word; padding: 6px 10px; margin: 4px 0; border-radius: 10px; background: var(--glass-bg-soft); border: 1px solid var(--xfl-line); }
+
+/* ---- Support Levels overview ---- */
+.xfl-tier-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+@media (max-width: 1199.98px) { .xfl-tier-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767.98px) { .xfl-tier-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 459.98px) { .xfl-tier-cards { grid-template-columns: 1fr; } }
+.xfl-tier-card { position: relative; overflow: hidden; border-radius: 16px; padding: 14px 14px 12px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(var(--glass-blur, 18px)); backdrop-filter: blur(var(--glass-blur, 18px));
+    animation: xfl-tier-rise .55s var(--xfl-ease, ease) both; }
+.xfl-tier-card:nth-child(2) { animation-delay: .06s; } .xfl-tier-card:nth-child(3) { animation-delay: .12s; }
+.xfl-tier-card:nth-child(4) { animation-delay: .18s; } .xfl-tier-card:nth-child(5) { animation-delay: .24s; }
+.xfl-tier-card::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--lvl), var(--lvl-b)); }
+.xfl-tier-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.xfl-tier-code { font-size: 1.5rem; font-weight: 800; color: var(--lvl); line-height: 1; }
+.xfl-tier-name { font-weight: 700; color: var(--xfl-ink); font-size: .9rem; line-height: 1.2; }
+.xfl-tier-big { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--xfl-ink); font-variant-numeric: tabular-nums; }
+.xfl-tier-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: .78rem; color: var(--xfl-muted); margin-top: 8px; }
+.xfl-tier-stats b { color: var(--xfl-ink); font-variant-numeric: tabular-nums; }
+.xfl-tier-load { height: 6px; border-radius: 3px; background: var(--xfl-line); overflow: hidden; margin-top: 8px; }
+.xfl-tier-load > span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--lvl), var(--lvl-b)); width: var(--w, 0%); animation: xfl-tier-grow 1.2s var(--xfl-ease, ease) .4s both; }
+
+/* escalation flow between the levels */
+.xfl-flowbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; align-items: center; }
+.xfl-flowbar-node { text-align: center; position: relative; padding: 4px; }
+.xfl-flowbar-node .xfl-lvl { font-size: .9rem; padding: 4px 14px; }
+.xfl-flowbar-node + .xfl-flowbar-node::before { content: attr(data-up); position: absolute; left: -22px; top: -16px; font-size: .72rem; color: var(--xfl-muted); width: 44px; text-align: center; }
+.xfl-flowbar-node + .xfl-flowbar-node::after { content: "→"; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); color: var(--xfl-muted); font-weight: 700; }
+
+/* ---- Development Tracker board ---- */
+.xfl-board { display: grid; grid-template-columns: repeat(7, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.xfl-board-col { background: var(--glass-bg-soft); border: 1px solid var(--xfl-line); border-radius: 14px; padding: 10px; min-height: 140px; display: flex; flex-direction: column; gap: 8px; }
+.xfl-board-col > h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 2px; display: flex; align-items: center; gap: 6px; color: var(--dev); }
+.xfl-board-col > h3 .badge { margin-left: auto; }
+.xfl-board-card { display: block; padding: 10px; border-radius: 12px; background: var(--glass-bg-strong); border: 1px solid var(--xfl-line); border-left: 4px solid var(--dev);
+    color: var(--xfl-ink); box-shadow: var(--glass-shadow); transition: transform .2s var(--xfl-ease, ease), box-shadow .2s ease; animation: xfl-tier-in .4s var(--xfl-ease, ease) both; }
+.xfl-board-card:hover { transform: translateY(-2px); box-shadow: var(--glass-shadow-lift); color: var(--xfl-ink); text-decoration: none; }
+.xfl-board-card .t { font-weight: 600; font-size: .86rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.xfl-board-card .meta { font-size: .74rem; color: var(--xfl-muted); display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px; align-items: center; }
+.xfl-board-card.is-overdue { border-left-color: #dc3545; }
+.xfl-board-empty { font-size: .78rem; color: var(--xfl-muted); text-align: center; padding: 18px 0; }
+
+@keyframes xfl-tier-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes xfl-tier-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes xfl-tier-grow { from { width: 0; } }
+@keyframes xfl-tier-pulse { 0% { transform: scale(1); opacity: .55; } 80%, 100% { transform: scale(1.08); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .xfl-rung, .xfl-tl-item, .xfl-tier-card, .xfl-board-card, .xfl-work-form > form, .xfl-tier-load > span { animation: none !important; }
+    .xfl-rung.is-current::after { display: none; }
+}
+@media print {
+    .xfl-work-form, .xfl-escalate-form { display: none !important; }
+}

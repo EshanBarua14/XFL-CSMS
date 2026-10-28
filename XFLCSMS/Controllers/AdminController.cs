@@ -405,7 +405,7 @@ namespace XFLCSMS.Controllers
                 }
 
                 // Assignment, ratings and scorecards keep the user's id: deleting would lose that history.
-                if (await _context.Issues.AnyAsync(i => i.AssignedToUserId == id)
+                if (await _context.Issues.AnyAsync(i => i.AssignedToUserId == id || i.DevOwnerUserId == id)
                     || await _context.TicketRatings.AnyAsync(r => r.EngineerUserId == id || r.RatedByUserId == id))
                 {
                     return Conflict("This user has assigned tickets or ratings, so the account cannot be deleted. Disable the user instead (Edit > User Status).");
@@ -2701,13 +2701,14 @@ namespace XFLCSMS.Controllers
         }
 
         /// <summary>Monthly Support Engineer ranking and Best Support Engineer of the Month.</summary>
-        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard)
+        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard, [FromServices] TierService tiers, int? level = null)
         {
             try
             {
                 DateTime? selected = DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
                 var view = await scorecard.ViewAsync(selected);
+                await tiers.ApplyToScorecardAsync(view, level);
                 view.Layout = "_Layout";
                 view.Controller = "Admin";
                 view.CanDecide = true;

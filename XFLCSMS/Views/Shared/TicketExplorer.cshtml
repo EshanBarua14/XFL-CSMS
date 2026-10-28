@@ -13,7 +13,8 @@
     var s = Model.Summary;
     var report = Model.Mode == "report";
     var ctl = Model.Controller;
-    bool presetStatus = Model.Preset == "closed" || Model.Preset == "unassigned" || Model.Preset == "mine";
+    bool presetStatus = Model.Preset == "closed" || Model.Preset == "unassigned" || Model.Preset == "mine" || Model.Preset == "levelqueue";
+    var staff = Model.Role != "Maker";
     bool filtersOpen = report || !f.IsEmpty;
 
     string H(double? hours)
@@ -40,7 +41,9 @@
         house = new { labels = s.ByHouse.Take(10).Select(b => b.Name), open = s.ByHouse.Take(10).Select(b => b.Open), closed = s.ByHouse.Take(10).Select(b => b.Closed) },
         engineer = new { labels = s.ByEngineer.Take(12).Select(b => b.Name), open = s.ByEngineer.Take(12).Select(b => b.Open), closed = s.ByEngineer.Take(12).Select(b => b.Closed), sla = s.ByEngineer.Take(12).Select(b => b.SlaMetPercent) },
         category = new { labels = s.ByCategory.Take(12).Select(b => b.Name), values = s.ByCategory.Take(12).Select(b => b.Total) },
-        aging = new { labels = s.Aging.Select(a => a.Label), values = s.Aging.Select(a => a.Count) }
+        aging = new { labels = s.Aging.Select(a => a.Label), values = s.Aging.Select(a => a.Count) },
+        level = new { labels = s.ByLevel.Select(b => b.Name), open = s.ByLevel.Select(b => b.Open), closed = s.ByLevel.Select(b => b.Closed), sla = s.ByLevel.Select(b => b.SlaMetPercent) },
+        dev = new { labels = s.ByDevStage.Select(b => b.Name), values = s.ByDevStage.Select(b => b.Total) }
     };
 
     var breakdowns = new List<(string Id, string Title, List<XFLCSMS.Models.Admin.BreakdownRow> Rows)>();
@@ -51,6 +54,8 @@
     breakdowns.Add(("category", "Category", s.ByCategory));
     breakdowns.Add(("type", "Support type", s.BySupportType));
     breakdowns.Add(("priority", "Priority", s.ByPriority));
+    if (staff) { breakdowns.Add(("level", "Support level", s.ByLevel)); }
+    breakdowns.Add(("dev", "Development", s.ByDevStage));
 }
 @section Head {
     <link rel="stylesheet" href="~/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
@@ -230,6 +235,30 @@
                             </select>
                         </div>
                     }
+                    @if (staff)
+                    {
+                        <div class="form-group col-6 col-md-3 col-xl-2">
+                            <label for="f-level">Support level</label>
+                            <select id="f-level" name="Levels" multiple class="form-control form-control-sm xfl-select2" data-placeholder="Any level">
+                                @foreach (var o in Model.Levels)
+                                {
+                                    <option value="@o.Value" selected="@f.Levels.Contains(int.Parse(o.Value))">@o.Text</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="form-group col-6 col-md-3 col-xl-2">
+                        <label for="f-dev">Development</label>
+                        <select id="f-dev" name="Dev" multiple class="form-control form-control-sm xfl-select2" data-placeholder="Any">
+                            <option value="any" selected="@f.Dev.Contains("any")">Tracked (any stage)</option>
+                            <option value="active" selected="@f.Dev.Contains("active")">In progress (not deployed)</option>
+                            <option value="none" selected="@f.Dev.Contains("none")">No development</option>
+                            @foreach (var st in XFLCSMS.Models.Tiers.DevStages.All)
+                            {
+                                <option value="@st.Value" selected="@f.Dev.Contains(st.Value)">@st.Label</option>
+                            }
+                        </select>
+                    </div>
                     <div class="form-group col-6 col-md-3 col-xl-2">
                         <label for="f-sla">SLA</label>
                         <select id="f-sla" name="Sla" class="form-control form-control-sm">
@@ -304,6 +333,17 @@
                 <div class="card"><div class="card-header"><h3 class="card-title">By engineer (open / closed, SLA met %)</h3></div>
                     <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-engineer" aria-label="Tickets by engineer" role="img"></canvas></div></div></div>
             </div>
+            @if (staff)
+            {
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><h3 class="card-title">By support level (open / closed, SLA met %)</h3></div>
+                        <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-level" aria-label="Tickets by support level" role="img"></canvas></div></div></div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><h3 class="card-title">Development stages</h3></div>
+                        <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-dev" aria-label="Tickets by development stage" role="img"></canvas></div></div></div>
+                </div>
+            }
             <div class="col-lg-6">
                 <div class="card"><div class="card-header"><h3 class="card-title">By category</h3></div>
                     <div class="card-body"><div class="xfl-chart xfl-chart-lg"><canvas id="ch-category" aria-label="Tickets by category" role="img"></canvas></div></div></div>

@@ -37,11 +37,17 @@ namespace XFLCSMS.Models.Admin
         /// <summary>Free text: ticket number, title, raised by, engineer.</summary>
         public string? Q { get; set; }
 
+        /// <summary>Support levels 1-5 the ticket is at.</summary>
+        public List<int> Levels { get; set; } = new();
+
+        /// <summary>Development: a stage (DevStages), "any" (tracked), "active" (not deployed yet) or "none" (no development).</summary>
+        public List<string> Dev { get; set; } = new();
+
         public bool IsEmpty =>
             From == null && To == null && string.IsNullOrEmpty(Period) && HouseIds.Count == 0 && BranchId == null
             && ProductIds.Count == 0 && Statuses.Count == 0 && Priorities.Count == 0 && SupportTypeId == null
             && CategoryId == null && SubCategoryId == null && SectionId == null && EngineerId == null
-            && string.IsNullOrEmpty(Sla) && OlderThanDays == null && string.IsNullOrWhiteSpace(Q);
+            && string.IsNullOrEmpty(Sla) && OlderThanDays == null && string.IsNullOrWhiteSpace(Q) && Levels.Count == 0 && Dev.Count == 0;
     }
 
     /// <summary>One ticket as the detailed tables and the exports show it (names resolved, times computed).</summary>
@@ -88,6 +94,19 @@ namespace XFLCSMS.Models.Admin
         public string ResolutionSla { get; set; } = string.Empty;
         public int? Rating { get; set; }
         public int Attachments { get; set; }
+
+        /// <summary>Support level 1-5 and its code (L1 ... L5).</summary>
+        public int Level { get; set; } = 1;
+        public string LevelCode { get; set; } = "L1";
+
+        /// <summary>Times the ticket was escalated to a higher level.</summary>
+        public int Escalations { get; set; }
+
+        /// <summary>Development stage label ("" when the ticket needs no development), owner and ETA.</summary>
+        public string DevStage { get; set; } = string.Empty;
+        public string DevOwner { get; set; } = string.Empty;
+        public DateTime? DevEta { get; set; }
+        public bool DevOverdue { get; set; }
     }
 
     /// <summary>A count per group (house, product, engineer, ...) for the breakdown tables and charts.</summary>
@@ -132,6 +151,10 @@ namespace XFLCSMS.Models.Admin
         public List<BreakdownRow> ByEngineer { get; set; } = new();
         public List<BreakdownRow> ByCategory { get; set; } = new();
         public List<BreakdownRow> BySupportType { get; set; } = new();
+        public List<BreakdownRow> ByLevel { get; set; } = new();
+        public List<BreakdownRow> ByDevStage { get; set; } = new();
+        public int Escalated { get; set; }
+        public int InDevelopment { get; set; }
 
         /// <summary>Open tickets by age: &lt;1 day, 1-3, 3-7, 7-30, &gt;30 days.</summary>
         public List<(string Label, int Count)> Aging { get; set; } = new();
@@ -178,6 +201,7 @@ namespace XFLCSMS.Models.Admin
         public List<Option> SubCategories { get; set; } = new();
         public List<Option> Sections { get; set; } = new();
         public List<Option> Engineers { get; set; } = new();
+        public List<Option> Levels { get; set; } = new();
 
         /// <summary>Readable list of the active filters, for the page and the printed / exported report.</summary>
         public List<string> FilterDescription { get; set; } = new();

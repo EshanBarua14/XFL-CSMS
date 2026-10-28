@@ -11,6 +11,7 @@ using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Notifications;
 using XFLCSMS.Models.Register;
 using XFLCSMS.Models.Support;
+using XFLCSMS.Models.Tiers;
 using XFLCSMS.Models.Todos;
 
 namespace XFLCSMS.Services.Notifications
@@ -172,6 +173,12 @@ namespace XFLCSMS.Services.Notifications
                         break;
                     case Todo todo:
                         CaptureTodo(entry, todo, New, list);
+                        break;
+                    case TicketEscalation escalation when entry.State == EntityState.Added:
+                        CaptureEscalation(escalation, context, New, list);
+                        break;
+                    case TicketDevUpdate update when entry.State == EntityState.Added:
+                        CaptureDevUpdate(update, context, New, list);
                         break;
                     case Brokerage b:
                         CaptureSetup(entry, "BrokerageHouse", "brokerage house", nameof(Brokerage.BrokerageHouseName), New, list);
@@ -384,10 +391,66 @@ namespace XFLCSMS.Services.Notifications
             }
         }
 
+        private static IssueTable? FindIssue(DbContext context, int issueId) =>
+            context.Set<IssueTable>().Local.FirstOrDefault(i => i.IssueId == issueId)
+            ?? context.Set<IssueTable>().AsNoTracking().FirstOrDefault(i => i.IssueId == issueId);
+
+        private static void CaptureEscalation(TicketEscalation escalation, DbContext context, Func<string, NotificationEventData> make,
+            List<Func<NotificationEventData?>> list)
+        {
+            if (escalation.FromLevel == escalation.ToLevel)
+            {
+                return; // a reassignment at the same level is announced as "ticket assigned"
+            }
+
+            list.Add(() =>
+            {
+                var issue = FindIssue(context, escalation.IssueId);
+                if (issue == null) return null;
+                var data = ForTicket(make("TicketEscalated"), Snapshot(issue));
+                data.Values["Level"] = SupportLevel.Code(escalation.ToLevel);
+                data.Values["OldLevel"] = SupportLevel.Code(escalation.FromLevel);
+                data.Values["LevelName"] = context.Set<SupportLevel>().AsNoTracking().Where(l => l.Level == escalation.ToLevel).Select(l => l.Name).FirstOrDefault();
+                data.Values["Reason"] = escalation.Reason;
+                if (issue.AssignedToUserId == null)
+                {
+                    // nobody picked it up yet: the engineers of the new level are told it is in their queue
+                    foreach (var id in context.Set<User>().AsNoTracking()
+                                 .Where(u => u.Department == "Support Engineer" && u.UType && u.UStatus && (u.SupportLevel ?? 1) >= escalation.ToLevel)
+                                 .Select(u => u.Id).ToList())
+                    {
+                        data.RelatedUserIds.Add(id);
+                    }
+                }
+
+                return data;
+            });
+        }
+
+        private static void CaptureDevUpdate(TicketDevUpdate update, DbContext context, Func<string, NotificationEventData> make,
+            List<Func<NotificationEventData?>> list)
+        {
+            list.Add(() =>
+            {
+                var issue = FindIssue(context, update.IssueId);
+                if (issue == null) return null;
+                var data = ForTicket(make("DevelopmentUpdated"), Snapshot(issue));
+                data.Values["DevStage"] = DevStages.Label(update.Stage == "None" ? null : update.Stage);
+                data.Values["OldDevStage"] = DevStages.Label(update.FromStage);
+                data.Values["DevOwner"] = update.OwnerName ?? "not set";
+                data.Values["DevEta"] = update.Eta?.ToString("dd MMM yyyy") ?? "not set";
+                data.Values["DevReference"] = update.Reference;
+                data.Values["DevNote"] = update.VisibleToClient ? update.Note : null;
+                if (update.OwnerUserId != null) data.RelatedUserIds.Add(update.OwnerUserId.Value);
+                data.StaffOnly = !update.VisibleToClient; // internal: the client is not told
+                return data;
+            });
+        }
+
         private static readonly string[] ProfileFields =
         {
             nameof(User.FullName), nameof(User.Email), nameof(User.PhonNumber), nameof(User.Designation), nameof(User.Branch),
-            nameof(User.BrokerageHouseName), nameof(User.EmployeeId), nameof(User.UserName)
+            nameof(User.BrokerageHouseName), nameof(User.EmployeeId), nameof(User.UserName), nameof(User.SupportLevel)
         };
 
         private static void CaptureUser(EntityEntry entry, User user, Func<string, NotificationEventData> make,
@@ -464,6 +527,7 @@ namespace XFLCSMS.Services.Notifications
                 nameof(User.BrokerageHouseName) => "brokerage house",
                 nameof(User.EmployeeId) => "employee ID",
                 nameof(User.UserName) => "user name",
+                nameof(User.SupportLevel) => "support level " + SupportLevel.Code(Original<int?>(entry, nameof(User.SupportLevel))) + " -> " + SupportLevel.Code(user.SupportLevel),
                 _ => f.ToLowerInvariant()
             }).ToList();
             if (changes.Count > 0)

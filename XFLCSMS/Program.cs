@@ -64,6 +64,7 @@ builder.Services.AddScoped<TicketCountService>();
 builder.Services.AddScoped<FeedbackService>();
 builder.Services.AddScoped<ScorecardService>();
 builder.Services.AddScoped<TicketReportService>();
+builder.Services.AddScoped<TierService>();
 builder.Services.AddSingleton<LoginThrottle>();
 
 // Connection string lives in appsettings.json -> ConnectionStrings:DefaultConnection

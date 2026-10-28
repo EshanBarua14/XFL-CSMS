@@ -1,0 +1,40 @@
+@model XFLCSMS.Models.Issue.MakerView
+@using XFLCSMS.Models.Tiers
+@inject XFLCSMS.Data.DataContext Db
+@*
+    The engineer <option>s of the "Assigned To" list on the three staff Edit Ticket pages, grouped by support level.
+    Engineers at the ticket's level and above come first (least busy first); engineers below it are listed apart and
+    cannot be chosen: the ticket has to be handed back first. The current assignee always stays selectable.
+*@
+@{
+    var ticketLevel = SupportLevel.Clamp(Db.Issues.Where(i => i.IssueId == Model.IssueId).Select(i => (int?)i.SupportLevel).FirstOrDefault());
+    var names = Db.SupportLevels.ToDictionary(l => l.Level, l => l.Name);
+    var load = Db.Issues.Where(i => i.IStatus != "Close" && i.AssignedToUserId != null)
+        .GroupBy(i => i.AssignedToUserId!.Value).Select(g => new { g.Key, Count = g.Count() }).ToDictionary(x => x.Key, x => x.Count);
+    var engineers = (Model.SupportEngineers ?? new List<XFLCSMS.Models.Register.User>())
+        .Select(u => new { User = u, Level = SupportLevel.Clamp(u.SupportLevel), Open = load.GetValueOrDefault(u.Id) })
+        .ToList();
+    string Group(int level) => SupportLevel.Code(level) + (names.TryGetValue(level, out var n) ? " · " + n : "");
+}
+@foreach (var g in engineers.Where(e => e.Level >= ticketLevel).GroupBy(e => e.Level).OrderBy(g => g.Key))
+{
+    <optgroup label="@Group(g.Key)">
+        @foreach (var e in g.OrderBy(e => e.Open).ThenBy(e => e.User.FullName))
+        {
+            <option value="@e.User.FullName" selected="@(e.User.FullName == Model.AssgnBy)">@e.User.FullName (@e.Open open)</option>
+        }
+    </optgroup>
+}
+@{
+    var below = engineers.Where(e => e.Level < ticketLevel).OrderByDescending(e => e.Level).ThenBy(e => e.User.FullName).ToList();
+}
+@if (below.Count > 0)
+{
+    <optgroup label="Below @SupportLevel.Code(ticketLevel): hand the ticket back first">
+        @foreach (var e in below)
+        {
+            var current = e.User.FullName == Model.AssgnBy;
+            <option value="@e.User.FullName" selected="@current" disabled="@(!current)">@e.User.FullName (@SupportLevel.Code(e.Level))</option>
+        }
+    </optgroup>
+}

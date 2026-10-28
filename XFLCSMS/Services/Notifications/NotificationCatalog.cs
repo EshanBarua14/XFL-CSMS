@@ -44,6 +44,8 @@ namespace XFLCSMS.Services.Notifications
         private static readonly string[] Setup = { "ItemType", "ItemName", "Action" };
         private static readonly string[] Award = { "Month", "EngineerName", "AwardStatus", "Reason", "Score" };
         private static readonly string[] Todo = { "TodoTitle", "TodoStatus", "OwnerName" };
+        private static readonly string[] Tier = { "Level", "LevelName", "OldLevel", "Reason" };
+        private static readonly string[] Dev = { "DevStage", "OldDevStage", "DevOwner", "DevEta", "DevReference", "DevNote" };
 
         public const string TicketsGroup = "Tickets";
         public const string SlaGroup = "SLA";
@@ -121,7 +123,33 @@ namespace XFLCSMS.Services.Notifications
                     Defaults = new[] { new RoleDefault(R.SupportEngineer, InApp), new RoleDefault(R.Maker, InApp) }
                 },
 
+                // ---- Support levels and development ---------------------------------------------------------------
+                new()
+                {
+                    Key = "TicketEscalated", Group = TicketsGroup, Name = "Ticket escalated / handed back",
+                    Description = "A ticket moves to another support level (L1-L5). Goes to the engineers of the new level when nobody is assigned yet.",
+                    Title = "{{TicketNumber}} moved to {{Level}}", Text = "{{ActorName}} moved {{TicketNumber}} \"{{TicketTitle}}\" from {{OldLevel}} to {{Level}} ({{LevelName}}): {{Reason}}",
+                    Placeholders = Common.Concat(Ticket).Concat(Tier).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.SupportManager, InApp, NotificationAudience.All), new RoleDefault(R.SupportEngineer, InAppEmail), new RoleDefault(R.Maker, InApp) }
+                },
+                new()
+                {
+                    Key = "DevelopmentUpdated", Group = TicketsGroup, Name = "Development status changed",
+                    Description = "A ticket that needs a code change moves to another development stage (analysis, development, code review, QA / UAT, ready to deploy, deployed) or gets a new ETA. Internal notes are not sent to the client.",
+                    Title = "{{TicketNumber}}: {{DevStage}}", Text = "{{TicketNumber}} \"{{TicketTitle}}\" is now in {{DevStage}}. Owner {{DevOwner}}, ETA {{DevEta}}. {{DevNote}}",
+                    Placeholders = Common.Concat(Ticket).Concat(Dev).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.SupportManager, InApp, NotificationAudience.All), new RoleDefault(R.SupportEngineer, InApp), new RoleDefault(R.Maker, InAppEmail) }
+                },
+
                 // ---- SLA -----------------------------------------------------------------------------------------
+                new()
+                {
+                    Key = "EscalationDue", Group = SlaGroup, Name = "Escalation due (time at level used up)",
+                    Description = "An open ticket stayed at its support level longer than the level allows (Admin > Support Levels).",
+                    Title = "Escalation due: {{TicketNumber}} at {{Level}}", Text = "{{TicketNumber}} ({{Priority}}) has been at {{Level}} ({{LevelName}}) longer than allowed, overdue by {{Overdue}}. Escalate it or solve it.",
+                    Placeholders = Common.Concat(Ticket).Concat(Tier).Concat(Sla).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.Admin, InApp, NotificationAudience.All), new RoleDefault(R.SupportManager, InAppEmail, NotificationAudience.All), new RoleDefault(R.SupportEngineer, InApp) }
+                },
                 SlaEvent("SlaFirstResponseWarning", "First response due soon", "No first response yet and most of the first-response time is used.",
                     "SLA: {{TicketNumber}} needs a first response by {{DueAt}}", "{{TicketNumber}} ({{Priority}}) has no first response yet. Due {{DueAt}}.", false),
                 SlaEvent("SlaFirstResponseBreach", "First response overdue", "The first-response target passed without a response.",

@@ -35,6 +35,9 @@
             menu.Add(("Engineer Performance", "fas fa-trophy", null, new[] {
                 ("Engineer Scorecard", "fas fa-medal", "Scorecard"),
                 ("Service Feedback", "fas fa-star", "ServiceFeedback") }));
+            menu.Add(("Support Levels", "fas fa-layer-group", null, new[] {
+                ("Levels Overview", "fas fa-sitemap", "SupportTiers"),
+                ("Development Tracker", "fas fa-code-branch", "DevTracker") }));
             menu.Add(("Users", "fas fa-users", null, new[] {
                 ("Create User", "fas fa-user-plus", "CreateUser"),
                 ("User List", "fas fa-address-book", "UserList") }));
@@ -46,7 +49,8 @@
                 ("Categories", "fas fa-tags", "SupportCatagoryList"),
                 ("Sub-Categories", "fas fa-tag", "SupportSubCatagoryList"),
                 ("Affected Sections", "fas fa-puzzle-piece", "AffectedSectionList"),
-                ("SLA Targets", "fas fa-stopwatch", "SlaTargets") }));
+                ("SLA Targets", "fas fa-stopwatch", "SlaTargets"),
+                ("Support Levels", "fas fa-user-cog", "SupportLevels") }));
             menu.Add(("Notifications", "fas fa-bell", null, new[] {
                 ("Who Gets What", "fas fa-sliders-h", "Notifications"),
                 ("Templates", "fas fa-file-alt", "NotificationTemplates"),
@@ -72,6 +76,9 @@
             menu.Add(("Engineer Performance", "fas fa-trophy", null, new[] {
                 ("Engineer Scorecard", "fas fa-medal", "Scorecard"),
                 ("Service Feedback", "fas fa-star", "ServiceFeedback") }));
+            menu.Add(("Support Levels", "fas fa-layer-group", null, new[] {
+                ("Levels Overview", "fas fa-sitemap", "SupportTiers"),
+                ("Development Tracker", "fas fa-code-branch", "DevTracker") }));
             menu.Add(todo);
             break;
         case "SupportEngineer":
@@ -82,9 +89,13 @@
                 ("Create Ticket", "fas fa-plus-circle", "IssueRaiseFrom"),
                 ("All Tickets", "fas fa-list", "AllTicketList"),
                 ("Assigned to Me", "fas fa-user-check", "AssignedTicketList"),
+                ("My Level Queue", "fas fa-inbox", "LevelQueue"),
                 ("Unassigned", "fas fa-inbox", "UnassignedTicketList"),
                 ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
             menu.Add(("Reports", "fas fa-file-alt", "Reports", null));
+            menu.Add(("Support Levels", "fas fa-layer-group", null, new[] {
+                ("Levels Overview", "fas fa-sitemap", "SupportTiers"),
+                ("Development Tracker", "fas fa-code-branch", "DevTracker") }));
             menu.Add(todo);
             break;
         default:

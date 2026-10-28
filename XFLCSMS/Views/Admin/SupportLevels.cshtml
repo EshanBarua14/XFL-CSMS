@@ -1,0 +1,86 @@
+@model XFLCSMS.Models.Tiers.SupportLevelsAdminView
+@using XFLCSMS.Models.Tiers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Support Levels";
+    ViewData["Subtitle"] = "L1 to L5: what each level handles, how long a ticket may stay there, and who works at which level.";
+}
+@section PageActions {
+    <a asp-controller="Admin" asp-action="SupportTiers" class="btn btn-outline-primary"><i class="fas fa-layer-group mr-1"></i>Levels overview</a>
+}
+
+<section class="content">
+    <div class="container-fluid">
+        <form asp-controller="Admin" asp-action="SupportLevels" method="post">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-layer-group mr-2"></i>Levels</h3></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th style="width:70px">Level</th><th style="min-width:180px">Name</th><th style="min-width:280px">What it handles</th><th style="width:190px">Time allowed at the level</th></tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Levels.Count; i++)
+                            {
+                                var l = Model.Levels[i];
+                                <tr>
+                                    <td class="align-middle"><input type="hidden" name="levels[@i].Level" value="@l.Level" /><span class="xfl-lvl xfl-lvl-@l.Level">@SupportLevel.Code(l.Level)</span></td>
+                                    <td><input type="text" name="levels[@i].Name" value="@l.Name" maxlength="60" class="form-control form-control-sm" required /></td>
+                                    <td><textarea name="levels[@i].Description" maxlength="400" rows="2" class="form-control form-control-sm">@l.Description</textarea></td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="levels[@i].MaxHoursAtLevel" value="@l.MaxHoursAtLevel" min="0" max="8760" step="1" class="form-control" required />
+                                            <div class="input-group-append"><span class="input-group-text">hours</span></div>
+                                        </div>
+                                        <small class="text-muted">0 = no limit</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-muted">
+                    When an open ticket stays at a level longer than allowed, it is flagged <b>escalation due</b> on the ticket and the overview, and the
+                    managers are told (Notifications &gt; "Escalation due"). Engineers escalate upward with a reason; managers and administrators can also hand a ticket back.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex align-items-center flex-wrap">
+                    <h3 class="card-title mb-0"><i class="fas fa-user-cog mr-2"></i>Support Engineers</h3>
+                    <span class="ml-2 small text-muted">Engineers are offered tickets at their level and below. Engineers without a level work at L1.</span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr><th>Engineer</th><th>Status</th><th class="text-right">Open tickets</th><th style="width:260px">Level</th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Engineers.Count; i++)
+                            {
+                                var e = Model.Engineers[i];
+                                <tr class="@(e.Active ? "" : "text-muted")">
+                                    <td class="align-middle"><input type="hidden" name="engineers[@i].UserId" value="@e.Id" /><b>@e.Name</b></td>
+                                    <td class="align-middle">@(e.Active ? "Active" : "Disabled")</td>
+                                    <td class="align-middle text-right">@e.OpenTickets</td>
+                                    <td>
+                                        <select name="engineers[@i].Level" class="form-control form-control-sm" aria-label="Level of @e.Name">
+                                            @foreach (var l in Model.Levels)
+                                            {
+                                                <option value="@l.Level" selected="@(l.Level == e.Level)">@SupportLevel.Code(l.Level) · @l.Name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                </tr>
+                            }
+                            @if (Model.Engineers.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-muted">No Support Engineers yet. Create users with the department "Support Engineer".</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save levels</button>
+        </form>
+    </div>
+</section>

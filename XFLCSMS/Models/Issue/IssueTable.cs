@@ -76,6 +76,21 @@ namespace XFLCSMS.Models.Issue
         public DateTime? ClosedOn { get; set; }
         public string? ClosedBy { get; set; }
 
+        /// <summary>Support level the ticket sits at, 1 to 5 (L1 Service Desk ... L5 Architecture &amp; Vendors). New tickets start at L1.</summary>
+        public int SupportLevel { get; set; } = 1;
+
+        /// <summary>When the ticket reached its current level (null = since it was raised).</summary>
+        public DateTime? LevelSince { get; set; }
+
+        /// <summary>Development stage when the ticket needs a code change (see DevStages); null = no development.</summary>
+        [MaxLength(30)]
+        public string? DevStage { get; set; }
+        public DateTime? DevStageSince { get; set; }
+        public int? DevOwnerUserId { get; set; }
+        public DateTime? DevEta { get; set; }
+        [MaxLength(200)]
+        public string? DevReference { get; set; }
+
       
 
     }

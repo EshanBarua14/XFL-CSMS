@@ -1081,13 +1081,14 @@ namespace XFLCSMS.Controllers
         }
 
         /// <summary>Monthly Support Engineer ranking and Best Support Engineer of the Month.</summary>
-        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard)
+        public async Task<IActionResult> Scorecard(string? month, string? export, [FromServices] ScorecardService scorecard, [FromServices] TierService tiers, int? level = null)
         {
             try
             {
                 DateTime? selected = DateTime.TryParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
                 var view = await scorecard.ViewAsync(selected);
+                await tiers.ApplyToScorecardAsync(view, level);
                 view.Layout = "_SupportManegerLayout";
                 view.Controller = "SupportManegar";
                 view.CanDecide = true;

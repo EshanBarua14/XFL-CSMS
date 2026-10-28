@@ -332,12 +332,13 @@ namespace XFLCSMS.Services
             return productId.HasValue ? _context.Products.AsNoTracking().Where(p => p.ProductId == productId.Value).Select(p => p.ProductName).FirstOrDefault() : null;
         }
 
-        /// <summary>Engineers a ticket can be assigned to: active XFL support engineers (not disabled accounts).</summary>
+        /// <summary>Engineers a ticket can be assigned to: active XFL support engineers (not disabled accounts), by level then name.</summary>
         public Task<List<User>> AssignableEngineersAsync()
         {
             return _context.Users
                 .Where(u => u.Department == "Support Engineer" && u.UType && u.UStatus)
-                .OrderBy(u => u.FullName)
+                .OrderBy(u => u.SupportLevel ?? 1)
+                .ThenBy(u => u.FullName)
                 .ToListAsync();
         }
 
@@ -367,6 +368,18 @@ namespace XFLCSMS.Services
             var now = DateTime.Now;
             var newAssignee = string.IsNullOrWhiteSpace(form.AssgnBy) ? null : form.AssgnBy;
             var assigneeChanged = !string.Equals(newAssignee, string.IsNullOrWhiteSpace(issue.AssignBy) ? null : issue.AssignBy, StringComparison.Ordinal);
+
+            // an engineer below the ticket's support level cannot take it (the form does not offer them): it has to be handed back first
+            if (assigneeChanged && newAssignee != null)
+            {
+                var id = FindStaffId(newAssignee);
+                var engineerLevel = _context.Users.Where(u => u.Id == id && u.Department == "Support Engineer").Select(u => (int?)(u.SupportLevel ?? 1)).FirstOrDefault();
+                if (engineerLevel != null && engineerLevel < issue.SupportLevel)
+                {
+                    newAssignee = string.IsNullOrWhiteSpace(issue.AssignBy) ? null : issue.AssignBy;
+                    assigneeChanged = false;
+                }
+            }
 
             if (newAssignee == null)
             {

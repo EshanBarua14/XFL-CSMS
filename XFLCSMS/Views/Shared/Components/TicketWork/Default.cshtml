@@ -1,0 +1,315 @@
+@model XFLCSMS.Models.Tiers.TicketWorkView
+@using XFLCSMS.Models.Tiers
+@using System.Globalization
+@*
+    Support level and development panel of the Ticket Details pages (ViewComponents/TicketWorkViewComponent).
+    Left: the L1-L5 ladder, time at the level, escalate / hand back form and the escalation history.
+    Right: the development pipeline (analysis to deployed), owner, ETA, reference, update form and timeline.
+    Clients see where their ticket is and the development timeline without internal notes.
+*@
+@{
+    var m = Model;
+    string When(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy, h:mm tt", CultureInfo.InvariantCulture) : "";
+    string Day(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy", CultureInfo.InvariantCulture) : "not set";
+    string Span(TimeSpan t) => t.TotalDays >= 1 ? (int)t.TotalDays + "d " + t.Hours + "h" : t.TotalHours >= 1 ? (int)t.TotalHours + "h " + t.Minutes + "m" : Math.Max(1, (int)t.TotalMinutes) + "m";
+    var visited = new HashSet<int>(m.Escalations.SelectMany(e => new[] { e.FromLevel, e.ToLevel })) { m.Level };
+    var devIndex = DevStages.Index(m.DevStage);
+    var onHold = m.DevStage == DevStages.OnHold;
+    var steps = DevStages.Pipeline.Length;
+    // how far the line is filled: up to the current stage, all of it once deployed
+    var devDone = m.DevStage == DevStages.Deployed ? 1.0 : devIndex <= 0 ? 0.0 : devIndex / (double)(steps - 1);
+    var canAct = m.IsStaff && !m.IsClosed;
+    var showDev = m.IsStaff || m.DevStage != null || m.DevUpdates.Count > 0;
+}
+<div class="card xfl-work-card" id="ticket-work">
+    <div class="card-header d-flex align-items-center flex-wrap">
+        <h3 class="card-title mb-0"><i class="fas fa-layer-group mr-2"></i>Support level @(showDev ? "& development" : "")</h3>
+        <span class="ml-auto d-flex align-items-center flex-wrap" style="gap:6px">
+            <span class="xfl-lvl xfl-lvl-@m.Level" title="@m.LevelInfo?.Description">@SupportLevel.Code(m.Level) · @m.LevelInfo?.Name</span>
+            @if (m.DevStage != null)
+            {
+                <span class="xfl-dev-chip xfl-dev-@m.DevStage.ToLowerInvariant()"><i class="@DevStages.Icon(m.DevStage) mr-1"></i>@DevStages.Label(m.DevStage)</span>
+            }
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            @* ---------------- Support level ---------------- *@
+            <div class="@(showDev ? "col-lg-6" : "col-12") xfl-work-col">
+                <ol class="xfl-ladder" aria-label="Support levels">
+                    @foreach (var l in m.Levels)
+                    {
+                        var state = l.Level == m.Level ? "is-current" : visited.Contains(l.Level) ? "is-visited" : "";
+                        <li class="xfl-rung xfl-lvl-@l.Level @state" title="@l.Description" aria-current="@(l.Level == m.Level ? "step" : null)">
+                            <span class="xfl-rung-code">@SupportLevel.Code(l.Level)</span>
+                            <span class="xfl-rung-name">@l.Name</span>
+                        </li>
+                    }
+                </ol>
+
+                <dl class="row xfl-work-facts mb-2">
+                    <dt class="col-5">With</dt>
+                    <dd class="col-7">@(m.CurrentEngineer ?? (m.IsClosed ? "–" : "Nobody yet: waiting in the " + SupportLevel.Code(m.Level) + " queue"))</dd>
+                    <dt class="col-5">At this level since</dt>
+                    <dd class="col-7">@When(m.LevelSince) <span class="text-muted small">(@Span((m.IsClosed ? m.LevelSince : DateTime.Now) - m.LevelSince))</span></dd>
+                    @if (m.EscalationDueAt.HasValue && !m.IsClosed && m.IsStaff)
+                    {
+                        <dt class="col-5">Escalate or solve by</dt>
+                        <dd class="col-7">
+                            @When(m.EscalationDueAt)
+                            @if (m.EscalationOverdue)
+                            {
+                                <span class="badge badge-danger ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>overdue @Span(DateTime.Now - m.EscalationDueAt.Value)</span>
+                            }
+                        </dd>
+                    }
+                </dl>
+                @if (!m.IsStaff)
+                {
+                    <p class="small text-muted mb-2">@m.LevelInfo?.Description</p>
+                }
+
+                @if (canAct)
+                {
+                    <details class="xfl-work-form mb-3" @(m.EscalationOverdue ? "open" : "")>
+                        <summary class="btn btn-sm btn-outline-primary"><i class="fas fa-level-up-alt mr-1"></i>Escalate@(m.CanHandBack ? " / hand back / reassign" : " / reassign")</summary>
+                        <form asp-controller="@m.Controller" asp-action="EscalateTicket" method="post" class="mt-2 xfl-escalate-form">
+                            <input type="hidden" name="issueId" value="@m.IssueId" />
+                            <div class="form-row">
+                                <div class="form-group col-sm-5">
+                                    <label for="esc-level" class="small mb-1">Move to level</label>
+                                    <select id="esc-level" name="toLevel" class="form-control form-control-sm" required>
+                                        @foreach (var l in m.Levels.Where(l => m.CanHandBack || l.Level >= m.Level))
+                                        {
+                                            var next = l.Level == Math.Min(m.Level + 1, SupportLevel.Max);
+                                            <option value="@l.Level" selected="@next">@SupportLevel.Code(l.Level) · @l.Name@(l.Level == m.Level ? " (same level)" : l.Level < m.Level ? " (hand back)" : "")</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-7">
+                                    <label for="esc-engineer" class="small mb-1">Engineer <span class="text-muted">(level and open tickets)</span></label>
+                                    <select id="esc-engineer" name="engineerId" class="form-control form-control-sm">
+                                        <option value="">Keep if allowed, otherwise the level's queue</option>
+                                        @foreach (var g in m.Engineers.GroupBy(e => e.Level).OrderBy(g => g.Key))
+                                        {
+                                            var info = m.Levels.FirstOrDefault(l => l.Level == g.Key);
+                                            <optgroup label="@SupportLevel.Code(g.Key) · @info?.Name">
+                                                @foreach (var e in g.OrderBy(e => e.OpenTickets).ThenBy(e => e.Name))
+                                                {
+                                                    <option value="@e.Id" data-level="@e.Level">@e.Name · @e.OpenTickets open@(e.Id == m.CurrentEngineerId ? " (current)" : "")</option>
+                                                }
+                                            </optgroup>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="esc-reason" class="small mb-1">Why (the next engineer reads this first)</label>
+                                <textarea id="esc-reason" name="reason" class="form-control form-control-sm" rows="2" minlength="5" maxlength="1000" required
+                                          placeholder="What was checked, what was found, what is needed from the next level"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane mr-1"></i>Move ticket</button>
+                            <span class="small text-muted ml-2">Engineers below the chosen level are hidden. Least busy first.</span>
+                        </form>
+                    </details>
+                }
+
+                <h4 class="xfl-work-sub">Escalation history</h4>
+                @if (m.Escalations.Count == 0)
+                {
+                    <p class="small text-muted mb-0">Not moved yet: the ticket is at the level it started on.</p>
+                }
+                else
+                {
+                    <ul class="xfl-timeline">
+                        @foreach (var e in m.Escalations)
+                        {
+                            var icon = e.Kind == "Escalated" ? "fa-arrow-up" : e.Kind == "Handed back" ? "fa-arrow-down" : "fa-exchange-alt";
+                            <li class="xfl-tl-item xfl-lvl-@e.ToLevel">
+                                <span class="xfl-tl-dot"><i class="fas @icon"></i></span>
+                                <div class="xfl-tl-body">
+                                    <div><b>@e.Kind</b> @SupportLevel.Code(e.FromLevel) → @SupportLevel.Code(e.ToLevel)
+                                        @if (m.IsStaff)
+                                        {
+                                            <span class="text-muted">· @(e.FromEngineerName ?? "unassigned") → @(e.ToEngineerName ?? "level queue")</span>
+                                        }
+                                    </div>
+                                    @if (m.IsStaff)
+                                    {
+                                        <div class="xfl-tl-note">@e.Reason</div>
+                                    }
+                                    <div class="small text-muted">@When(e.On)@(m.IsStaff && e.ByName != null ? " · " + e.ByName : "")</div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            @* ---------------- Development ---------------- *@
+            @if (showDev)
+            {
+                <div class="col-lg-6 xfl-work-col">
+                    @if (m.DevStage == null)
+                    {
+                        <p class="text-muted small mb-2"><i class="fas fa-info-circle mr-1"></i>This ticket is not tracked as development work. Start tracking when it needs a code change (bug fix or enhancement).</p>
+                    }
+                    else
+                    {
+                        <ol class="xfl-stepper xfl-dev-stepper @(onHold ? "is-hold" : "")" style="--steps: @steps; --done: @devDone.ToString(CultureInfo.InvariantCulture)" aria-label="Development progress">
+                            @for (var i = 0; i < steps; i++)
+                            {
+                                var s = DevStages.Pipeline[i];
+                                var st = m.DevStage == DevStages.Deployed || i < devIndex ? "is-done" : i == devIndex ? "is-current" : "";
+                                <li class="xfl-step @st" aria-current="@(i == devIndex ? "step" : null)">
+                                    <span class="xfl-step-dot"><i class="@s.Icon" aria-hidden="true"></i></span>
+                                    <span class="xfl-step-label">@s.Label</span>
+                                </li>
+                            }
+                        </ol>
+                        @if (onHold)
+                        {
+                            <div class="alert alert-warning py-1 px-2 small mb-2"><i class="fas fa-pause-circle mr-1"></i>On hold since @When(m.DevStageSince)</div>
+                        }
+                        <dl class="row xfl-work-facts mb-2">
+                            <dt class="col-5">Stage</dt>
+                            <dd class="col-7">@DevStages.Label(m.DevStage) <span class="text-muted small">since @When(m.DevStageSince)</span></dd>
+                            <dt class="col-5">Owner</dt>
+                            <dd class="col-7">@(m.DevOwner ?? "not set")</dd>
+                            <dt class="col-5">ETA</dt>
+                            <dd class="col-7">
+                                @Day(m.DevEta)
+                                @if (m.DevOverdue)
+                                {
+                                    <span class="badge badge-danger ml-1">overdue</span>
+                                }
+                            </dd>
+                            @if (m.IsStaff && !string.IsNullOrEmpty(m.DevReference))
+                            {
+                                <dt class="col-5">Reference</dt>
+                                <dd class="col-7"><code>@m.DevReference</code></dd>
+                            }
+                        </dl>
+                    }
+
+                    @if (m.IsStaff)
+                    {
+                        <details class="xfl-work-form mb-3">
+                            <summary class="btn btn-sm btn-outline-primary"><i class="fas fa-code mr-1"></i>@(m.DevStage == null ? "Track development" : "Update development")</summary>
+                            <form asp-controller="@m.Controller" asp-action="UpdateDevelopment" method="post" class="mt-2">
+                                <input type="hidden" name="issueId" value="@m.IssueId" />
+                                <div class="form-row">
+                                    <div class="form-group col-sm-6">
+                                        <label for="dev-stage" class="small mb-1">Stage</label>
+                                        <select id="dev-stage" name="stage" class="form-control form-control-sm" required>
+                                            @foreach (var s in DevStages.All)
+                                            {
+                                                var selected = m.DevStage == null ? s.Value == DevStages.Analysis : s.Value == m.DevStage;
+                                                <option value="@s.Value" selected="@selected">@s.Label</option>
+                                            }
+                                            @if (m.DevStage != null)
+                                            {
+                                                <option value="None">No development (stop tracking)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-sm-6">
+                                        <label for="dev-owner" class="small mb-1">Owner</label>
+                                        <select id="dev-owner" name="ownerId" class="form-control form-control-sm">
+                                            <option value="">Not set</option>
+                                            @foreach (var o in m.DevOwners)
+                                            {
+                                                <option value="@o.Id" selected="@(o.Id == m.DevOwnerUserId)">@o.Name@(o.Level > 0 ? " (" + SupportLevel.Code(o.Level) + ")" : "")@(o.OpenTickets > 0 ? " · " + o.OpenTickets + " in dev" : "")</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-sm-6">
+                                        <label for="dev-eta" class="small mb-1">ETA</label>
+                                        <input id="dev-eta" type="date" name="eta" class="form-control form-control-sm" value="@(m.DevEta?.ToString("yyyy-MM-dd"))" />
+                                    </div>
+                                    <div class="form-group col-sm-6">
+                                        <label for="dev-ref" class="small mb-1">Reference <span class="text-muted">(CR, branch, PR, build)</span></label>
+                                        <input id="dev-ref" type="text" name="reference" maxlength="200" class="form-control form-control-sm" value="@m.DevReference" placeholder="e.g. CR-1042 / PR #87" />
+                                    </div>
+                                </div>
+                                <div class="form-group mb-1">
+                                    <label for="dev-note" class="small mb-1">Note</label>
+                                    <textarea id="dev-note" name="note" rows="2" maxlength="1000" class="form-control form-control-sm" placeholder="What changed, what is next"></textarea>
+                                </div>
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="dev-internal" name="internalNote" value="true" />
+                                    <label class="custom-control-label small" for="dev-internal">Internal note (the client does not see it and is not told)</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save mr-1"></i>Save</button>
+                            </form>
+                        </details>
+                    }
+
+                    @if (m.DevUpdates.Count > 0)
+                    {
+                        <h4 class="xfl-work-sub">Development timeline</h4>
+                        <ul class="xfl-timeline">
+                            @foreach (var u in m.DevUpdates)
+                            {
+                                var stage = u.Stage == "None" ? null : u.Stage;
+                                <li class="xfl-tl-item xfl-dev-@(stage?.ToLowerInvariant() ?? "none")">
+                                    <span class="xfl-tl-dot"><i class="@DevStages.Icon(stage)"></i></span>
+                                    <div class="xfl-tl-body">
+                                        <div>
+                                            @if (u.FromStage != u.Stage && !(u.FromStage == null && stage == null))
+                                            {
+                                                <b>@DevStages.Label(stage)</b>
+                                                @if (u.FromStage != null)
+                                                {
+                                                    <span class="text-muted">from @DevStages.Label(u.FromStage)</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <b>Update</b> <span class="text-muted">@DevStages.Label(stage)</span>
+                                            }
+                                            @if (!u.VisibleToClient)
+                                            {
+                                                <span class="badge badge-secondary ml-1" title="Not shown to the client">internal</span>
+                                            }
+                                        </div>
+                                        @if (u.Note != null)
+                                        {
+                                            <div class="xfl-tl-note">@u.Note</div>
+                                        }
+                                        <div class="small text-muted">
+                                            @When(u.On)@(u.ByName != null ? " · " + u.ByName : "")
+                                            @if (u.Eta.HasValue) { <span> · ETA @Day(u.Eta)</span> }
+                                            @if (m.IsStaff && u.OwnerName != null) { <span> · owner @u.OwnerName</span> }
+                                            @if (m.IsStaff && u.Reference != null) { <span> · <code>@u.Reference</code></span> }
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<script>
+    // the engineer list only offers engineers who can work at the chosen level
+    (function () {
+        var level = document.getElementById('esc-level'), eng = document.getElementById('esc-engineer');
+        if (!level || !eng) { return; }
+        function sync() {
+            var min = parseInt(level.value, 10) || 1;
+            Array.prototype.forEach.call(eng.querySelectorAll('option[data-level]'), function (o) {
+                var ok = parseInt(o.getAttribute('data-level'), 10) >= min;
+                o.hidden = !ok; o.disabled = !ok;
+                if (!ok && o.selected) { eng.value = ''; }
+            });
+            Array.prototype.forEach.call(eng.querySelectorAll('optgroup'), function (g) {
+                g.hidden = !g.querySelector('option:not([disabled])');
+            });
+        }
+        level.addEventListener('change', sync);
+        sync();
+    })();
+</script>
