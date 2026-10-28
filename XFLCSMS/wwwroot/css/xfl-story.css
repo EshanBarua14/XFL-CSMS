@@ -48,13 +48,37 @@ body.xfl-login { display: block; height: auto; min-height: 100vh; }
 .xl-expand .xl-word:nth-child(5) { animation-delay: 1.35s; }
 @keyframes xl-word-in { from { opacity: 0; transform: translate3d(0, 10px, 0); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 
-/* ---- the credit line under the page ---- */
-.xfl-login .xl-shell { min-height: calc(100vh - 48px); }
+/* ---- one screen, no scrollbar: the shell fills the height the credit line leaves, and everything scales to it ---- */
+/* (adminlte.js writes an inline min-height on .login-page bodies, sized to the card; the full window wins here) */
+html body.xfl-login { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; height: auto; overflow-x: hidden; min-height: 100vh !important; min-height: 100dvh !important; }
+.xfl-login .xl-shell { flex: 1 0 auto; width: 100%; min-height: 0; padding-top: clamp(12px, 3vh, 28px); padding-bottom: clamp(8px, 2vh, 20px); }
+.xfl-login .xfl-page-footer { flex: none; padding: 4px 16px 10px; font-size: 12px; }
+/* the story keeps its 960 x 430 picture plus ~260px of title, steps, caption and footer inside the window height */
+.xfl-login .xs-story { max-width: calc((100vh - 270px) * 2.233 + 30px); max-width: calc((100dvh - 270px) * 2.233 + 30px); }
 
+/* short laptop screens: a tighter sign-in card */
+@media (max-height: 800px) {
+    .xfl-login .xfl-login-brand { gap: 4px; margin: 0 auto 4px; }
+    .xfl-login .xfl-login-brand img { width: 80px; height: 80px; }
+    .xfl-login .xfl-login-brand .h1 { font-size: 1.6rem; }
+    .xfl-login .login-box .card-header { padding-top: 12px; padding-bottom: 10px; }
+    .xfl-login .login-box .card-body { padding-top: 10px; padding-bottom: 10px; }
+    .xfl-login .login-box .input-group.mb-3, .xfl-login .login-box p.mb-3 { margin-bottom: .6rem !important; }
+    .xl-hero-sub { margin-bottom: 10px; }
+}
+
+/* tablets and phones: just the sign-in card (the story needs a wide screen) */
 @media (max-width: 991.98px) {
-    .xl-shell { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 64px 16px 24px; align-items: start; }
-    .xl-form-col { max-width: 420px; width: 100%; margin: 0 auto; order: -1; }
-    .xl-hero-title { font-size: 1.3rem; }
+    .xl-shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 56px 16px 12px; align-items: center; }
+    .xl-story-col { display: none; }
+    .xl-form-col { max-width: 420px; width: 100%; margin: 0 auto; }
+}
+@media (max-width: 991.98px) and (max-height: 720px) {
+    .xfl-login .xl-shell { padding-top: 48px; }
+    .xfl-login .xfl-login-brand img { width: 60px; height: 60px; }
+    .xfl-login .xfl-login-brand .h1 { font-size: 1.4rem; }
+    .xfl-login .login-box .card-body, .xfl-login .login-box .login-card-body { padding-top: 6px; padding-bottom: 6px; }
+    .xfl-login .login-box .input-group.mb-3, .xfl-login .login-box p.mb-3 { margin-bottom: .45rem !important; }
 }
 @media (max-width: 479.98px) {
     .xl-expand { font-size: .66rem; letter-spacing: .05em; }
