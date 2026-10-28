@@ -1,4 +1,4 @@
-/* XFL CSMS - motion helpers for every page (the styles are in css/xfl-glass.css):
+/* Xpert CSMS - motion helpers for every page (the styles are in css/xfl-glass.css):
    - charts (Chart.js) grow in, bar by bar, the moment Chart.js loads
    - the numbers of the dashboards and reports count up when they come into view
    - the ticket workflow strip of the dashboards fills its bars when it comes into view

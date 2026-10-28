@@ -74,7 +74,7 @@ namespace XFLCSMS.Services.Notifications
             if (string.IsNullOrWhiteSpace(from)) throw new PermanentNotificationException("No sender (From address) is set up.");
 
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_settings.Get(SettingKeys.SmtpFromName) ?? "XFL CSMS", from));
+            email.From.Add(new MailboxAddress(_settings.Get(SettingKeys.SmtpFromName) ?? "Xpert CSMS", from));
             try
             {
                 email.To.Add(MailboxAddress.Parse(m.Address));

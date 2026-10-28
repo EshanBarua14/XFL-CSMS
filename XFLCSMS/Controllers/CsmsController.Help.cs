@@ -4,7 +4,7 @@ using XFLCSMS.Models.Common;
 
 namespace XFLCSMS.Controllers
 {
-    /// <summary>"How CSMS works": the roles, the ticket workflow and what the signed-in role does in it.</summary>
+    /// <summary>"How Xpert CSMS works": the roles, the ticket workflow and what the signed-in role does in it.</summary>
     public abstract partial class CsmsController
     {
         [HttpGet]

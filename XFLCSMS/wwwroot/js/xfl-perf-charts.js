@@ -1,4 +1,4 @@
-/* XFL CSMS - engineer performance charts (Chart.js 4).
+/* Xpert CSMS - engineer performance charts (Chart.js 4).
    Each <canvas data-chart='{...}'> describes one chart as data: type (bar, line, radar, doughnut),
    labels, datasets [{label, data, color | colors, fill, dashed, axis}], and unit ("%", "min", "" ...).
    Colours of text and grid lines come from the page's theme variables, and every chart is drawn

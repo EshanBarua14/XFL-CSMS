@@ -1,5 +1,5 @@
-/* XFL CSMS - interaction polish on top of the glass design (loaded last by Views/Shared/_XflHead.cshtml):
-   keyboard focus, read-only fields, busy buttons, the unsent-draft bar, one pager style, and the "How CSMS works" page.
+/* Xpert CSMS - interaction polish on top of the glass design (loaded last by Views/Shared/_XflHead.cshtml):
+   keyboard focus, read-only fields, busy buttons, the unsent-draft bar, one pager style, and the "How Xpert CSMS works" page.
    Colours come from the xfl-polish / xfl-glass variables, so light and dark follow the theme. */
 
 /* ---- keyboard users: a visible ring on whatever has focus, and a skip link to the page ---- */
@@ -54,7 +54,7 @@ kbd { padding: 1px 6px; border-radius: 6px; font-size: .78em; background: var(--
 /* ---- thin scrollbars inside cards and the side menu ---- */
 .sidebar, .card-body, .table-responsive, .dataTables_wrapper { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--xfl-muted) 45%, transparent) transparent; }
 
-/* ---- "How CSMS works" (Views/Shared/Help.cshtml) ---- */
+/* ---- "How Xpert CSMS works" (Views/Shared/Help.cshtml) ---- */
 .xfl-help-hero .card-body { padding: 24px 26px; background: var(--glass-shine, none); }
 .xfl-help-chip { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: .82rem;
     background: color-mix(in srgb, var(--xfl-blue) 12%, transparent); color: var(--xfl-blue); }

@@ -16,7 +16,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@(string.IsNullOrEmpty(title) ? "XFL CSMS" : title + " | XFL CSMS")</title>
+    <title>@(string.IsNullOrEmpty(title) ? "Xpert CSMS" : title + " | Xpert CSMS")</title>
     <partial name="_XflHead" />
     @await RenderSectionAsync("Head", required: false)
 </head>
@@ -37,7 +37,7 @@
             </ul>
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <a class="nav-link" asp-controller="@controller" asp-action="Help" title="How CSMS works" aria-label="How CSMS works"><i class="far fa-question-circle"></i></a>
+                    <a class="nav-link" asp-controller="@controller" asp-action="Help" title="How Xpert CSMS works" aria-label="How Xpert CSMS works"><i class="far fa-question-circle"></i></a>
                 </li>
                 <partial name="~/Views/Shared/Notifications/_Bell.cshtml" />
                 <li class="nav-item d-none d-md-block">
@@ -86,8 +86,8 @@
         </main>
 
         <footer class="main-footer">
-            <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.1.0</div>
-            <strong>Copyright &copy; @DateTime.Now.Year <a href="https://xpertfintech.com">Xpert Fintech Limited</a>.</strong> All rights reserved.
+            <div class="float-right d-none d-sm-inline-block"><b>Xpert CSMS</b> 1.1.0</div>
+            <partial name="_XflFooter" />
         </footer>
     </div>
 

@@ -1,4 +1,4 @@
-/* XFL CSMS - installable app (PWA).
+/* Xpert CSMS - installable app (PWA).
    - registers the service worker (/sw.js)
    - shows an "Install app" button when the browser offers installation (Chrome / Edge on PC and Android)
    - on iPhone / iPad, where Safari has no install prompt, explains "Share > Add to Home Screen" once
@@ -26,7 +26,7 @@
         btn.type = 'button';
         btn.className = 'btn btn-primary btn-sm xfl-install-btn';
         btn.innerHTML = '<i class="fas fa-download mr-1"></i>Install app';
-        btn.title = 'Install XFL CSMS on this device';
+        btn.title = 'Install Xpert CSMS on this device';
         btn.style.display = 'none';
 
         // signed-in pages: in the top bar; sign-in pages: floating bottom right
@@ -78,7 +78,7 @@
         box.className = 'xfl-ios-hint alert alert-info shadow';
         box.setAttribute('role', 'status');
         box.innerHTML = '<button type="button" class="close" aria-label="Close">&times;</button>' +
-            '<b>Install XFL CSMS</b><br>Tap <i class="fas fa-share-square"></i> <b>Share</b>, then <b>Add to Home Screen</b>.';
+            '<b>Install Xpert CSMS</b><br>Tap <i class="fas fa-share-square"></i> <b>Share</b>, then <b>Add to Home Screen</b>.';
         box.querySelector('.close').addEventListener('click', function () { box.parentNode.removeChild(box); });
         document.body.appendChild(box);
     }

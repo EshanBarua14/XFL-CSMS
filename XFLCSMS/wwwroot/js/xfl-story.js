@@ -1,4 +1,4 @@
-/* XFL CSMS - the animated ticket story on the sign-in page (Views/RegisterLogin/_LoginStory.cshtml, css/xfl-story.css).
+/* Xpert CSMS - the animated ticket story on the sign-in page (Views/RegisterLogin/_LoginStory.cshtml, css/xfl-story.css).
    Runs the timeline: sets data-phase on #xsStory (the CSS animates the people, bubbles, screens and stars for each phase),
    moves the ticket along its flight paths, and marks the matching step under the scene.
    Pauses with the button, when the tab is hidden and when the scene is scrolled out of view.

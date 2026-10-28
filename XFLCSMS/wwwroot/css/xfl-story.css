@@ -1,4 +1,4 @@
-/* XFL CSMS - the sign-in page: the animated ticket story (Views/RegisterLogin/_LoginStory.cshtml) and the split layout.
+/* Xpert CSMS - the sign-in page: the animated ticket story (Views/RegisterLogin/_LoginStory.cshtml) and the split layout.
    js/xfl-story.js sets data-phase on #xsStory (raise, fly1, review, fly2, solve, fly3, rate, reset) and moves the ticket;
    everything else is animated here. Light and dark follow html[data-theme]. With "reduce motion" on, data-phase is "still". */
 
@@ -21,10 +21,43 @@ body.xfl-login { display: block; height: auto; min-height: 100vh; }
 .xfl-login .btn-signin::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; transform: skewX(-20deg);
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent); animation: xl-shine 4.5s ease-in-out 1.5s infinite; }
 @keyframes xl-shine { 0% { left: -60%; } 30%, 100% { left: 130%; } }
+/* ---- the product name: "Xpert CSMS", then spelled out word by word; each word lights its letter in "CSMS" ---- */
+.xl-brand-name .xl-acro { display: inline-flex; font-weight: 700; }
+.xl-acro > span { display: inline-block; background: linear-gradient(90deg, #1769c2, #7a5af5, #20c997, #1769c2); background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: xl-acro-pop .7s var(--xfl-ease) both, xl-acro-flow 9s linear 2.4s infinite; }
+.xl-acro > span:nth-child(1) { animation-delay: .75s, 2.4s; }
+.xl-acro > span:nth-child(2) { animation-delay: .95s, 2.4s; }
+.xl-acro > span:nth-child(3) { animation-delay: 1.15s, 2.4s; }
+.xl-acro > span:nth-child(4) { animation-delay: 1.35s, 2.4s; }
+@keyframes xl-acro-pop { 0% { transform: none; filter: none; } 45% { transform: translateY(-5px) scale(1.22); filter: drop-shadow(0 4px 8px rgba(122, 90, 245, .45)); } 100% { transform: none; filter: none; } }
+@keyframes xl-acro-flow { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
+.xl-expand { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 .32em; margin: -2px 0 8px; padding-bottom: 7px;
+    font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--xfl-muted); }
+.xl-expand::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 0; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #1769c2, #7a5af5, #20c997, transparent); transform-origin: center;
+    animation: xl-rule 1s var(--xfl-ease) 1.6s both; }
+@keyframes xl-rule { from { opacity: 0; transform: scaleX(0); } to { opacity: .8; transform: scaleX(1); } }
+.xl-word { display: inline-block; animation: xl-word-in .6s var(--xfl-ease) both; }
+.xl-word b { font-weight: 800; background: linear-gradient(90deg, #1769c2, #7a5af5, #20c997); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.xl-word-x { color: var(--xfl-ink); }
+.xl-expand .xl-word:nth-child(1) { animation-delay: .55s; }
+.xl-expand .xl-word:nth-child(2) { animation-delay: .75s; }
+.xl-expand .xl-word:nth-child(3) { animation-delay: .95s; }
+.xl-expand .xl-word:nth-child(4) { animation-delay: 1.15s; }
+.xl-expand .xl-word:nth-child(5) { animation-delay: 1.35s; }
+@keyframes xl-word-in { from { opacity: 0; transform: translate3d(0, 10px, 0); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ---- the credit line under the page ---- */
+.xfl-login .xl-shell { min-height: calc(100vh - 48px); }
+
 @media (max-width: 991.98px) {
     .xl-shell { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 64px 16px 24px; align-items: start; }
     .xl-form-col { max-width: 420px; width: 100%; margin: 0 auto; order: -1; }
     .xl-hero-title { font-size: 1.3rem; }
+}
+@media (max-width: 479.98px) {
+    .xl-expand { font-size: .66rem; letter-spacing: .05em; }
 }
 
 /* ---- the story panel ---- */
@@ -300,7 +333,8 @@ html[data-theme="dark"] .xs-trail { stroke: rgba(140, 180, 255, .55); }
 
 /* ---- reduce motion: the finished story, still ---- */
 @media (prefers-reduced-motion: reduce) {
-    .xs-svg *, .xs-steps *, .xs-story, .xl-form-col, .xl-hero-title, .xl-hero-sub, .xfl-login .xfl-login-brand img, .xfl-login .btn-signin::after { animation: none !important; transition: none !important; }
+    .xs-svg *, .xs-steps *, .xs-story, .xl-form-col, .xl-hero-title, .xl-hero-sub, .xfl-login .xfl-login-brand img, .xfl-login .btn-signin::after,
+    .xl-acro > span, .xl-word, .xl-expand::after { animation: none !important; transition: none !important; }
     .xs-pause { display: none; }
     .xs-story .xs-progress, .xs-story .xs-code { transform: none; }
     .xs-story .xs-screen-ok, .xs-story .xs-stars { opacity: 1; }

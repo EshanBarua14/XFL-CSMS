@@ -183,10 +183,10 @@ namespace XFLCSMS.Controllers
             }
             else
             {
-                subject = "XFL CSMS test message";
+                subject = "Xpert CSMS test message";
                 body = channel == NotificationChannel.Email
-                    ? "<p>Hello " + System.Net.WebUtility.HtmlEncode(me.FullName) + ",</p><p>This is a test message from XFL CSMS. E-mail notifications work.</p>"
-                    : "XFL CSMS test message: " + NotificationChannel.Label(channel) + " notifications work.";
+                    ? "<p>Hello " + System.Net.WebUtility.HtmlEncode(me.FullName) + ",</p><p>This is a test message from Xpert CSMS. E-mail notifications work.</p>"
+                    : "Xpert CSMS test message: " + NotificationChannel.Label(channel) + " notifications work.";
             }
 
             address = string.IsNullOrWhiteSpace(address) ? null : address.Trim();

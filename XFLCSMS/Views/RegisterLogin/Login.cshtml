@@ -10,7 +10,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>XFL CSMS | Log in</title>
+    <title>Xpert CSMS | Log in</title>
     <partial name="_XflHead" />
 
     <!-- icheck bootstrap -->
@@ -31,7 +31,9 @@
             <div class="login-box">
                 <div class="card card-outline card-primary">
                     <div class="card-header text-center">
-                        <a href="~/" class="xfl-login-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="104" height="104"><span class="h1"><b>XFL</b> CSMS</span></a>
+                        <a href="~/" class="xfl-login-brand"><img src="~/img/xfl-logo-centered.png" alt="Xpert Fintech Limited" width="104" height="104"><span class="h1 xl-brand-name"><b>Xpert</b> <span class="xl-acro"><span>C</span><span>S</span><span>M</span><span>S</span></span></span></a>
+                        @* the product name spelled out: each word rises in as its letter in "CSMS" lights up (css/xfl-story.css) *@
+                        <p class="xl-expand"><span class="xl-word xl-word-x">Xpert</span> <span class="xl-word"><b>C</b>ustomer</span> <span class="xl-word"><b>S</b>upport</span> <span class="xl-word"><b>M</b>anagement</span> <span class="xl-word"><b>S</b>ystem</span></p>
                         <p class="login-box-msg">Sign in to start your session</p>
                     </div>
 
@@ -100,5 +102,6 @@
         }
     </script>
     <script src="~/js/xfl-story.js" asp-append-version="true"></script>
+    <footer class="xfl-page-footer"><partial name="_XflFooter" /></footer>
 </body>
 </html>

@@ -2,7 +2,7 @@ using XFLCSMS.Models.Tiers;
 
 namespace XFLCSMS.Models.Common
 {
-    /// <summary>The "How CSMS works" page (Views/Shared/Help.cshtml).</summary>
+    /// <summary>The "How Xpert CSMS works" page (Views/Shared/Help.cshtml).</summary>
     public class HelpView
     {
         public string Layout { get; set; } = "_MakerLayout";
