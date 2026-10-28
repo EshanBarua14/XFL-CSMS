@@ -272,7 +272,9 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                var invalid = Tickets.ValidateStaffEdit(issue, makerView);
+                // what the engineer's support level may do (Admin > Support Levels > Authority)
+                var invalid = Tickets.ValidateStaffEdit(issue, makerView)
+                    ?? await HttpContext.RequestServices.GetRequiredService<AssignmentService>().ValidateEngineerEditAsync(issue, makerView, editor);
                 if (invalid != null)
                 {
                     TempData["ErrorMessage"] = invalid + " Nothing was saved.";
@@ -280,8 +282,12 @@ namespace XFLCSMS.Controllers
                 }
 
                 // closing the ticket notifies the client (rating link) through the notification system
-                Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: true);
+                var closed = Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: true);
                 await _context.SaveChangesAsync();
+                if (closed || issue.AssignedToUserId == null)
+                {
+                    AutoAssignWorker.Wake(); // an engineer may be idle now, or the ticket is back in the queue
+                }
 
                 var rejected = await Tickets.SaveAttachmentsAsync(issue.IssueId, files);
                 if (rejected.Count > 0)

@@ -1,0 +1,287 @@
+@model XFLCSMS.Models.Tiers.TicketQueueView
+@using XFLCSMS.Models.Tiers
+@using System.Globalization
+@*
+    Ticket Queue (CsmsController.TicketQueue): open tickets nobody is assigned to, oldest first.
+    Engineers take a ticket (or the next one), answer transfer requests and follow their own.
+    Managers and administrators assign from the queue, see every engineer's load and who is online, approve transfers
+    and can run auto-assign now. The rules are set under Admin > Setup > Ticket Assignment and Support Levels.
+*@
+@{
+    Layout = Model.Layout;
+    var ctl = Model.Controller;
+    var s = Model.Settings;
+    ViewData["Title"] = "Ticket Queue";
+    ViewData["Subtitle"] = Model.IsEngineer
+        ? "Tickets nobody has taken yet, oldest first. Take one, or answer the transfer requests sent to you."
+        : "Tickets nobody has taken yet, oldest first. Assign them, follow the engineers' load and approve transfers.";
+    string When(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM, h:mm tt", CultureInfo.InvariantCulture) : "";
+    string Age(DateTime d)
+    {
+        var t = DateTime.Now - d;
+        return t.TotalDays >= 1 ? (int)t.TotalDays + "d " + t.Hours + "h" : t.TotalHours >= 1 ? (int)t.TotalHours + "h " + t.Minutes + "m" : Math.Max(1, (int)t.TotalMinutes) + "m";
+    }
+    bool Online(int id) => Model.LastSeen.TryGetValue(id, out var on) && DateTime.Now - on <= TimeSpan.FromMinutes(Math.Max(1, s.OnlineWindowMinutes));
+    string Pri(string p) => p == "High" ? "badge-danger" : p == "Medium" ? "badge-warning" : "badge-secondary";
+    var here = Context.Request.Path.ToString();
+}
+@section PageActions {
+    @if (Model.IsEngineer && Model.CanSelfAssign && Model.Queue.Any(q => q.CanTake))
+    {
+        <form asp-controller="@ctl" asp-action="TakeNextTicket" method="post" class="d-inline">
+            <button type="submit" class="btn btn-success"><i class="fas fa-hand-paper mr-1"></i>Take the next ticket</button>
+        </form>
+    }
+    @if (Model.IsManager)
+    {
+        <form asp-controller="@ctl" asp-action="RunAutoAssign" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-primary" @(s.AutoAssignEnabled ? "" : "disabled") title="@(s.AutoAssignEnabled ? "Give queued tickets to idle engineers now" : "Auto-assign is switched off")">
+                <i class="fas fa-magic mr-1"></i>Run auto-assign now
+            </button>
+        </form>
+        @if (Model.Role == "Admin")
+        {
+            <a asp-controller="Admin" asp-action="TicketAssignment" class="btn btn-outline-secondary"><i class="fas fa-sliders-h mr-1"></i>Settings</a>
+        }
+    }
+}
+
+<section class="content">
+    <div class="container-fluid">
+        @* ---------- how assignment works right now ---------- *@
+        <div class="d-flex flex-wrap mb-3 small" style="gap:6px">
+            <span class="badge @(s.SelfAssignEnabled ? "badge-success" : "badge-secondary") p-2"><i class="fas fa-hand-paper mr-1"></i>Self-assign @(s.SelfAssignEnabled ? "on" : "off")</span>
+            <span class="badge @(s.AutoAssignEnabled ? "badge-success" : "badge-secondary") p-2" title="Every @s.AutoAssignIntervalMinutes min, to engineers holding fewer than @s.AutoAssignIdleBelow open ticket(s)">
+                <i class="fas fa-magic mr-1"></i>Auto-assign @(s.AutoAssignEnabled ? "on · " + AssignmentLevelRules.All.First(r => r.Value == AssignmentLevelRules.Normalize(s.AutoAssignLevelRule)).Label.ToLowerInvariant() : "off")
+            </span>
+            <span class="badge @(s.TransferEnabled ? "badge-success" : "badge-secondary") p-2"><i class="fas fa-people-arrows mr-1"></i>Transfers @(s.TransferEnabled ? (s.TransferNeedsManagerApproval ? "on · manager approves" : "on") : "off")</span>
+            @if (Model.IsEngineer && Model.MyAuthority != null)
+            {
+                var a = Model.MyAuthority;
+                <span class="badge badge-light p-2"><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@a.Level mr-1">@SupportLevel.Code(a.Level)</span>
+                    You hold @Model.MyOpen open@(a.MaxOpenTickets > 0 ? " of " + a.MaxOpenTickets + " allowed" : "")</span>
+            }
+        </div>
+        @if (Model.IsEngineer && Model.SelfAssignBlocked != null)
+        {
+            <div class="alert alert-light border small py-2"><i class="fas fa-info-circle mr-1"></i>@Model.SelfAssignBlocked</div>
+        }
+
+        @* ---------- transfer requests ---------- *@
+        @if (Model.Incoming.Count > 0)
+        {
+            <div class="card card-outline card-warning">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-people-arrows mr-2"></i>Asked to take over <span class="badge badge-warning">@Model.Incoming.Count</span></h3></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Ticket</th><th>From</th><th>Why</th><th>Asked</th><th style="min-width:280px"></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Incoming)
+                            {
+                                <tr>
+                                    <td><a asp-controller="@ctl" asp-action="TicketView" asp-route-id="@r.Request.IssueId"><b>@r.Number</b></a> <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@r.Level">@SupportLevel.Code(r.Level)</span><div class="small text-muted">@r.Title</div></td>
+                                    <td>@r.Request.FromName</td>
+                                    <td class="small">@r.Request.Note</td>
+                                    <td class="small text-muted">@When(r.Request.CreatedOn)@(r.Request.ExpiresOn.HasValue ? " · lapses " + When(r.Request.ExpiresOn) : "")</td>
+                                    <td>
+                                        <form asp-controller="@ctl" asp-action="AnswerTransfer" method="post" class="form-inline" style="gap:4px">
+                                            <input type="hidden" name="requestId" value="@r.Request.Id" />
+                                            <input type="hidden" name="returnUrl" value="@here" />
+                                            <input type="text" name="note" maxlength="1000" class="form-control form-control-sm" placeholder="Note (optional)" aria-label="Note" />
+                                            <button type="submit" name="accept" value="true" class="btn btn-success btn-sm">Accept</button>
+                                            <button type="submit" name="accept" value="false" class="btn btn-outline-danger btn-sm">Decline</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        @if (Model.Outgoing.Count > 0 || Model.Open.Count > 0)
+        {
+            var rows = Model.IsEngineer ? Model.Outgoing : Model.Open;
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-hourglass-half mr-2"></i>@(Model.IsEngineer ? "Your transfer requests" : "Open transfer requests") <span class="badge badge-secondary">@rows.Count</span></h3></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Ticket</th><th>From → to</th><th>Why</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in rows)
+                            {
+                                <tr>
+                                    <td><a asp-controller="@ctl" asp-action="TicketView" asp-route-id="@r.Request.IssueId"><b>@r.Number</b></a> <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@r.Level">@SupportLevel.Code(r.Level)</span><div class="small text-muted">@r.Title</div></td>
+                                    <td>@r.Request.FromName → @r.Request.ToName</td>
+                                    <td class="small">@r.Request.Note@(string.IsNullOrEmpty(r.Request.DecisionNote) ? "" : " · “" + r.Request.DecisionNote + "”")</td>
+                                    <td><span class="badge @(r.Request.Status == TicketTransferRequest.AwaitingApproval ? "badge-warning" : "badge-light")">@TicketTransferRequest.Label(r.Request.Status)</span><div class="small text-muted">@When(r.Request.CreatedOn)</div></td>
+                                    <td class="text-nowrap">
+                                        @if (Model.IsEngineer)
+                                        {
+                                            <form asp-controller="@ctl" asp-action="CancelTransfer" method="post" class="d-inline">
+                                                <input type="hidden" name="requestId" value="@r.Request.Id" />
+                                                <input type="hidden" name="returnUrl" value="@here" />
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm">Withdraw</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-controller="@ctl" asp-action="DecideTransfer" method="post" class="d-inline">
+                                                <input type="hidden" name="requestId" value="@r.Request.Id" />
+                                                <input type="hidden" name="returnUrl" value="@here" />
+                                                <button type="submit" name="approve" value="true" class="btn btn-success btn-sm">Approve</button>
+                                                <button type="submit" name="approve" value="false" class="btn btn-outline-danger btn-sm">Reject</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="row">
+            @* ---------- the queue ---------- *@
+            <div class="@(Model.IsManager ? "col-xl-8" : "col-12")">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center flex-wrap">
+                        <h3 class="card-title mb-0"><i class="fas fa-inbox mr-2"></i>Queue <span class="badge badge-primary">@Model.Queue.Count</span></h3>
+                        <span class="ml-auto d-flex flex-wrap" style="gap:4px">
+                            @foreach (var l in Model.Levels)
+                            {
+                                var c = Model.Queue.Count(q => q.Level == l.Level);
+                                if (c > 0)
+                                {
+                                    <span class="xfl-lvl xfl-lvl-sm xfl-lvl-@l.Level" title="@l.Name">@SupportLevel.Code(l.Level) · @c</span>
+                                }
+                            }
+                        </span>
+                    </div>
+                    <div class="card-body p-0 table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead><tr><th>Ticket</th><th>Level</th><th>Priority</th><th>Waiting</th><th style="min-width:200px"></th></tr></thead>
+                            <tbody>
+                                @foreach (var q in Model.Queue)
+                                {
+                                    <tr class="@(Model.IsEngineer && !q.CanTake ? "text-muted" : "")">
+                                        <td>
+                                            <a asp-controller="@ctl" asp-action="TicketView" asp-route-id="@q.IssueId"><b>@q.Number</b></a>
+                                            <span class="small text-muted">@q.House</span>
+                                            <div class="small">@q.Title</div>
+                                        </td>
+                                        <td class="align-middle"><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@q.Level">@SupportLevel.Code(q.Level)</span></td>
+                                        <td class="align-middle"><span class="badge @Pri(q.Priority)">@q.Priority</span></td>
+                                        <td class="align-middle small" title="Raised @When(q.Raised)">@Age(q.Raised)</td>
+                                        <td class="align-middle">
+                                            @if (Model.IsEngineer)
+                                            {
+                                                if (q.CanTake)
+                                                {
+                                                    <form asp-controller="@ctl" asp-action="TakeTicket" method="post" class="d-inline">
+                                                        <input type="hidden" name="issueId" value="@q.IssueId" />
+                                                        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-hand-paper mr-1"></i>Take</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <span class="small">@q.WhyNot</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <form asp-controller="@ctl" asp-action="AssignTicket" method="post" class="form-inline flex-nowrap" style="gap:4px">
+                                                    <input type="hidden" name="issueId" value="@q.IssueId" />
+                                                    <input type="hidden" name="returnUrl" value="@here" />
+                                                    <select name="engineerId" class="form-control form-control-sm" required aria-label="Engineer for @q.Number">
+                                                        <option value="">Assign to…</option>
+                                                        @foreach (var e in Model.Engineers.Where(e => e.Level >= q.Level).OrderBy(e => e.OpenTickets).ThenBy(e => e.Name))
+                                                        {
+                                                            <option value="@e.Id">@e.Name · @SupportLevel.Code(e.Level) · @e.OpenTickets open@(Online(e.Id) ? " · online" : "")</option>
+                                                        }
+                                                    </select>
+                                                    <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                @if (Model.Queue.Count == 0)
+                                {
+                                    <tr><td colspan="5" class="text-muted text-center py-4"><i class="fas fa-check-circle text-success mr-1"></i>The queue is empty: every open ticket has an engineer.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* ---------- engineers (managers) ---------- *@
+            @if (Model.IsManager)
+            {
+                <div class="col-xl-4">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-users mr-2"></i>Engineers</h3></div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Engineer</th><th>Level</th><th class="text-right">Open</th></tr></thead>
+                                <tbody>
+                                    @foreach (var e in Model.Engineers.OrderBy(e => e.OpenTickets).ThenBy(e => e.Name))
+                                    {
+                                        var level = Model.Levels.First(l => l.Level == e.Level);
+                                        var idle = e.OpenTickets < Math.Max(1, s.AutoAssignIdleBelow);
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-circle mr-1 @(Online(e.Id) ? "text-success" : "text-muted")" style="font-size:.6em" title="@(Online(e.Id) ? "Online" : "Not seen in the last " + s.OnlineWindowMinutes + " min")"></i>@e.Name
+                                                @if (idle)
+                                                {
+                                                    <span class="badge badge-info ml-1" title="Holds fewer than @s.AutoAssignIdleBelow open ticket(s)">idle</span>
+                                                }
+                                                @if (!level.ReceivesAutoAssign)
+                                                {
+                                                    <span class="badge badge-light ml-1" title="@SupportLevel.Code(e.Level) does not receive auto-assign">manual only</span>
+                                                }
+                                            </td>
+                                            <td><span class="xfl-lvl xfl-lvl-sm xfl-lvl-@e.Level">@SupportLevel.Code(e.Level)</span></td>
+                                            <td class="text-right">@e.OpenTickets@(level.MaxOpenTickets > 0 ? " / " + level.MaxOpenTickets : "")</td>
+                                        </tr>
+                                    }
+                                    @if (Model.Engineers.Count == 0)
+                                    {
+                                        <tr><td colspan="3" class="text-muted">No active Support Engineers.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer small text-muted">Online = used CSMS in the last @s.OnlineWindowMinutes minutes. @(s.AutoAssignOnlyOnline ? "Only online engineers get tickets automatically." : "")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.Recent.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-history mr-2"></i>Transfers, last 7 days</h3></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Ticket</th><th>From → to</th><th>Result</th><th>When</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Recent)
+                            {
+                                <tr>
+                                    <td><a asp-controller="@ctl" asp-action="TicketView" asp-route-id="@r.Request.IssueId">@r.Number</a></td>
+                                    <td>@r.Request.FromName → @r.Request.ToName</td>
+                                    <td><span class="badge @(r.Request.Status == TicketTransferRequest.Accepted ? "badge-success" : "badge-secondary")">@TicketTransferRequest.Label(r.Request.Status)</span>
+                                        @if (r.Request.DecidedByName != null) { <span class="small text-muted">· @r.Request.DecidedByName</span> }</td>
+                                    <td class="small text-muted">@When(r.Request.DecidedOn ?? r.Request.CreatedOn)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</section>

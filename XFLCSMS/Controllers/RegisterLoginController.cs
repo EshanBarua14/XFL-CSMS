@@ -30,6 +30,13 @@ namespace XFLCSMS.Controllers
         public IActionResult KeepAlive()
         {
             var signedIn = SessionAuthorizeAttribute.AllKeys.Any(k => !string.IsNullOrEmpty(HttpContext.Session.GetString(k)));
+            var (userId, _) = NotificationSaveInterceptor.Actor(HttpContext);
+            if (userId.HasValue)
+            {
+                // an open, visible CSMS page counts as "online" for auto-assign
+                HttpContext.RequestServices.GetRequiredService<EngineerPresence>().Touch(userId.Value);
+            }
+
             return signedIn ? NoContent() : Unauthorized();
         }
 

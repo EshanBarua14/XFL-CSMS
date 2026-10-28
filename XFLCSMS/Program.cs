@@ -92,6 +92,9 @@ builder.Services.AddScoped<FeedbackService>();
 builder.Services.AddScoped<ScorecardService>();
 builder.Services.AddScoped<TicketReportService>();
 builder.Services.AddScoped<TierService>();
+builder.Services.AddScoped<AssignmentService>();
+builder.Services.AddSingleton<EngineerPresence>();
+builder.Services.AddHostedService<AutoAssignWorker>();
 builder.Services.AddSingleton<LoginThrottle>();
 
 // Connection string lives in appsettings.json -> ConnectionStrings:DefaultConnection

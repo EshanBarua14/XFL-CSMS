@@ -45,6 +45,7 @@ namespace XFLCSMS.Services.Notifications
         private static readonly string[] Award = { "Month", "EngineerName", "AwardStatus", "Reason", "Score" };
         private static readonly string[] Todo = { "TodoTitle", "TodoStatus", "OwnerName" };
         private static readonly string[] Tier = { "Level", "LevelName", "OldLevel", "Reason" };
+        private static readonly string[] Transfer = { "FromName", "ToName", "TransferNote", "Decision", "DecisionNote" };
         private static readonly string[] Dev = { "DevStage", "OldDevStage", "DevOwner", "DevEta", "DevReference", "DevNote" };
 
         public const string TicketsGroup = "Tickets";
@@ -131,6 +132,30 @@ namespace XFLCSMS.Services.Notifications
                     Title = "{{TicketNumber}} moved to {{Level}}", Text = "{{ActorName}} moved {{TicketNumber}} \"{{TicketTitle}}\" from {{OldLevel}} to {{Level}} ({{LevelName}}): {{Reason}}",
                     Placeholders = Common.Concat(Ticket).Concat(Tier).ToArray(),
                     Defaults = new[] { new RoleDefault(R.SupportManager, InApp, NotificationAudience.All), new RoleDefault(R.SupportEngineer, InAppEmail), new RoleDefault(R.Maker, InApp) }
+                },
+                new()
+                {
+                    Key = "TransferRequested", Group = TicketsGroup, Name = "Transfer requested",
+                    Description = "An engineer asks another engineer to take over a ticket. Goes to the engineer who is asked.",
+                    Title = "{{FromName}} asks you to take {{TicketNumber}}", Text = "{{FromName}} asks you to take over {{TicketNumber}} \"{{TicketTitle}}\": {{TransferNote}}. Accept or decline on the ticket: {{Link}}",
+                    Placeholders = Common.Concat(Ticket).Concat(Transfer).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.SupportEngineer, InAppEmail) }
+                },
+                new()
+                {
+                    Key = "TransferAnswered", Group = TicketsGroup, Name = "Transfer accepted / declined",
+                    Description = "A transfer request is accepted, declined, approved or rejected. Goes to the engineers of the request.",
+                    Title = "Transfer of {{TicketNumber}}: {{Decision}}", Text = "Transfer of {{TicketNumber}} from {{FromName}} to {{ToName}}: {{Decision}} ({{ActorName}}). {{DecisionNote}}",
+                    Placeholders = Common.Concat(Ticket).Concat(Transfer).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.SupportEngineer, InApp) }
+                },
+                new()
+                {
+                    Key = "TransferAwaitingApproval", Group = TicketsGroup, Name = "Transfer waiting for approval",
+                    Description = "An engineer accepted a transfer and a support manager must approve it (when that is switched on under Ticket Assignment).",
+                    Title = "Approve transfer of {{TicketNumber}}", Text = "{{ToName}} accepted to take {{TicketNumber}} \"{{TicketTitle}}\" from {{FromName}}: {{TransferNote}}. Approve or reject: {{Link}}",
+                    Placeholders = Common.Concat(Ticket).Concat(Transfer).ToArray(),
+                    Defaults = new[] { new RoleDefault(R.SupportManager, InAppEmail, NotificationAudience.All), new RoleDefault(R.Admin, InApp, NotificationAudience.All) }
                 },
                 new()
                 {

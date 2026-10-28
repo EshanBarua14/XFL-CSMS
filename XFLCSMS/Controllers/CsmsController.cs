@@ -65,6 +65,9 @@ namespace XFLCSMS.Controllers
 
             // Every layout prints ViewBag.Profile.FullName, so it must be set for every view.
             ViewBag.Profile = user;
+
+            // auto-assign only gives tickets to staff who are using CSMS (any page, or the keep-alive of an open page)
+            HttpContext.RequestServices.GetRequiredService<EngineerPresence>().Touch(user.Id);
             base.OnActionExecuting(context);
         }
 

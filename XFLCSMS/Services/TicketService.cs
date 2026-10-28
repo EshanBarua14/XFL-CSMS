@@ -228,6 +228,7 @@ namespace XFLCSMS.Services
             await _context.SaveChangesAsync();
 
             rejected = await SaveAttachmentsAsync(issue.IssueId, files);
+            AutoAssignWorker.Wake(); // an idle engineer may get it now
             return (issue, null, rejected);
         }
 

@@ -31,3 +31,24 @@ Internal notes are hidden from the client and never sent to them.
 - Ticket lists and reports: Level and Development filters, columns (Level, Escalations, Development, Dev owner, Dev ETA), charts and breakdowns by level and stage.
 - Engineer Scorecard: level filter (ranking within the level) and level badges.
 - Notifications: "Ticket escalated / handed back", "Development status changed", "Escalation due".
+
+## Ticket assignment
+- **Tickets > Ticket Queue** (engineers, managers, administrators): open tickets nobody is assigned to, oldest first.
+  Engineers **Take** a ticket (or **Take the next ticket**), managers **Assign** one to an engineer at the ticket's level or above,
+  see each engineer's load and who is online, approve transfers and **Run auto-assign now**.
+- On the ticket page: **Assign to me**, **Give back to the queue** (with a reason), **Ask another engineer to take it**
+  (transfer request: the other engineer accepts or declines, optionally a manager approves). Managers assign / reassign from the same panel.
+- **Auto-assign**: every few minutes (and when a ticket is raised, given back, closed or escalated to a queue) each idle engineer
+  gets the oldest queued ticket their level may work on. Idle = fewer open tickets than the limit; only engineers online
+  (used CSMS recently) when that is switched on. A ticket an engineer gave back or transferred is not given back to them for 24 hours.
+  Background assignments are stamped "Auto-assign" in "Approved by".
+- **Admin > Setup > Ticket Assignment**: switches and numbers for all of the above (self-assign, give back, status when taken,
+  auto-assign on/off, idle limit, interval, which tickets (own level first / own level only / oldest at or below), order
+  (oldest / priority first), online only, delay for new tickets, transfers on/off, manager approval, lapse time, capacity check).
+- **Admin > Setup > Support Levels > Authority**: per level, what its engineers may do: take tickets, get auto-assigned,
+  request transfers, assign others, escalate (and up to which level), hand back, close, most open tickets (0 = no limit).
+  Support managers and administrators may always do everything. Checked on the server for the ticket panel, Edit Ticket and the queue.
+- Defaults after the upgrade: every level may take, get auto-assigned, request transfers, escalate (up to L5) and close;
+  no level may hand back or assign others (as before, engineers moving a ticket to a colleague now use a transfer request).
+  Auto-assign is on (idle = no open ticket, online only, every 2 minutes); switch it off under Ticket Assignment if not wanted.
+- Notifications: "Transfer requested", "Transfer accepted / declined", "Transfer waiting for approval" (Admin > Notifications); auto-assigned tickets send "Ticket assigned".

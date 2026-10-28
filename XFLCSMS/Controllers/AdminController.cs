@@ -418,7 +418,8 @@ namespace XFLCSMS.Controllers
 
                 // Assignment, ratings and scorecards keep the user's id: deleting would lose that history.
                 if (await _context.Issues.AnyAsync(i => i.AssignedToUserId == id || i.DevOwnerUserId == id)
-                    || await _context.TicketRatings.AnyAsync(r => r.EngineerUserId == id || r.RatedByUserId == id))
+                    || await _context.TicketRatings.AnyAsync(r => r.EngineerUserId == id || r.RatedByUserId == id)
+                    || await _context.TicketTransferRequests.AnyAsync(t => t.FromUserId == id || t.ToUserId == id))
                 {
                     return Conflict("This user has assigned tickets or ratings, so the account cannot be deleted. Disable the user instead (Edit > User Status).");
                 }

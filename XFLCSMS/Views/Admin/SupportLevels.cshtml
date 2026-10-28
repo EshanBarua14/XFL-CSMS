@@ -3,7 +3,18 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Support Levels";
-    ViewData["Subtitle"] = "L1 to L5: what each level handles, how long a ticket may stay there, and who works at which level.";
+    ViewData["Subtitle"] = "L1 to L5: what each level handles, how long a ticket may stay there, what its engineers may do, and who works at which level.";
+    var rights = new (string Field, string Label, string Help)[]
+    {
+        ("CanSelfAssign", "Take tickets", "Assign a queued ticket to themselves (at their level or below)."),
+        ("ReceivesAutoAssign", "Get auto-assigned", "Receive the oldest queued ticket automatically when idle."),
+        ("CanRequestTransfer", "Request transfers", "Ask another engineer to take over a ticket they hold."),
+        ("CanAssignOthers", "Assign others", "Assign and reassign tickets to other engineers directly, like a manager."),
+        ("CanEscalate", "Escalate", "Move a ticket up to a higher level."),
+        ("CanHandBack", "Hand back", "Move a ticket down to a lower level."),
+        ("CanClose", "Close tickets", "Close a ticket with its resolution.")
+    };
+    bool Has(SupportLevel l, string field) => (bool)typeof(SupportLevel).GetProperty(field)!.GetValue(l)!;
 }
 @section PageActions {
     <a asp-controller="Admin" asp-action="SupportTiers" class="btn btn-outline-primary"><i class="fas fa-layer-group mr-1"></i>Levels overview</a>
@@ -41,7 +52,65 @@
                 </div>
                 <div class="card-footer small text-muted">
                     When an open ticket stays at a level longer than allowed, it is flagged <b>escalation due</b> on the ticket and the overview, and the
-                    managers are told (Notifications &gt; "Escalation due"). Engineers escalate upward with a reason; managers and administrators can also hand a ticket back.
+                    managers are told (Notifications &gt; "Escalation due"). Who may escalate, hand back and close is set under Authority below.
+                </div>
+            </div>
+
+            <div class="card" id="authority">
+                <div class="card-header d-flex align-items-center flex-wrap">
+                    <h3 class="card-title mb-0"><i class="fas fa-user-shield mr-2"></i>Authority</h3>
+                    <span class="ml-2 small text-muted">What the Support Engineers of each level may do. Support managers and administrators may always do everything.</span>
+                    <a asp-controller="Admin" asp-action="TicketAssignment" class="ml-auto small"><i class="fas fa-sliders-h mr-1"></i>Ticket Assignment settings</a>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0 text-center">
+                        <thead>
+                            <tr>
+                                <th class="text-left" style="width:70px">Level</th>
+                                @foreach (var r in rights)
+                                {
+                                    <th class="small" title="@r.Help">@r.Label</th>
+                                }
+                                <th class="small" style="min-width:120px" title="Highest level they may escalate to">Escalate up to</th>
+                                <th class="small" style="min-width:120px" title="Most open tickets an engineer may hold through take, auto-assign or accepting a transfer">Most open tickets</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Levels.Count; i++)
+                            {
+                                var l = Model.Levels[i];
+                                <tr>
+                                    <td class="text-left align-middle"><span class="xfl-lvl xfl-lvl-@l.Level" title="@l.Name">@SupportLevel.Code(l.Level)</span></td>
+                                    @foreach (var r in rights)
+                                    {
+                                        var id = "auth-" + l.Level + "-" + r.Field;
+                                        <td class="align-middle">
+                                            <div class="custom-control custom-switch d-inline-block">
+                                                <input type="checkbox" class="custom-control-input" id="@id" name="levels[@i].@r.Field" value="true" @(Has(l, r.Field) ? "checked" : "") />
+                                                <label class="custom-control-label" for="@id"><span class="sr-only">@r.Label for @SupportLevel.Code(l.Level)</span></label>
+                                            </div>
+                                            <input type="hidden" name="levels[@i].@r.Field" value="false" />
+                                        </td>
+                                    }
+                                    <td>
+                                        <select name="levels[@i].EscalateUpTo" class="form-control form-control-sm" aria-label="Escalate up to, @SupportLevel.Code(l.Level)">
+                                            @foreach (var to in Model.Levels.Where(x => x.Level >= l.Level))
+                                            {
+                                                <option value="@to.Level" selected="@(to.Level == Math.Max(l.EscalateUpTo, l.Level))">@SupportLevel.Code(to.Level)</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="levels[@i].MaxOpenTickets" value="@l.MaxOpenTickets" min="0" max="1000" class="form-control form-control-sm" aria-label="Most open tickets, @SupportLevel.Code(l.Level)" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-muted">
+                    Most open tickets 0 = no limit (managers can still assign more). Engineers always work on tickets at their level or below; an engineer
+                    without "Assign others" moves a ticket to a colleague with a transfer request. Escalating to a level above the next one skips levels.
                 </div>
             </div>
 

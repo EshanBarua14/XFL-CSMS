@@ -25,7 +25,7 @@ namespace XFLCSMS.Services
         {
             var rows = await _db.SupportLevels.AsNoTracking().ToListAsync();
             return SupportLevel.Defaults
-                .Select(d => rows.FirstOrDefault(r => r.Level == d.Level) ?? new SupportLevel { Level = d.Level, Name = d.Name, Description = d.Description, MaxHoursAtLevel = d.MaxHoursAtLevel })
+                .Select(d => rows.FirstOrDefault(r => r.Level == d.Level) ?? d.Copy())
                 .ToList();
         }
 
@@ -518,7 +518,7 @@ namespace XFLCSMS.Services
             }
         }
 
-        /// <summary>Admin: saves the level texts and limits and every engineer's level. Returns an error text or null.</summary>
+        /// <summary>Admin: saves the level texts, limits and authority and every engineer's level. Returns an error text or null.</summary>
         public async Task<string?> SaveAdminAsync(List<SupportLevel> levels, List<EngineerLevelForm> engineers)
         {
             foreach (var form in levels ?? new())
@@ -545,6 +545,21 @@ namespace XFLCSMS.Services
                 row.Name = name.Length > 60 ? name.Substring(0, 60) : name;
                 row.Description = string.IsNullOrWhiteSpace(form.Description) ? null : form.Description.Trim().Length > 400 ? form.Description.Trim().Substring(0, 400) : form.Description.Trim();
                 row.MaxHoursAtLevel = form.MaxHoursAtLevel;
+
+                if (form.MaxOpenTickets < 0 || form.MaxOpenTickets > 1000)
+                {
+                    return "Most open tickets must be between 0 and 1000 (0 = no limit).";
+                }
+
+                row.CanSelfAssign = form.CanSelfAssign;
+                row.ReceivesAutoAssign = form.ReceivesAutoAssign;
+                row.CanRequestTransfer = form.CanRequestTransfer;
+                row.CanAssignOthers = form.CanAssignOthers;
+                row.CanEscalate = form.CanEscalate;
+                row.EscalateUpTo = Math.Clamp(form.EscalateUpTo, form.Level, SupportLevel.Max);
+                row.CanHandBack = form.CanHandBack;
+                row.CanClose = form.CanClose;
+                row.MaxOpenTickets = form.MaxOpenTickets;
             }
 
             var ids = (engineers ?? new()).Select(e => e.UserId).ToList();
