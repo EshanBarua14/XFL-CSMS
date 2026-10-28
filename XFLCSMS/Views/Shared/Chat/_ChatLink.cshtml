@@ -1,0 +1,16 @@
+@* Messages icon in the top bar with the unread count (kept up to date by xfl-notify.js). *@
+@using XFLCSMS.Services.Chat
+@inject ChatSettingsStore ChatSettings
+@{
+    var controller = (ViewContext.RouteData.Values["controller"] as string) ?? "";
+    var profile = ViewBag.Profile as XFLCSMS.Models.Register.User;
+}
+@if (profile != null && controller is "Admin" or "SupportManegar" or "SupportEngineer" or "Maker" && ChatSettings.Enabled)
+{
+    <li class="nav-item" id="xflChatLink" data-unread="@Url.Action("ChatUnread", controller)" data-page="@Url.Action("Chat", controller)" data-me="@profile.Id">
+        <a class="nav-link" asp-controller="@controller" asp-action="Chat" title="Messages" aria-label="Messages">
+            <i class="far fa-comments"></i>
+            <span class="badge badge-primary navbar-badge d-none" id="xflChatCount">0</span>
+        </a>
+    </li>
+}

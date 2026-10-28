@@ -1,0 +1,11 @@
+@model List<(int Id, string Name, string Role)>
+@* Quick links from a ticket to the chat with the people on it (ViewComponents/TicketChatViewComponent.cs). *@
+<div class="d-flex flex-wrap align-items-center mb-3 xfl-ticket-chat">
+    <span class="text-muted small mr-2"><i class="far fa-comments mr-1"></i>Chat about this ticket:</span>
+    @foreach (var b in Model)
+    {
+        <a class="btn btn-sm btn-outline-primary mr-2 mb-1" href="@Url.Action("Chat", (string)ViewBag.Controller, new { with = b.Id })">
+            <i class="far fa-comment-dots mr-1"></i>@b.Name <small class="text-muted">(@b.Role.ToLowerInvariant())</small>
+        </a>
+    }
+</div>

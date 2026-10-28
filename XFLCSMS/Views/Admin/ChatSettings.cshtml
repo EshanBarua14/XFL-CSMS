@@ -1,0 +1,90 @@
+@model XFLCSMS.Models.Chat.ChatSettingsAdminView
+@using XFLCSMS.Services.Chat
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Chat Rules";
+    ViewData["Subtitle"] = "Who may chat with whom, group chats and file sharing. The rules are checked on every message, so a change applies straight away.";
+}
+@section PageActions {
+    <a asp-controller="Admin" asp-action="Chat" class="btn btn-outline-primary"><i class="fas fa-comments mr-1"></i>Open Messages</a>
+}
+
+<form asp-controller="Admin" asp-action="ChatSettings" method="post" autocomplete="off">
+    <div class="row">
+        <div class="col-xl-7">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-user-friends mr-2"></i>Who may chat with whom</h3></div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Between</th><th>and</th><th style="width:230px">Rule</th></tr></thead>
+                        <tbody>
+                            @foreach (var (a, b) in ChatRule.Pairs())
+                            {
+                                var key = ChatRule.Key(a, b);
+                                var value = Model.Rules[key];
+                                var isDefault = value == ChatRule.Default(a, b);
+                                <tr>
+                                    <td class="align-middle">@ChatRole.Label(a)</td>
+                                    <td class="align-middle">@(a == b ? "each other" : ChatRole.Label(b))</td>
+                                    <td>
+                                        <select name="@key" class="form-control form-control-sm" aria-label="@ChatRole.Label(a) and @ChatRole.Label(b)">
+                                            @foreach (var o in ChatRule.Options)
+                                            {
+                                                <option value="@o.Value" selected="@(o.Value == value)">@o.Label@(o.Value == ChatRule.Default(a, b) ? " (default)" : "")</option>
+                                            }
+                                        </select>
+                                        @if (!isDefault) { <small class="text-warning"><i class="fas fa-pen mr-1"></i>changed</small> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-muted">
+                    <b>Only through a ticket</b>: one of the two raised a ticket that is assigned to the other (or the other is its developer), while it is
+                    open and for the days set on the right after it is closed. <b>Same brokerage house</b>: both belong to the same house.
+                    In a group every member must be allowed to chat with every other member. An existing chat stays readable when a rule no longer allows it,
+                    but nobody can write in it until the rule allows it again.
+                    <br />Out of the box: XFL employees chat with each other freely; brokerage house users chat with the Support Managers and with the
+                    engineer assigned to their own ticket only.
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-sliders-h mr-2"></i>Chats and files</h3></div>
+                <div class="card-body">
+                    @foreach (var f in ChatSettingKeys.Fields)
+                    {
+                        var value = Model.Values[f.Key];
+                        <div class="form-group">
+                            @if (f.Type == "bool")
+                            {
+                                <div class="custom-control custom-switch">
+                                    <input type="hidden" name="@f.Key" value="false" />
+                                    <input type="checkbox" class="custom-control-input" id="@f.Key" name="@f.Key" value="true" @(value == "true" ? "checked" : "") />
+                                    <label class="custom-control-label" for="@f.Key">@f.Label</label>
+                                </div>
+                            }
+                            else
+                            {
+                                <label for="@f.Key">@f.Label</label>
+                                <input type="@(f.Type == "number" ? "number" : "text")" class="form-control" id="@f.Key" name="@f.Key" value="@value"
+                                       @(f.Type == "number" ? "min=0 step=1" : "") />
+                            }
+                            @if (!string.IsNullOrEmpty(f.Help)) { <small class="form-text text-muted">@f.Help</small> }
+                            @if (f.Key == ChatSettingKeys.AllowedExtensions)
+                            {
+                                <small class="form-text text-muted">Never accepted: @string.Join(" ", Model.BlockedExtensions)</small>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save</button>
+        <button type="submit" name="reset" value="1" class="btn btn-outline-secondary ml-2" onclick="return confirm('Put every chat rule and switch back to the default?');">Back to defaults</button>
+    </div>
+</form>

@@ -3,6 +3,7 @@
     The menu depends on the role, taken from the controller that renders the page.
     Groups open and close (AdminLTE treeview); the group of the open page starts open with its entry marked.
 *@
+@inject XFLCSMS.Services.Chat.ChatSettingsStore ChatSettings
 @{
     var controller = (ViewContext.RouteData.Values["controller"] as string) ?? "";
     var action = (ViewContext.RouteData.Values["action"] as string) ?? "";
@@ -52,7 +53,8 @@
                 ("Affected Sections", "fas fa-puzzle-piece", "AffectedSectionList"),
                 ("SLA Targets", "fas fa-stopwatch", "SlaTargets"),
                 ("Support Levels", "fas fa-user-cog", "SupportLevels"),
-                ("Ticket Assignment", "fas fa-sliders-h", "TicketAssignment") }));
+                ("Ticket Assignment", "fas fa-sliders-h", "TicketAssignment"),
+                ("Chat Rules", "fas fa-comments", "ChatSettings") }));
             menu.Add(("Notifications", "fas fa-bell", null, new[] {
                 ("Who Gets What", "fas fa-sliders-h", "Notifications"),
                 ("Templates", "fas fa-file-alt", "NotificationTemplates"),
@@ -124,6 +126,12 @@
             menu.Add(("Reports", "fas fa-file-alt", "Reports", null));
             menu.Add(todo);
             break;
+    }
+
+    // Messages (chat) right under the dashboard, when chat is on
+    if (ChatSettings.Enabled && controller != "Viewer")
+    {
+        menu.Insert(1, ("Messages", "far fa-comments", "Chat", null));
     }
 
     // Pages that are not in the menu (view / edit / create) mark the list they belong to.

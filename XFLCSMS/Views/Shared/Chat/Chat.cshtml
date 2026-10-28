@@ -1,0 +1,131 @@
+@model XFLCSMS.Models.Chat.ChatPageView
+@using XFLCSMS.Services.Chat
+@inject ChatSettingsStore ChatSettings
+@{
+    Layout = Model.Layout;
+    ViewData["Title"] = "Messages";
+    var c = Model.Controller;
+    var maxMb = ChatSettings.GetInt(ChatSettingKeys.MaxFileMb, 20);
+}
+@section Head {
+    <link rel="stylesheet" href="~/css/xfl-chat.css" asp-append-version="true" />
+}
+@section PageActions {
+    <button type="button" class="btn btn-primary" id="chatNewDirect"><i class="fas fa-user-plus mr-1"></i>New chat</button>
+    @if (Model.CanCreateGroups)
+    {
+        <button type="button" class="btn btn-outline-primary" id="chatNewGroup"><i class="fas fa-users mr-1"></i>New group</button>
+    }
+    @if (c == "Admin")
+    {
+        <a asp-controller="Admin" asp-action="ChatSettings" class="btn btn-outline-secondary"><i class="fas fa-cog mr-1"></i>Chat rules</a>
+    }
+}
+
+<div class="xfl-chat card" id="xflChat"
+     data-me="@Model.MeId"
+     data-conversations="@Url.Action("ChatConversations", c)" data-contacts="@Url.Action("ChatContacts", c)"
+     data-info="@Url.Action("ChatInfo", c)" data-messages="@Url.Action("ChatMessages", c)"
+     data-start="@Url.Action("ChatStart", c)" data-group="@Url.Action("ChatCreateGroup", c)"
+     data-add="@Url.Action("ChatAddMembers", c)" data-remove="@Url.Action("ChatRemoveMember", c)"
+     data-leave="@Url.Action("ChatLeave", c)" data-rename="@Url.Action("ChatRename", c)"
+     data-send="@Url.Action("ChatSend", c)" data-edit="@Url.Action("ChatEdit", c)" data-delete="@Url.Action("ChatDelete", c)"
+     data-read="@Url.Action("ChatRead", c)" data-file="@Url.Action("ChatFile", c)"
+     data-open-with="@Model.OpenWith" data-open-conversation="@Model.OpenConversation"
+     data-max-mb="@maxMb" data-extensions="@string.Join(",", ChatSettings.AllowedExtensions)">
+    <aside class="xfl-chat-list" aria-label="Chats">
+        <div class="xfl-chat-search">
+            <i class="fas fa-search"></i>
+            <input type="search" id="chatFilter" class="form-control form-control-sm" placeholder="Search chats" aria-label="Search chats" />
+        </div>
+        <div id="chatList" class="xfl-chat-items" role="list"><div class="xfl-chat-empty">Loading…</div></div>
+    </aside>
+
+    <section class="xfl-chat-main" aria-live="polite">
+        <div id="chatPlaceholder" class="xfl-chat-placeholder">
+            <i class="far fa-comments"></i>
+            <p>Choose a chat on the left, or start a new one.</p>
+        </div>
+
+        <div id="chatPane" class="xfl-chat-pane d-none">
+            <header class="xfl-chat-head">
+                <button type="button" class="btn btn-link xfl-chat-back" id="chatBack" aria-label="Back to chats"><i class="fas fa-arrow-left"></i></button>
+                <span class="xfl-chat-avatar" id="chatAvatar"></span>
+                <div class="xfl-chat-title">
+                    <b id="chatTitle"></b>
+                    <small id="chatSubtitle" class="text-muted"></small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary ml-auto" id="chatInfoBtn" title="Members and settings"><i class="fas fa-info-circle"></i></button>
+            </header>
+            <div class="xfl-chat-messages" id="chatMessages" tabindex="0"></div>
+            <div class="xfl-chat-blocked d-none" id="chatBlocked"></div>
+            <form class="xfl-chat-compose" id="chatCompose" autocomplete="off">
+                <div class="xfl-chat-files d-none" id="chatFiles"></div>
+                <div class="xfl-chat-row">
+                    <label class="btn btn-light xfl-chat-attach mb-0" id="chatAttachLabel" title="Attach files (up to @maxMb MB each)">
+                        <i class="fas fa-paperclip"></i>
+                        <input type="file" id="chatFileInput" multiple class="d-none" />
+                    </label>
+                    <textarea id="chatInput" class="form-control" rows="1" maxlength="@ChatService.MaxBodyLength" placeholder="Write a message… (Enter sends, Shift+Enter new line)" aria-label="Message"></textarea>
+                    <button type="submit" class="btn btn-primary" id="chatSendBtn" title="Send"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+@* New chat / new group / add members: one dialog with a searchable people list *@
+<div class="modal fade" id="chatPeopleModal" tabindex="-1" role="dialog" aria-labelledby="chatPeopleTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatPeopleTitle">New chat</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group d-none" id="chatGroupNameRow">
+                    <label for="chatGroupName">Group name</label>
+                    <input type="text" id="chatGroupName" class="form-control" maxlength="100" />
+                </div>
+                <input type="search" id="chatPeopleFilter" class="form-control mb-2" placeholder="Search people" aria-label="Search people" />
+                <div id="chatPeople" class="list-group xfl-chat-people"></div>
+                <small class="text-muted d-block mt-2">Only people you are allowed to chat with are listed.</small>
+                <div class="alert alert-danger mt-2 mb-0 d-none" id="chatPeopleError"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary d-none" id="chatPeopleOk">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Chat details: members, add / remove, rename, leave *@
+<div class="modal fade" id="chatInfoModal" tabindex="-1" role="dialog" aria-labelledby="chatInfoTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatInfoTitle">Chat details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3 d-none" id="chatRenameRow">
+                    <input type="text" id="chatRenameInput" class="form-control" maxlength="100" aria-label="Group name" />
+                    <div class="input-group-append"><button type="button" class="btn btn-outline-primary" id="chatRenameBtn">Rename</button></div>
+                </div>
+                <h6 class="text-muted">Members</h6>
+                <ul class="list-group mb-2" id="chatMembers"></ul>
+                <div class="alert alert-danger mt-2 mb-0 d-none" id="chatInfoError"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger mr-auto d-none" id="chatLeaveBtn"><i class="fas fa-sign-out-alt mr-1"></i>Leave group</button>
+                <button type="button" class="btn btn-outline-primary d-none" id="chatAddBtn"><i class="fas fa-user-plus mr-1"></i>Add people</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/xfl-chat.js" asp-append-version="true" defer></script>
+}

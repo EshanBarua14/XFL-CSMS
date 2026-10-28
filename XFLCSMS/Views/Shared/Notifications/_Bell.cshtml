@@ -4,6 +4,7 @@
 @using XFLCSMS.Services.Notifications
 @inject IDataProtectionProvider Protection
 @inject NotificationSettingsStore NotificationSettings
+@inject XFLCSMS.Services.Chat.ChatSettingsStore ChatSettings
 @{
     var controller = (ViewContext.RouteData.Values["controller"] as string) ?? "";
     var profile = ViewBag.Profile as XFLCSMS.Models.Register.User;
@@ -13,7 +14,7 @@
     <li class="nav-item dropdown" id="xflBell"
         data-feed="@Url.Action("NotificationFeed", controller)" data-read="@Url.Action("NotificationRead", controller)"
         data-open="@Url.Action("OpenNotification", controller)" data-hub="@Url.Content("~" + NotificationHub.Path)"
-        data-token="@(NotificationSettings.GetBool(SettingKeys.InAppEnabled) ? NotificationHub.CreateToken(Protection, profile.Id) : "")"
+        data-token="@(NotificationSettings.GetBool(SettingKeys.InAppEnabled) || ChatSettings.Enabled ? NotificationHub.CreateToken(Protection, profile.Id) : "")"
         data-csrf="@Xsrf.GetAndStoreTokens(Context).RequestToken">
         <a class="nav-link" data-toggle="dropdown" href="#" title="Notifications" aria-label="Notifications">
             <i class="far fa-bell"></i>
