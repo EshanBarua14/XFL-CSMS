@@ -12,6 +12,7 @@
         "Admin" => "Administrator",
         "SupportManager" => "Support Manager",
         "SupportEngineer" => "Support Engineer",
+        "Viewer" => "Viewer (CEO / MD)",
         _ => "Brokerage House User (Maker)"
     };
 
@@ -41,6 +42,14 @@
             ("fa-exchange-alt", "Escalate, hand back, reassign", "On the ticket page, with a reason. Only managers and admins hand back.", "AllTicketList"),
             ("fa-comments", "Client feedback", "Low ratings to follow up, reply to the client, exclude unfair ratings.", "ServiceFeedback"),
             ("fa-trophy", "Engineer scorecard", "Monthly ranking and the Best Support Engineer award.", "Scorecard"),
+        },
+        "Viewer" => new[]
+        {
+            ("fa-tachometer-alt", "Dashboard", "Open, in progress and closed tickets at a glance.", "Dashbord"),
+            ("fa-list", "All tickets", "Every ticket you may see, with status, level and engineer. Read only.", "AllTicketList"),
+            ("fa-folder-open", "Open tickets", "What is still being worked on.", "OpenTicketList"),
+            ("fa-check-circle", "Closed tickets", "Resolved tickets with their resolution.", "ClosedTicketList"),
+            ("fa-chart-pie", "Reports", "Tickets by period, product, status and priority, with exports.", "Reports"),
         },
         _ => new[]
         {
@@ -122,17 +131,18 @@
         }
     </div>
 
-    <h3 class="xfl-help-h">The four roles</h3>
+    <h3 class="xfl-help-h">The five roles</h3>
     <div class="row">
         @foreach (var (key, icon, who, does) in new[]
         {
             ("Maker", "fa-building", "Staff of a brokerage house (a client of XFL).", "Raises tickets for the own house, follows them, rates or reopens closed tickets. Sees only the tickets they raised or that XFL logged for them."),
             ("SupportEngineer", "fa-headset", "XFL support staff, each at a level L1-L5.", "Works assigned tickets and the level queue, escalates, tracks development, closes with a resolution. Cannot take a ticket above their level."),
             ("SupportManager", "fa-user-tie", "Leads the support team.", "Assigns, escalates, hands back and reassigns, follows client feedback, decides the monthly award. Sees every ticket and report."),
+            ("Viewer", "fa-eye", "CEO / MD of a brokerage house, or the XFL MD.", "Read only: sees every ticket and report of the own house (the XFL MD: of every house). Cannot raise, edit, rate or chat."),
             ("Admin", "fa-user-shield", "Runs the system.", "Everything a manager does, plus users, houses, branches, products, categories, support levels, SLA targets and notification rules."),
         })
         {
-            <div class="col-12 col-md-6 col-xl-3 mb-3">
+            <div class="col-12 col-md-6 col-xl-4 mb-3">
                 <div class="card xfl-help-role h-100 @(key == role ? "is-me" : "")">
                     <div class="card-body">
                         <span class="xfl-help-icon"><i class="fas @icon"></i></span>

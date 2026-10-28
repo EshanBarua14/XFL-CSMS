@@ -19,6 +19,7 @@ namespace XFLCSMS.Controllers
                     SessionAuthorizeAttribute.Admin => "Admin",
                     SessionAuthorizeAttribute.SupportManager => "SupportManager",
                     SessionAuthorizeAttribute.SupportEngineer => "SupportEngineer",
+                    SessionAuthorizeAttribute.Viewer => "Viewer",
                     _ => "Maker"
                 },
                 Levels = await Tiers.LevelsAsync()
