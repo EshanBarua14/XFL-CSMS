@@ -29,6 +29,18 @@ namespace XFLCSMS.Services
         private static readonly Regex DroppedBlocks = new(@"<(script|style|iframe|object|embed|form|svg|math|noscript|template)\b.*?(</\1\s*>|$)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
         private static readonly Regex Comments = new(@"<!--.*?(-->|$)", RegexOptions.Compiled | RegexOptions.Singleline);
 
+        /// <summary>The visible text of an HTML fragment (tags removed, entities decoded, trimmed).</summary>
+        public static string ToPlainText(string? html)
+        {
+            if (string.IsNullOrEmpty(html))
+            {
+                return string.Empty;
+            }
+
+            var text = Regex.Replace(Comments.Replace(html, string.Empty), "<[^>]*>", " ");
+            return WebUtility.HtmlDecode(text).Replace('\u00a0', ' ').Trim();
+        }
+
         public static string Sanitize(string? html)
         {
             if (string.IsNullOrEmpty(html))

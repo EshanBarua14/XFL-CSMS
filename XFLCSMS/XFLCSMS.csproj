@@ -1,11 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>XFLCSMS</RootNamespace>
+		<Version>1.1.0</Version>
+		<!-- Runs on the .NET 6 runtime when it is installed, otherwise on the newest installed one (.NET 8 hosting bundle on IIS). -->
+		<RollForward>Major</RollForward>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Never publish: development seed passwords, machine secrets, the attachments in the repository (production keeps its own) -->
+		<Content Update="appsettings.Development.json;appsettings.Local.json" CopyToPublishDirectory="Never" />
+		<Content Update="wwwroot\Uplods\**" CopyToPublishDirectory="Never" />
+		<None Update="appsettings.Local.json.example" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="jquery.datatables" Version="1.10.15" />
@@ -21,7 +31,8 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.16" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+		<PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

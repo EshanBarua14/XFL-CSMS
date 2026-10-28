@@ -20,6 +20,13 @@ namespace XFLCSMS.Data
             using var scope = services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
+            // demo accounts with a known password must never reach a live database, whatever the settings say
+            var allowDemoData = !scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>().IsProduction();
+            if (!allowDemoData && configuration.GetValue("SeedDemoData", false))
+            {
+                logger.LogWarning("SeedDemoData is ignored in Production.");
+            }
+
             try
             {
                 if (configuration.GetValue("Database:AutoMigrate", true))
@@ -31,7 +38,7 @@ namespace XFLCSMS.Data
 
                 if (db.Users.Any())
                 {
-                    DemoDataSeeder.Seed(db, configuration, logger);
+                    if (allowDemoData) { DemoDataSeeder.Seed(db, configuration, logger); }
                     return;
                 }
 
@@ -89,7 +96,7 @@ namespace XFLCSMS.Data
 
                 logger.LogWarning("Empty database: created the first administrator '{UserName}'. Sign in and change the password.", userName);
 
-                DemoDataSeeder.Seed(db, configuration, logger);
+                if (allowDemoData) { DemoDataSeeder.Seed(db, configuration, logger); }
             }
             catch (Exception ex)
             {
