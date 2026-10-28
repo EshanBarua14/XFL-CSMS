@@ -52,6 +52,8 @@ namespace XFLCSMS.Data
         public DbSet<SupportLevel> SupportLevels => Set<SupportLevel>();
         public DbSet<TicketEscalation> TicketEscalations => Set<TicketEscalation>();
         public DbSet<TicketDevUpdate> TicketDevUpdates => Set<TicketDevUpdate>();
+        public DbSet<AssignmentSettings> AssignmentSettings => Set<AssignmentSettings>();
+        public DbSet<TicketTransferRequest> TicketTransferRequests => Set<TicketTransferRequest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -122,6 +124,18 @@ namespace XFLCSMS.Data
             {
                 e.HasOne<IssueTable>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(x => new { x.IssueId, x.On });
+            });
+
+            // ticket assignment: self-assign, auto-assign and transfer requests between engineers
+            modelBuilder.Entity<AssignmentSettings>().HasData(new AssignmentSettings());
+            modelBuilder.Entity<TicketTransferRequest>(e =>
+            {
+                e.HasOne<IssueTable>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne<User>().WithMany().HasForeignKey(x => x.FromUserId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne<User>().WithMany().HasForeignKey(x => x.ToUserId).OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.IssueId, x.Status });
+                e.HasIndex(x => new { x.ToUserId, x.Status });
+                e.HasIndex(x => new { x.FromUserId, x.Status });
             });
         }
 

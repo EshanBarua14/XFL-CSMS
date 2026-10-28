@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using XFLCSMS.Services;
+using XFLCSMS.Services.Notifications;
 
 namespace XFLCSMS.ViewComponents
 {
@@ -10,10 +11,14 @@ namespace XFLCSMS.ViewComponents
     public class TicketWorkViewComponent : ViewComponent
     {
         private readonly TierService _tiers;
+        private readonly AssignmentService _assignment;
+        private readonly DataContext _db;
 
-        public TicketWorkViewComponent(TierService tiers)
+        public TicketWorkViewComponent(TierService tiers, AssignmentService assignment, DataContext db)
         {
             _tiers = tiers;
+            _assignment = assignment;
+            _db = db;
         }
 
         public async Task<IViewComponentResult> InvokeAsync(int issueId)
@@ -28,7 +33,28 @@ namespace XFLCSMS.ViewComponents
             };
 
             var view = await _tiers.PanelAsync(issueId, role, controller);
-            return view == null ? Content(string.Empty) : View(view);
+            if (view == null)
+            {
+                return Content(string.Empty);
+            }
+
+            var (userId, _) = NotificationSaveInterceptor.Actor(HttpContext);
+            if (view.IsStaff && userId.HasValue)
+            {
+                var issue = await _db.Issues.AsNoTracking().FirstAsync(i => i.IssueId == issueId);
+                view.Assignment = await _assignment.PanelAsync(issue, userId.Value, role, view.Engineers);
+                if (role == "SupportEngineer")
+                {
+                    var engineer = await _assignment.EngineerAsync(userId.Value);
+                    var authority = engineer?.Authority;
+                    view.CanHandBack = authority?.CanHandBack == true;
+                    view.CanEscalate = authority?.CanEscalate == true;
+                    view.EscalateUpTo = authority?.EscalateUpTo ?? view.Level;
+                    view.CanReassign = authority?.CanAssignOthers == true;
+                }
+            }
+
+            return View(view);
         }
     }
 }

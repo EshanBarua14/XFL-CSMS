@@ -19,6 +19,11 @@
     // how far the line is filled: up to the current stage, all of it once deployed
     var devDone = m.DevStage == DevStages.Deployed ? 1.0 : devIndex <= 0 ? 0.0 : devIndex / (double)(steps - 1);
     var canAct = m.IsStaff && !m.IsClosed;
+    var a = m.Assignment;
+    var here = "#ticket-work";
+    // the levels this user may move the ticket to (engineers: by their level's authority)
+    var moveLevels = m.Levels.Where(l => l.Level < m.Level ? m.CanHandBack : l.Level == m.Level ? m.CanReassign : m.CanEscalate && l.Level <= m.EscalateUpTo).ToList();
+    var defaultMove = moveLevels.Any(l => l.Level == m.Level + 1) ? m.Level + 1 : moveLevels.FirstOrDefault()?.Level;
     var showDev = m.IsStaff || m.DevStage != null || m.DevUpdates.Count > 0;
 }
 <div class="card xfl-work-card" id="ticket-work">
@@ -71,17 +76,133 @@
 
                 @if (canAct)
                 {
+                    @* ---------- assignment: take, give back, transfer, manager assign ---------- *@
+                    <div class="xfl-assign mb-3">
+                        @if (a.OpenTransfer != null)
+                        {
+                            var t = a.OpenTransfer;
+                            <div class="alert alert-info py-2 px-3 mb-2 small">
+                                <div><i class="fas fa-people-arrows mr-1"></i><b>Transfer requested:</b> @t.FromName → @t.ToName
+                                    <span class="badge badge-light ml-1">@TicketTransferRequest.Label(t.Status)</span></div>
+                                <div class="xfl-tl-note mt-1">@t.Note</div>
+                                <div class="text-muted">@When(t.CreatedOn)@(t.ExpiresOn.HasValue && t.Status == TicketTransferRequest.Pending ? " · lapses " + When(t.ExpiresOn) : "")</div>
+                                @if (a.OpenTransferIsForMe)
+                                {
+                                    <form asp-controller="@m.Controller" asp-action="AnswerTransfer" method="post" class="mt-2">
+                                        <input type="hidden" name="requestId" value="@t.Id" />
+                                        <input type="hidden" name="returnUrl" value="@here" />
+                                        <input type="text" name="note" maxlength="1000" class="form-control form-control-sm mb-1" placeholder="Note for @t.FromName (optional)" />
+                                        <button type="submit" name="accept" value="true" class="btn btn-success btn-sm"><i class="fas fa-check mr-1"></i>Accept and take it</button>
+                                        <button type="submit" name="accept" value="false" class="btn btn-outline-danger btn-sm"><i class="fas fa-times mr-1"></i>Decline</button>
+                                    </form>
+                                }
+                                @if (a.OpenTransferIsMine)
+                                {
+                                    <form asp-controller="@m.Controller" asp-action="CancelTransfer" method="post" class="mt-2">
+                                        <input type="hidden" name="requestId" value="@t.Id" />
+                                        <input type="hidden" name="returnUrl" value="@here" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="fas fa-undo mr-1"></i>Withdraw request</button>
+                                    </form>
+                                }
+                                @if (a.CanApproveTransfer)
+                                {
+                                    <form asp-controller="@m.Controller" asp-action="DecideTransfer" method="post" class="mt-2">
+                                        <input type="hidden" name="requestId" value="@t.Id" />
+                                        <input type="hidden" name="returnUrl" value="@here" />
+                                        <button type="submit" name="approve" value="true" class="btn btn-success btn-sm"><i class="fas fa-check-double mr-1"></i>Approve transfer</button>
+                                        <button type="submit" name="approve" value="false" class="btn btn-outline-danger btn-sm"><i class="fas fa-ban mr-1"></i>Reject</button>
+                                    </form>
+                                }
+                            </div>
+                        }
+
+                        <div class="d-flex flex-wrap align-items-start" style="gap:6px">
+                            @if (a.CanTake)
+                            {
+                                <form asp-controller="@m.Controller" asp-action="TakeTicket" method="post">
+                                    <input type="hidden" name="issueId" value="@m.IssueId" />
+                                    <input type="hidden" name="returnUrl" value="@here" />
+                                    <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-hand-paper mr-1"></i>Assign to me</button>
+                                </form>
+                            }
+                            @if (a.CanAssignOthers && m.Role != "SupportEngineer")
+                            {
+                                <form asp-controller="@m.Controller" asp-action="AssignTicket" method="post" class="form-inline" style="gap:4px">
+                                    <input type="hidden" name="issueId" value="@m.IssueId" />
+                                    <input type="hidden" name="returnUrl" value="@here" />
+                                    <select name="engineerId" class="form-control form-control-sm" required aria-label="Assign to engineer">
+                                        <option value="">@(m.CurrentEngineerId == null ? "Assign to…" : "Reassign to…")</option>
+                                        @foreach (var e in m.Engineers.Where(e => e.Level >= m.Level && e.Id != m.CurrentEngineerId).OrderBy(e => e.OpenTickets).ThenBy(e => e.Name))
+                                        {
+                                            <option value="@e.Id">@e.Name · @SupportLevel.Code(e.Level) · @e.OpenTickets open</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-user-check mr-1"></i>Assign</button>
+                                </form>
+                            }
+                        </div>
+                        @if (!a.CanTake && a.TakeBlocked != null)
+                        {
+                            <p class="small text-muted mb-0 mt-1"><i class="fas fa-info-circle mr-1"></i>@a.TakeBlocked</p>
+                        }
+
+                        @if (a.CanRequestTransfer)
+                        {
+                            <details class="xfl-work-form mt-2">
+                                <summary class="btn btn-sm btn-outline-primary"><i class="fas fa-people-arrows mr-1"></i>Ask another engineer to take it</summary>
+                                <form asp-controller="@m.Controller" asp-action="RequestTransfer" method="post" class="mt-2">
+                                    <input type="hidden" name="issueId" value="@m.IssueId" />
+                                    <input type="hidden" name="returnUrl" value="@here" />
+                                    <div class="form-group mb-1">
+                                        <label for="tr-to" class="small mb-1">Engineer <span class="text-muted">(at @SupportLevel.Code(m.Level) or above, least busy first)</span></label>
+                                        <select id="tr-to" name="toUserId" class="form-control form-control-sm" required>
+                                            <option value="">Choose…</option>
+                                            @foreach (var e in a.TransferTargets)
+                                            {
+                                                <option value="@e.Id">@e.Name · @SupportLevel.Code(e.Level) · @e.OpenTickets open</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-1">
+                                        <label for="tr-note" class="small mb-1">Why (they read it before answering)</label>
+                                        <textarea id="tr-note" name="note" rows="2" minlength="5" maxlength="1000" class="form-control form-control-sm" required
+                                                  placeholder="What was done so far and why they should take it"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane mr-1"></i>Send request</button>
+                                    <span class="small text-muted ml-2">The ticket stays with you until they accept.</span>
+                                </form>
+                            </details>
+                        }
+
+                        @if (a.CanRelease)
+                        {
+                            <details class="xfl-work-form mt-2">
+                                <summary class="btn btn-sm btn-outline-secondary"><i class="fas fa-inbox mr-1"></i>Give back to the queue</summary>
+                                <form asp-controller="@m.Controller" asp-action="ReleaseTicket" method="post" class="mt-2">
+                                    <input type="hidden" name="issueId" value="@m.IssueId" />
+                                    <input type="hidden" name="returnUrl" value="@here" />
+                                    <textarea name="reason" rows="2" minlength="5" maxlength="900" class="form-control form-control-sm mb-1" required
+                                              placeholder="Why you give it back and what was done so far"></textarea>
+                                    <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-sign-out-alt mr-1"></i>Give back</button>
+                                </form>
+                            </details>
+                        }
+                    </div>
+                }
+
+                @if (canAct && moveLevels.Count > 0)
+                {
                     <details class="xfl-work-form mb-3" @(m.EscalationOverdue ? "open" : "")>
-                        <summary class="btn btn-sm btn-outline-primary"><i class="fas fa-level-up-alt mr-1"></i>Escalate@(m.CanHandBack ? " / hand back / reassign" : " / reassign")</summary>
+                        <summary class="btn btn-sm btn-outline-primary"><i class="fas fa-level-up-alt mr-1"></i>@string.Join(" / ", new[] { moveLevels.Any(l => l.Level > m.Level) ? "Escalate" : null, moveLevels.Any(l => l.Level < m.Level) ? "hand back" : null, moveLevels.Any(l => l.Level == m.Level) ? "reassign" : null }.Where(x => x != null))</summary>
                         <form asp-controller="@m.Controller" asp-action="EscalateTicket" method="post" class="mt-2 xfl-escalate-form">
                             <input type="hidden" name="issueId" value="@m.IssueId" />
                             <div class="form-row">
                                 <div class="form-group col-sm-5">
                                     <label for="esc-level" class="small mb-1">Move to level</label>
                                     <select id="esc-level" name="toLevel" class="form-control form-control-sm" required>
-                                        @foreach (var l in m.Levels.Where(l => m.CanHandBack || l.Level >= m.Level))
+                                        @foreach (var l in moveLevels)
                                         {
-                                            var next = l.Level == Math.Min(m.Level + 1, SupportLevel.Max);
+                                            var next = l.Level == defaultMove;
                                             <option value="@l.Level" selected="@next">@SupportLevel.Code(l.Level) · @l.Name@(l.Level == m.Level ? " (same level)" : l.Level < m.Level ? " (hand back)" : "")</option>
                                         }
                                     </select>
@@ -112,6 +233,25 @@
                             <span class="small text-muted ml-2">Engineers below the chosen level are hidden. Least busy first.</span>
                         </form>
                     </details>
+                }
+
+                @if (m.IsStaff && a.History.Any(t => !t.IsOpen))
+                {
+                    <h4 class="xfl-work-sub">Transfer requests</h4>
+                    <ul class="list-unstyled small mb-3">
+                        @foreach (var t in a.History.Where(t => !t.IsOpen))
+                        {
+                            <li class="mb-1">
+                                <i class="fas fa-people-arrows text-muted mr-1"></i>@t.FromName → @t.ToName
+                                <span class="badge @(t.Status == TicketTransferRequest.Accepted ? "badge-success" : "badge-secondary")">@TicketTransferRequest.Label(t.Status)</span>
+                                <span class="text-muted">@When(t.CreatedOn)@(t.DecidedByName != null ? " · " + t.DecidedByName : "")</span>
+                                @if (!string.IsNullOrEmpty(t.DecisionNote))
+                                {
+                                    <div class="text-muted pl-3">“@t.DecisionNote”</div>
+                                }
+                            </li>
+                        }
+                    </ul>
                 }
 
                 <h4 class="xfl-work-sub">Escalation history</h4>

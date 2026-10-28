@@ -41,13 +41,29 @@ namespace XFLCSMS.Controllers
                 }
 
                 var from = SupportLevel.Clamp(issue.SupportLevel);
-                var error = await Tiers.MoveAsync(issue, toLevel, engineerId, reason, CurrentUser!, canHandBack: RoleName is "Admin" or "SupportManager");
+                var manager = RoleName is "Admin" or "SupportManager";
+                string? error = null;
+                var canHandBack = manager;
+                if (RoleName == "SupportEngineer")
+                {
+                    // what the engineer's support level may do (Admin > Support Levels > Authority)
+                    var assignment = HttpContext.RequestServices.GetRequiredService<AssignmentService>();
+                    error = await assignment.ValidateEngineerMoveAsync(issue, toLevel, engineerId, CurrentUser!);
+                    canHandBack = toLevel < from && error == null;
+                }
+
+                error ??= await Tiers.MoveAsync(issue, toLevel, engineerId, reason, CurrentUser!, canHandBack);
                 if (error != null)
                 {
                     return BackToTicket(issueId, error, null);
                 }
 
                 await Db.SaveChangesAsync();
+                if (issue.AssignedToUserId == null)
+                {
+                    AutoAssignWorker.Wake(); // waiting in the new level's queue: an idle engineer there may get it
+                }
+
                 var who = string.IsNullOrWhiteSpace(issue.AssignBy) ? "waiting in the " + SupportLevel.Code(toLevel) + " queue" : "assigned to " + issue.AssignBy;
                 var what = toLevel > from ? "Escalated to " : toLevel < from ? "Handed back to " : "Reassigned at ";
                 return BackToTicket(issueId, null, what + SupportLevel.Code(toLevel) + ", " + who + ".");

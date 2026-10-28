@@ -1042,22 +1042,136 @@ namespace XFLCSMS.Migrations
                     b.ToTable("SupportTypes");
                 });
 
+            modelBuilder.Entity("XFLCSMS.Models.Tiers.AssignmentSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AutoAssignDelayMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("AutoAssignEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("AutoAssignIdleBelow")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AutoAssignIntervalMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AutoAssignLevelRule")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("AutoAssignOnlyOnline")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("AutoAssignOrder")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("OnlineWindowMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ReleaseEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("SelfAssignEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("StatusOnTake")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("TransferEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("TransferExpiryHours")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("TransferNeedsManagerApproval")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("TransferRespectsCapacity")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AssignmentSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AutoAssignDelayMinutes = 0,
+                            AutoAssignEnabled = true,
+                            AutoAssignIdleBelow = 1,
+                            AutoAssignIntervalMinutes = 2,
+                            AutoAssignLevelRule = "OwnLevelFirst",
+                            AutoAssignOnlyOnline = true,
+                            AutoAssignOrder = "Oldest",
+                            OnlineWindowMinutes = 15,
+                            ReleaseEnabled = true,
+                            SelfAssignEnabled = true,
+                            TransferEnabled = true,
+                            TransferExpiryHours = 24,
+                            TransferNeedsManagerApproval = false,
+                            TransferRespectsCapacity = true
+                        });
+                });
+
             modelBuilder.Entity("XFLCSMS.Models.Tiers.SupportLevel", b =>
                 {
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
+                    b.Property<bool>("CanAssignOthers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanClose")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanEscalate")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanHandBack")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanRequestTransfer")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanSelfAssign")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Description")
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
 
+                    b.Property<int>("EscalateUpTo")
+                        .HasColumnType("int");
+
                     b.Property<int>("MaxHoursAtLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxOpenTickets")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
+
+                    b.Property<bool>("ReceivesAutoAssign")
+                        .HasColumnType("bit");
 
                     b.HasKey("Level");
 
@@ -1067,37 +1181,82 @@ namespace XFLCSMS.Migrations
                         new
                         {
                             Level = 1,
+                            CanAssignOthers = false,
+                            CanClose = true,
+                            CanEscalate = true,
+                            CanHandBack = false,
+                            CanRequestTransfer = true,
+                            CanSelfAssign = true,
                             Description = "First contact: logs and classifies the ticket, answers how-to questions, applies known fixes and workarounds.",
+                            EscalateUpTo = 5,
                             MaxHoursAtLevel = 4,
-                            Name = "Service Desk"
+                            MaxOpenTickets = 0,
+                            Name = "Service Desk",
+                            ReceivesAutoAssign = true
                         },
                         new
                         {
                             Level = 2,
+                            CanAssignOthers = false,
+                            CanClose = true,
+                            CanEscalate = true,
+                            CanHandBack = false,
+                            CanRequestTransfer = true,
+                            CanSelfAssign = true,
                             Description = "Deeper troubleshooting: configuration, accounts and access, logs, reproducing the problem.",
+                            EscalateUpTo = 5,
                             MaxHoursAtLevel = 24,
-                            Name = "Technical Support"
+                            MaxOpenTickets = 0,
+                            Name = "Technical Support",
+                            ReceivesAutoAssign = true
                         },
                         new
                         {
                             Level = 3,
+                            CanAssignOthers = false,
+                            CanClose = true,
+                            CanEscalate = true,
+                            CanHandBack = false,
+                            CanRequestTransfer = true,
+                            CanSelfAssign = true,
                             Description = "Expert analysis of the product: data fixes, integrations, root cause of recurring problems.",
+                            EscalateUpTo = 5,
                             MaxHoursAtLevel = 72,
-                            Name = "Product Specialist"
+                            MaxOpenTickets = 0,
+                            Name = "Product Specialist",
+                            ReceivesAutoAssign = true
                         },
                         new
                         {
                             Level = 4,
+                            CanAssignOthers = false,
+                            CanClose = true,
+                            CanEscalate = true,
+                            CanHandBack = false,
+                            CanRequestTransfer = true,
+                            CanSelfAssign = true,
                             Description = "Engineering: bug fixes and changes to the code, followed through the development stages to deployment.",
+                            EscalateUpTo = 5,
                             MaxHoursAtLevel = 240,
-                            Name = "Development"
+                            MaxOpenTickets = 0,
+                            Name = "Development",
+                            ReceivesAutoAssign = true
                         },
                         new
                         {
                             Level = 5,
+                            CanAssignOthers = false,
+                            CanClose = true,
+                            CanEscalate = true,
+                            CanHandBack = false,
+                            CanRequestTransfer = true,
+                            CanSelfAssign = true,
                             Description = "Architects, infrastructure and third parties (exchange, depository, vendors) for problems outside XFL's code.",
+                            EscalateUpTo = 5,
                             MaxHoursAtLevel = 0,
-                            Name = "Architecture & Vendors"
+                            MaxOpenTickets = 0,
+                            Name = "Architecture & Vendors",
+                            ReceivesAutoAssign = true
                         });
                 });
 
@@ -1212,6 +1371,74 @@ namespace XFLCSMS.Migrations
                     b.HasIndex("IssueId", "On");
 
                     b.ToTable("TicketEscalations");
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Tiers.TicketTransferRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecidedByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DecidedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ExpiresOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FromName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("FromUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IssueId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ToName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("ToUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUserId", "Status");
+
+                    b.HasIndex("IssueId", "Status");
+
+                    b.HasIndex("ToUserId", "Status");
+
+                    b.ToTable("TicketTransferRequests");
                 });
 
             modelBuilder.Entity("XFLCSMS.Models.Todos.Todo", b =>
@@ -1404,6 +1631,27 @@ namespace XFLCSMS.Migrations
                         .WithMany()
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("XFLCSMS.Models.Tiers.TicketTransferRequest", b =>
+                {
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("XFLCSMS.Models.Issue.IssueTable", null)
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XFLCSMS.Models.Register.User", null)
+                        .WithMany()
+                        .HasForeignKey("ToUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

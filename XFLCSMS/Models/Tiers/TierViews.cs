@@ -29,6 +29,14 @@ namespace XFLCSMS.Models.Tiers
 
         /// <summary>Engineers may only escalate upward; managers and administrators may also hand a ticket back.</summary>
         public bool CanHandBack { get; set; }
+
+        /// <summary>From the engineer's level authority (managers and administrators: everything).</summary>
+        public bool CanEscalate { get; set; } = true;
+        public int EscalateUpTo { get; set; } = SupportLevel.Max;
+        public bool CanReassign { get; set; } = true;
+
+        /// <summary>Take / give back / transfer buttons for the signed-in user.</summary>
+        public TicketAssignmentInfo Assignment { get; set; } = new();
         public string? CurrentEngineer { get; set; }
         public int? CurrentEngineerId { get; set; }
         public List<EngineerOption> Engineers { get; set; } = new();

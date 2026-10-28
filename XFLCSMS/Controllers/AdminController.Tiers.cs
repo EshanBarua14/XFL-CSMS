@@ -4,7 +4,7 @@ using XFLCSMS.Services;
 
 namespace XFLCSMS.Controllers
 {
-    /// <summary>Admin > Setup > Support Levels: names and time limits of L1-L5 and the level of every Support Engineer.</summary>
+    /// <summary>Admin > Setup > Support Levels: names, time limits and authority of L1-L5 and the level of every Support Engineer.</summary>
     public partial class AdminController
     {
         [HttpGet]
@@ -41,6 +41,43 @@ namespace XFLCSMS.Controllers
                 }
 
                 return RedirectToAction(nameof(SupportLevels));
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        /// <summary>Admin > Setup > Ticket Assignment: self-assign, auto-assign and transfer requests.</summary>
+        [HttpGet]
+        public async Task<IActionResult> TicketAssignment([FromServices] AssignmentService assignment)
+        {
+            try
+            {
+                return View(await assignment.SettingsAsync());
+            }
+            catch (Exception ex)
+            {
+                return HandleError(ex);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TicketAssignment(AssignmentSettings form, [FromServices] AssignmentService assignment)
+        {
+            try
+            {
+                var error = await assignment.SaveSettingsAsync(form, CurrentUser!);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                    return View(form);
+                }
+
+                AutoAssignWorker.Wake();
+                TempData["SuccessMessage"] = "Ticket assignment saved.";
+                return RedirectToAction(nameof(TicketAssignment));
             }
             catch (Exception ex)
             {

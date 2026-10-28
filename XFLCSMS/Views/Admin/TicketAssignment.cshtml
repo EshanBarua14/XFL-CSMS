@@ -1,0 +1,151 @@
+@model XFLCSMS.Models.Tiers.AssignmentSettings
+@using XFLCSMS.Models.Tiers
+@using System.Globalization
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Ticket Assignment";
+    ViewData["Subtitle"] = "How tickets reach engineers: taking a ticket, auto-assign to idle engineers, and transfers between engineers.";
+    var m = Model;
+}
+@functions {
+    // a switch that posts true when on and false when off
+    private Microsoft.AspNetCore.Html.IHtmlContent Switch(string name, bool on, string label, string help)
+    {
+        var id = "set-" + name;
+        return new Microsoft.AspNetCore.Html.HtmlString(
+            "<div class=\"form-group mb-3\"><div class=\"custom-control custom-switch\">"
+            + "<input type=\"checkbox\" class=\"custom-control-input\" id=\"" + id + "\" name=\"" + name + "\" value=\"true\"" + (on ? " checked" : "") + " />"
+            + "<label class=\"custom-control-label\" for=\"" + id + "\"><b>" + System.Net.WebUtility.HtmlEncode(label) + "</b></label>"
+            + "</div><input type=\"hidden\" name=\"" + name + "\" value=\"false\" />"
+            + "<small class=\"form-text text-muted ml-4\">" + System.Net.WebUtility.HtmlEncode(help) + "</small></div>");
+    }
+}
+@section PageActions {
+    <a asp-controller="Admin" asp-action="TicketQueue" class="btn btn-outline-primary"><i class="fas fa-inbox mr-1"></i>Ticket Queue</a>
+    <a asp-controller="Admin" asp-action="SupportLevels" asp-fragment="authority" class="btn btn-outline-secondary"><i class="fas fa-user-shield mr-1"></i>Level authority</a>
+}
+
+<section class="content">
+    <div class="container-fluid">
+        <form asp-controller="Admin" asp-action="TicketAssignment" method="post">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-hand-paper mr-2"></i>Taking tickets</h3></div>
+                        <div class="card-body">
+                            @Switch("SelfAssignEnabled", m.SelfAssignEnabled, "Engineers can take tickets themselves",
+                                "\"Assign to me\" on the ticket and \"Take\" on the Ticket Queue, for queued tickets at the engineer's level or below. Each level also needs \"Take tickets\" (Support Levels > Authority).")
+                            @Switch("ReleaseEnabled", m.ReleaseEnabled, "Engineers can give a ticket back to the queue",
+                                "With a reason, recorded in the ticket's history. The ticket is not auto-assigned to the same engineer again for 24 hours.")
+                            <div class="form-group mb-0">
+                                <label for="status-on-take"><b>Status when a ticket is taken or auto-assigned</b></label>
+                                <select id="status-on-take" name="StatusOnTake" class="form-control">
+                                    <option value="" selected="@(string.IsNullOrEmpty(m.StatusOnTake))">Keep the status</option>
+                                    <option value="Inqueue" selected="@(m.StatusOnTake == "Inqueue")">In Queue</option>
+                                    <option value="Inprogress" selected="@(m.StatusOnTake == "Inprogress")">In Progress</option>
+                                </select>
+                                <small class="form-text text-muted">Only moves a ticket forward (an In Progress ticket is never put back to In Queue). When an engineer does it, it counts as the first response.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-people-arrows mr-2"></i>Transfers between engineers</h3></div>
+                        <div class="card-body">
+                            @Switch("TransferEnabled", m.TransferEnabled, "Engineers can ask another engineer to take over a ticket",
+                                "The other engineer accepts or declines; the ticket stays with the first engineer until then. Each level also needs \"Request transfers\".")
+                            @Switch("TransferNeedsManagerApproval", m.TransferNeedsManagerApproval, "A support manager approves accepted transfers",
+                                "After the engineer accepts, the transfer waits on the Ticket Queue until a manager or administrator approves it.")
+                            @Switch("TransferRespectsCapacity", m.TransferRespectsCapacity, "Respect the levels' \"most open tickets\"",
+                                "An engineer at the limit of their level cannot be asked or accept.")
+                            <div class="form-group mb-0">
+                                <label for="transfer-expiry"><b>Unanswered requests lapse after</b></label>
+                                <div class="input-group" style="max-width:220px">
+                                    <input id="transfer-expiry" type="number" name="TransferExpiryHours" value="@m.TransferExpiryHours" min="0" max="720" class="form-control" required />
+                                    <div class="input-group-append"><span class="input-group-text">hours</span></div>
+                                </div>
+                                <small class="form-text text-muted">0 = never.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title mb-0"><i class="fas fa-magic mr-2"></i>Auto-assign</h3></div>
+                        <div class="card-body">
+                            @Switch("AutoAssignEnabled", m.AutoAssignEnabled, "Give queued tickets to idle engineers automatically",
+                                "The least busy idle engineer gets the oldest queued ticket their level may work on. Levels without \"Get auto-assigned\" are skipped.")
+                            <div class="form-row">
+                                <div class="form-group col-sm-6">
+                                    <label for="idle-below"><b>Idle while holding fewer than</b></label>
+                                    <div class="input-group">
+                                        <input id="idle-below" type="number" name="AutoAssignIdleBelow" value="@m.AutoAssignIdleBelow" min="1" max="100" class="form-control" required />
+                                        <div class="input-group-append"><span class="input-group-text">open tickets</span></div>
+                                    </div>
+                                    <small class="form-text text-muted">1 = only engineers with no open ticket.</small>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="interval"><b>Run every</b></label>
+                                    <div class="input-group">
+                                        <input id="interval" type="number" name="AutoAssignIntervalMinutes" value="@m.AutoAssignIntervalMinutes" min="1" max="1440" class="form-control" required />
+                                        <div class="input-group-append"><span class="input-group-text">minutes</span></div>
+                                    </div>
+                                    <small class="form-text text-muted">Also runs when a ticket is raised, given back or closed.</small>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="level-rule"><b>Which tickets</b></label>
+                                    <select id="level-rule" name="AutoAssignLevelRule" class="form-control">
+                                        @foreach (var r in AssignmentLevelRules.All)
+                                        {
+                                            <option value="@r.Value" selected="@(r.Value == AssignmentLevelRules.Normalize(m.AutoAssignLevelRule))">@r.Label</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="order"><b>Order</b></label>
+                                    <select id="order" name="AutoAssignOrder" class="form-control">
+                                        @foreach (var o in AssignmentOrders.All)
+                                        {
+                                            <option value="@o.Value" selected="@(o.Value == AssignmentOrders.Normalize(m.AutoAssignOrder))">@o.Label</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label for="delay"><b>Leave new tickets for self-assign for</b></label>
+                                    <div class="input-group">
+                                        <input id="delay" type="number" name="AutoAssignDelayMinutes" value="@m.AutoAssignDelayMinutes" min="0" max="1440" class="form-control" required />
+                                        <div class="input-group-append"><span class="input-group-text">minutes</span></div>
+                                    </div>
+                                    <small class="form-text text-muted">0 = assign at once.</small>
+                                </div>
+                            </div>
+                            @Switch("AutoAssignOnlyOnline", m.AutoAssignOnlyOnline, "Only engineers who are online",
+                                "Nobody signed out or on leave gets a ticket. Online = used CSMS (or had it open) within the minutes below.")
+                            <div class="form-group mb-0">
+                                <label for="online"><b>Online means active in the last</b></label>
+                                <div class="input-group" style="max-width:220px">
+                                    <input id="online" type="number" name="OnlineWindowMinutes" value="@m.OnlineWindowMinutes" min="1" max="1440" class="form-control" required />
+                                    <div class="input-group-append"><span class="input-group-text">minutes</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body small text-muted">
+                            <p class="mb-1"><i class="fas fa-user-tie mr-1"></i><b>Support managers and administrators</b> can always assign and reassign any ticket (Ticket Queue, the ticket page, Edit ticket) and approve or reject transfers.</p>
+                            <p class="mb-0"><i class="fas fa-layer-group mr-1"></i>What engineers of each level may do (take, get auto-assigned, request transfers, assign others, escalate, hand back, close, most open tickets) is set under
+                                <a asp-controller="Admin" asp-action="SupportLevels" asp-fragment="authority">Support Levels &gt; Authority</a>.</p>
+                            @if (m.UpdatedOn.HasValue)
+                            {
+                                <p class="mb-0 mt-2">Last changed @m.UpdatedOn.Value.ToString("dd MMM yyyy, h:mm tt", CultureInfo.InvariantCulture)@(m.UpdatedBy != null ? " by " + m.UpdatedBy : "").</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Save</button>
+        </form>
+    </div>
+</section>
