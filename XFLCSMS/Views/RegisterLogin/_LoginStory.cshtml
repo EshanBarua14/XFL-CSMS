@@ -1,12 +1,14 @@
-@* The animated story on the sign-in page: a maker at a brokerage house raises a ticket, the XFL support manager
-   reviews and assigns it, a support engineer solves it, and the maker gives five stars.
+@* The animated story on the sign-in page, following the real workflow: a maker at a brokerage house raises a ticket;
+   it joins the XFL queue at L1 and is auto-assigned to a free engineer (engineers can also take one, the manager can
+   assign); the engineer escalates it to L2; the code change is tracked stage by stage while the client chats with the
+   engineer; the ticket is closed, the maker rates it, and the house MD follows it all read only.
    Drawn in SVG (no images, works offline); css/xfl-story.css animates it and js/xfl-story.js runs the timeline.
    With "reduce motion" on, the finished story is shown still. *@
 <section class="xs-story" id="xsStory" data-phase="idle" data-ticket="new" aria-label="How Xpert CSMS works">
     <div class="xs-stage">
 <svg class="xs-svg" viewBox="0 0 960 430" role="img" aria-labelledby="xsTitle xsDesc" preserveAspectRatio="xMidYMid meet">
       <title id="xsTitle">How a support ticket travels through Xpert CSMS</title>
-      <desc id="xsDesc">A maker at a brokerage house raises a ticket; the XFL support manager reviews it and assigns it; a support engineer solves it; the maker is happy and gives five stars.</desc>
+      <desc id="xsDesc">A maker at a brokerage house raises a ticket; it joins the XFL queue at level L1 and is auto-assigned to a free support engineer; the engineer escalates it to L2; the code change is tracked through its development stages while the client and the engineer chat; the ticket is closed, the maker gives five stars, and the house MD watches it all on a read-only dashboard.</desc>
       <defs>
         <linearGradient id="xsSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="xs-sky-top"/><stop offset="1" class="xs-sky-bottom"/></linearGradient>
         <linearGradient id="xsGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="xs-glass-a"/><stop offset="1" class="xs-glass-b"/></linearGradient>
@@ -36,8 +38,15 @@
         <text class="xs-sign" x="180" y="117" text-anchor="middle">BROKERAGE HOUSE</text>
         <rect class="xs-ticker-bg" x="52" y="128" width="256" height="20" rx="4"/>
         <g clip-path="url(#xsTickerClip)"><g class="xs-ticker"><text x="56" y="142">DSEX 6,214 <tspan class="up">&#9650; 0.8%</tspan>  DS30 2,145 <tspan class="up">&#9650; 0.4%</tspan>  DSES 1,342 <tspan class="dn">&#9660; 0.1%</tspan>  DSEX 6,214 <tspan class="up">&#9650; 0.8%</tspan>  DS30 2,145 <tspan class="up">&#9650; 0.4%</tspan>  DSES 1,342 <tspan class="dn">&#9660; 0.1%</tspan></text></g></g>
-        <rect class="xs-win" x="48" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="92" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="214" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="48" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="92" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="214" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="206" width="22" height="26" rx="3"/>
-        <rect class="xs-col" x="40" y="150" width="8" height="188"/><rect class="xs-col" x="174" y="150" width="12" height="188"/><rect class="xs-col" x="312" y="150" width="8" height="188"/>
+        <rect class="xs-win" x="214" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="160" width="22" height="26" rx="3"/><rect class="xs-win" x="48" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="92" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="214" y="206" width="22" height="26" rx="3"/><rect class="xs-win" x="258" y="206" width="22" height="26" rx="3"/>
+        <rect class="xs-col" x="40" y="150" width="8" height="188"/>
+        <!-- the house MD's dashboard: read only -->
+        <g class="xs-md" transform="translate(52,154)">
+          <rect class="xs-md-screen" width="112" height="34" rx="6"/>
+          <g class="xs-md-eye" transform="translate(15,17)"><path d="M-9,0 Q0,-8 9,0 Q0,8 -9,0 Z" fill="#fff"/><circle r="3.4" fill="#1769c2"/><circle r="1.4" fill="#0f1d33"/></g>
+          <text x="29" y="15" class="xs-md-title">MD VIEW</text><text x="29" y="26" class="xs-md-sub">READ ONLY</text>
+          <rect class="xs-md-bar xs-md-bar-0" x="80" y="10" width="6" height="18" rx="2"/><rect class="xs-md-bar xs-md-bar-1" x="89" y="10" width="6" height="18" rx="2"/><rect class="xs-md-bar xs-md-bar-2" x="98" y="10" width="6" height="18" rx="2"/>
+        </g><rect class="xs-col" x="174" y="150" width="12" height="188"/><rect class="xs-col" x="312" y="150" width="8" height="188"/>
         <g class="xs-plant" transform="translate(316,338)"><rect x="-9" y="-16" width="18" height="16" rx="3" fill="#b5653b"/><path class="xs-leaf" d="M0,-16 Q-14,-34 -6,-48 Q2,-32 0,-16 Z M0,-16 Q14,-30 10,-44 Q0,-30 0,-16 Z" fill="#2fb36b"/></g>
       </g>
 
@@ -175,25 +184,26 @@
       <g class="xs-monitor" transform="translate(890,338)">
         <rect x="-4" y="-14" width="8" height="14" fill="#7d8796"/><rect x="-16" y="-3" width="32" height="4" rx="2" fill="#7d8796"/>
         <rect x="-38" y="-72" width="76" height="60" rx="6" class="xs-screen"/>
-        <text x="-30" y="-58" class="xs-screen-title">DEPLOY</text>
+        <text x="-30" y="-58" class="xs-screen-title">DEV TRACK</text>
         <rect x="-30" y="-46" width="60" height="8" rx="4" fill="rgba(255,255,255,.15)"/>
         <rect class="xs-progress" x="-30" y="-46" width="60" height="8" rx="4" fill="#22c55e"/>
-        <g transform="translate(0,-24)"><g class="xs-screen-ok"><circle r="9" fill="#22c55e"/><path d="M-4,0 L-1,3 L5,-4" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></g>
+        <text x="0" y="-27" text-anchor="middle" class="xs-stage" id="xsStage">ANALYSIS</text>
+        <g transform="translate(0,-20)"><g class="xs-screen-ok"><circle r="9" fill="#22c55e"/><path d="M-4,0 L-1,3 L5,-4" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></g>
       </g>
       <g class="xs-mug" transform="translate(860,338)"><rect x="-8" y="-16" width="16" height="16" rx="3" fill="#ff8a5b"/><path d="M8,-12 Q14,-10 8,-4" stroke="#ff8a5b" stroke-width="2.5" fill="none"/>
         <path class="xs-steam xs-steam-1" d="M-3,-20 Q-7,-26 -3,-32 Q1,-38 -3,-44" stroke-width="2" fill="none"/><path class="xs-steam xs-steam-2" d="M4,-20 Q0,-26 4,-32 Q8,-38 4,-44" stroke-width="2" fill="none"/></g>
 
       <!-- plaques -->
-      <g class="xs-plaque"><rect x="78" y="396" width="214" height="24" rx="12"/><text x="185" y="412" text-anchor="middle">Makers &#183; Brokerage House</text></g>
-      <g class="xs-plaque"><rect x="404" y="396" width="190" height="24" rx="12"/><text x="499" y="412" text-anchor="middle">Support Manager &#183; XFL</text></g>
-      <g class="xs-plaque"><rect x="700" y="396" width="208" height="24" rx="12"/><text x="804" y="412" text-anchor="middle">Support Engineer &#183; XFL</text></g>
+      <g class="xs-plaque"><rect x="78" y="396" width="214" height="24" rx="12"/><text x="185" y="412" text-anchor="middle">Makers &amp; MD &#183; Brokerage House</text></g>
+      <g class="xs-plaque"><rect x="404" y="396" width="190" height="24" rx="12"/><text x="499" y="412" text-anchor="middle">Queue &amp; Manager &#183; XFL</text></g>
+      <g class="xs-plaque"><rect x="700" y="396" width="208" height="24" rx="12"/><text x="804" y="412" text-anchor="middle">Engineers L1&#8211;L5 &#183; XFL</text></g>
 
       <!-- the ticket's flight paths -->
       <use href="#xsPath1" class="xs-trail xs-trail-1"/><use href="#xsPath2" class="xs-trail xs-trail-2"/><use href="#xsPath3" class="xs-trail xs-trail-3"/>
 
       <!-- manager: magnifier and stamp -->
       <g class="xs-magnifier"><g class="xs-mag-move"><circle cx="0" cy="0" r="13" class="xs-mag-glass"/><path d="M9,9 L22,22" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/></g></g>
-      <g class="xs-stamp" transform="translate(452,330) rotate(-12)"><g class="xs-stamp-in"><rect x="-38" y="-11" width="76" height="22" rx="4"/><text x="0" y="5" text-anchor="middle">ASSIGNED</text></g></g>
+      <g class="xs-stamp" transform="translate(452,262) rotate(-8)"><g class="xs-stamp-in"><rect x="-60" y="-11" width="120" height="22" rx="4"/><text x="0" y="5" text-anchor="middle">AUTO-ASSIGNED</text></g></g>
 
       <!-- the ticket -->
       <g id="xsTicket" class="xs-ticket" transform="translate(118,292)"><g transform="scale(1.35)">
@@ -201,6 +211,7 @@
           <rect x="-26" y="-18" width="52" height="36" rx="6" class="xs-ticket-card"/>
           <path d="M-26,-12 Q-26,-18 -20,-18 L20,-18 Q26,-18 26,-12 L26,-8 L-26,-8 Z" class="xs-ticket-head"/>
           <text x="-21" y="-10.5" class="xs-ticket-no">#1042</text>
+          <g class="xs-ticket-lvl-g"><rect x="9" y="-16.5" width="14" height="7" rx="3.5" class="xs-ticket-lvl-bg"/><text x="16" y="-11" text-anchor="middle" class="xs-ticket-lvl" id="xsLevel">L1</text></g>
           <rect x="-20" y="-3" width="30" height="3.5" rx="1.75" class="xs-ticket-line"/>
           <rect x="-20" y="4" width="22" height="3.5" rx="1.75" class="xs-ticket-line"/>
           <text x="-20" y="15" class="xs-ticket-state">NEW</text>
@@ -208,11 +219,15 @@
         </g>
       </g></g>
 
+      <!-- a chat message travelling between the engineer and the maker (Messages) -->
+      <g id="xsChat" class="xs-chat" transform="translate(772,316)"><g class="xs-chat-in"><rect x="-17" y="-12" width="34" height="22" rx="8"/><path d="M-9,10 l-3,7 l10,-7"/><circle cx="-7" cy="-1" r="2.2"/><circle cx="0" cy="-1" r="2.2"/><circle cx="7" cy="-1" r="2.2"/></g></g>
+
       <!-- speech bubbles -->
       <g class="xs-bubble xs-b-raise"><g class="xs-pop"><rect x="150" y="150" width="186" height="50" rx="12"/><path d="M168,200 l-4,12 l16,-12"/><text x="162" y="172">Trade upload keeps failing.</text><text x="162" y="188">Raising a ticket!</text></g></g>
-      <g class="xs-bubble xs-b-review"><g class="xs-pop"><rect x="340" y="150" width="196" height="50" rx="12"/><path d="M506,200 l18,12 l-4,-12"/><text x="352" y="172">High priority. Assigning it</text><text x="352" y="188">to our support engineer.</text></g></g>
-      <g class="xs-bubble xs-b-solve"><g class="xs-pop"><rect x="640" y="120" width="176" height="50" rx="12"/><path d="M786,170 l18,12 l-4,-12"/><text x="652" y="142">Found the bug. Fix</text><text x="652" y="158">deployed!</text></g></g>
-      <g class="xs-bubble xs-b-rate"><g class="xs-pop"><rect x="150" y="132" width="170" height="50" rx="12"/><path d="M168,182 l-4,12 l16,-12"/><text x="162" y="154">Solved so fast!</text><text x="162" y="170">Five stars, XFL!</text></g></g>
+      <g class="xs-bubble xs-b-review"><g class="xs-pop"><rect x="340" y="150" width="196" height="50" rx="12"/><path d="M506,200 l18,12 l-4,-12"/><text x="352" y="172">Oldest in the queue first:</text><text x="352" y="188">auto-assigned to a free L1.</text></g></g>
+      <g class="xs-bubble xs-b-solve"><g class="xs-pop"><rect x="640" y="120" width="176" height="50" rx="12"/><path d="M786,170 l18,12 l-4,-12"/><text x="652" y="142">Needs a code change.</text><text x="652" y="158">Escalating to L2.</text></g></g>
+      <g class="xs-bubble xs-b-track"><g class="xs-pop"><rect x="628" y="120" width="188" height="50" rx="12"/><path d="M786,170 l18,12 l-4,-12"/><text x="640" y="142">Fix is in QA, live today.</text><text x="640" y="158">I'll message you.</text></g></g>
+      <g class="xs-bubble xs-b-rate"><g class="xs-pop"><rect x="150" y="132" width="170" height="50" rx="12"/><path d="M168,182 l-4,12 l16,-12"/><text x="162" y="154">Solved and explained!</text><text x="162" y="170">Five stars, XFL!</text></g></g>
       <g class="xs-bubble xs-b-rate2"><g class="xs-pop"><rect x="262" y="196" width="96" height="34" rx="12"/><path d="M280,230 l-4,12 l16,-12"/><text x="274" y="218">Thank you!</text></g></g>
 
       <!-- the review: stars, hearts, confetti -->
@@ -224,10 +239,11 @@
         <button type="button" class="xs-pause" id="xsPause" aria-pressed="false" title="Pause the animation"><i class="fas fa-pause" aria-hidden="true"></i><span class="sr-only">Pause the animation</span></button>
     </div>
     <ol class="xs-steps" aria-hidden="true">
-        <li data-step="1"><span class="xs-step-ico"><i class="fas fa-ticket-alt"></i></span><span class="xs-step-txt"><b>Raise</b><small>Maker at the brokerage house</small></span></li>
-        <li data-step="2"><span class="xs-step-ico"><i class="fas fa-user-tie"></i></span><span class="xs-step-txt"><b>Review &amp; assign</b><small>XFL support manager</small></span></li>
-        <li data-step="3"><span class="xs-step-ico"><i class="fas fa-tools"></i></span><span class="xs-step-txt"><b>Solve</b><small>XFL support engineer</small></span></li>
-        <li data-step="4"><span class="xs-step-ico"><i class="fas fa-star"></i></span><span class="xs-step-txt"><b>Rate</b><small>Happy maker reviews</small></span></li>
+        <li data-step="1"><span class="xs-step-ico"><i class="fas fa-ticket-alt"></i></span><span class="xs-step-txt"><b>Raise</b><small>Maker</small></span></li>
+        <li data-step="2"><span class="xs-step-ico"><i class="fas fa-inbox"></i></span><span class="xs-step-txt"><b>Assign</b><small>Auto or self-assign</small></span></li>
+        <li data-step="3"><span class="xs-step-ico"><i class="fas fa-level-up-alt"></i></span><span class="xs-step-txt"><b>Escalate</b><small>Engineers L1&#8211;L5</small></span></li>
+        <li data-step="4"><span class="xs-step-ico"><i class="fas fa-code-branch"></i></span><span class="xs-step-txt"><b>Track &amp; chat</b><small>Dev stages, chat</small></span></li>
+        <li data-step="5"><span class="xs-step-ico"><i class="fas fa-star"></i></span><span class="xs-step-txt"><b>Rate</b><small>Maker, MD views</small></span></li>
     </ol>
     <p class="xs-caption" id="xsCaption">Every ticket, from the first report to a five-star review, in one place.</p>
 </section>

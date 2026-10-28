@@ -5,7 +5,7 @@
    - Only GET requests are touched: form posts, deletes and downloads always go to the server. */
 'use strict';
 
-var VERSION = 'xfl-csms-v3';
+var VERSION = 'xfl-csms-v4';
 var STATIC_CACHE = VERSION + '-static';
 var OFFLINE_URL = '/Home/Offline';
 
