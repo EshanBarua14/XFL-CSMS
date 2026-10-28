@@ -294,6 +294,8 @@ namespace XFLCSMS.Controllers
                     Attachments = issueWithAttachments.attachment,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
                     IssueTitle = issueWithAttachments.ITitle
 
 
@@ -357,6 +359,8 @@ namespace XFLCSMS.Controllers
                     SupportEngineers = SupportEng,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
 
                 };
                 return View(EditView);

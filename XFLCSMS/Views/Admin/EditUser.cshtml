@@ -28,7 +28,7 @@
 
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Full Name</label>
-                                    <input type="text" asp-for="@Model.FullName" value="@Model.FullName" class="form-control" id="exampleInputEmail1" placeholder="Full Name" readonly>
+                                    <input type="text" asp-for="@Model.FullName" value="@Model.FullName" class="form-control" placeholder="Full Name" required maxlength="200">
                                 </div>
 
                                 <div class="form-group">
@@ -38,17 +38,20 @@
 
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Email</label>
-                                    <input type="text" asp-for="@Model.Email" value="@Model.Email" class="form-control" id="exampleInputEmail1" placeholder="Email" readonly>
+                                    <input type="email" asp-for="@Model.Email" value="@Model.Email" class="form-control" placeholder="Email" required maxlength="200">
                                 </div>
 
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Phone Number</label>
-                                    <input type="text" asp-for="@Model.PhonNumber" value="@Model.PhonNumber" class="form-control" id="exampleInputEmail1" placeholder="Phone Number" readonly>
+                                    <input type="tel" asp-for="@Model.PhonNumber" value="@Model.PhonNumber" class="form-control" placeholder="Phone Number" maxlength="30">
                                 </div>
                                 <div class="form-group">
-                                    <label for="exampleInputEmail1">Designation</label>
-                                    @* <input type="text" asp-for="@Model.Designation" value="@Model.Designation" class="form-control" id="exampleInputEmail1" placeholder="Designation" readonly> *@
-                                <select type="text" asp-for="@Model.Department" class="form-control" id="UCatagory" name="Department">
+                                    <label for="Designation">Designation</label>
+                                    <input type="text" asp-for="@Model.Designation" value="@Model.Designation" class="form-control" placeholder="Designation" maxlength="100">
+                                </div>
+                                <div class="form-group">
+                                    <label for="Department">Role (department)</label>
+                                <select asp-for="@Model.Department" class="form-control" id="Department" name="Department">
                                     <option value="Maker">Maker</option>
                                     <option value="Support Maneger">Support Manager</option>
                                     <option value="Support Engineer">Support Engineer</option>
@@ -74,7 +77,7 @@
                             <div class="card-body">
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Employee Id</label>
-                                    <input type="text" asp-for="@Model.EmployeeId" value="@Model.EmployeeId" class="form-control" id="exampleInputEmail1" placeholder="Employee Id" readonly>
+                                    <input type="text" asp-for="@Model.EmployeeId" value="@Model.EmployeeId" class="form-control" placeholder="Employee Id" maxlength="50">
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputEmail1">Brokerage House Name</label>

@@ -188,6 +188,8 @@ namespace XFLCSMS.Controllers
                     Attachments = issueWithAttachments.attachment,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
                     IssueTitle = issueWithAttachments.ITitle
 
 
@@ -244,6 +246,8 @@ namespace XFLCSMS.Controllers
                     SupportEngineers = SupportEng,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
 
                 };
                 return View(EditView);
@@ -267,7 +271,7 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                var invalid = TicketService.ValidateStaffEdit(issue, makerView);
+                var invalid = Tickets.ValidateStaffEdit(issue, makerView);
                 if (invalid != null)
                 {
                     TempData["ErrorMessage"] = invalid + " Nothing was saved.";
@@ -420,6 +424,7 @@ namespace XFLCSMS.Controllers
 
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
+                ForgetAccountCheck(id);
                 return Ok();
             }
             catch (Exception ex)
@@ -539,6 +544,20 @@ namespace XFLCSMS.Controllers
 
                 if (user != null)
                 {
+                    var fullName = (userView.FullName ?? string.Empty).Trim();
+                    var email = (userView.Email ?? string.Empty).Trim();
+                    var emailTaken = await _context.Users.AnyAsync(u => u.Id != user.Id && u.Email == email);
+                    if (fullName.Length == 0 || email.Length == 0 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || emailTaken)
+                    {
+                        TempData["ErrorMessage"] = emailTaken ? "Another user already has the e-mail " + email + "." : "Please enter the full name and a valid e-mail address.";
+                        return RedirectToAction("EditUser", new { id = user.Id });
+                    }
+
+                    user.FullName = fullName;
+                    user.Email = email;
+                    user.PhonNumber = (userView.PhonNumber ?? string.Empty).Trim();
+                    user.Designation = string.IsNullOrWhiteSpace(userView.Designation) ? user.Designation : userView.Designation.Trim();
+                    user.EmployeeId = (userView.EmployeeId ?? string.Empty).Trim();
                     user.UStatus = userView.UStatus;
                     user.UCatagory = userView.UCatagory;
                     user.Department = userView.Department;
@@ -548,6 +567,8 @@ namespace XFLCSMS.Controllers
                     user.UType = userView.UCatagory || IsStaffDepartment(userView.Department);
                     _context.Update(user);
                     await _context.SaveChangesAsync();
+                    ForgetAccountCheck(user.Id);
+                    TempData["SuccessMessage"] = "User " + user.UserName + " was updated.";
                     return RedirectToAction("UserList");
                 }
                 return RedirectToAction("UserList");

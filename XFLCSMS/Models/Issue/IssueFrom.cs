@@ -27,6 +27,8 @@ namespace XFLCSMS.Models.Issue
 
         /// <summary>XFL staff only: the brokerage house the ticket is raised for (taken by phone or e-mail). Empty = the own house.</summary>
         public int? ForBrokerageId { get; set; }
+        /// <summary>XFL staff only: the brokerage house user who asked for the ticket. That user owns it: sees it, is told about it and rates it.</summary>
+        public int? OnBehalfOfUserId { get; set; }
 
 
     }

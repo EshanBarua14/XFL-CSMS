@@ -1,0 +1,211 @@
+@model XFLCSMS.Models.Common.HelpView
+@using XFLCSMS.Services
+@{
+    Layout = Model.Layout;
+    ViewData["Title"] = "How CSMS works";
+    ViewData["Subtitle"] = "The roles, the life of a ticket and what you do in it.";
+    var c = Model.Controller;
+    var role = Model.Role;
+    string Me(params string[] roles) => roles.Contains(role) ? "is-me" : "";
+    string RoleName(string r) => r switch
+    {
+        "Admin" => "Administrator",
+        "SupportManager" => "Support Manager",
+        "SupportEngineer" => "Support Engineer",
+        _ => "Brokerage House User (Maker)"
+    };
+
+    // what the signed-in role does, with the page that does it
+    var tasks = role switch
+    {
+        "Maker" => new[]
+        {
+            ("fa-plus-circle", "Raise a ticket", "Pick the product, describe the issue, attach screenshots or files (10 MB each).", "IssueRaiseFrom"),
+            ("fa-list", "Follow your tickets", "Status, the support level it is at, the engineer and the development timeline.", "MackerTicketList"),
+            ("fa-inbox", "Waiting for an engineer", "Your open tickets XFL has not assigned yet.", "UnassignedTicketList"),
+            ("fa-star", "Rate or reopen", "Closed tickets: rate within " + FeedbackService.RatingWindowDays + " days, or reopen when the problem is back.", "ClosedTicketList"),
+            ("fa-chart-pie", "Reports", "Your tickets by period, product, status and priority, with exports.", "Reports"),
+        },
+        "SupportEngineer" => new[]
+        {
+            ("fa-user-check", "My assigned tickets", "Work them: status In Progress, write the answer in Comments.", "AssignedTicketList"),
+            ("fa-layer-group", "My level queue", "Unassigned open tickets at your level or below: take one.", "LevelQueue"),
+            ("fa-level-up-alt", "Escalate", "On the ticket page: move it up a level with a reason the next engineer reads first.", "AssignedTicketList"),
+            ("fa-code-branch", "Development tracker", "Tickets that need a code change: stage, owner, ETA, reference.", "DevTracker"),
+            ("fa-check-circle", "Close with a resolution", "Closing needs the resolution in Comments: the client reads it with the rating request.", "AssignedTicketList"),
+        },
+        "SupportManager" => new[]
+        {
+            ("fa-inbox", "Assign new tickets", "Edit Ticket > Assigned To: engineers grouped by level, least busy first.", "UnassignedTicketList"),
+            ("fa-layer-group", "Watch the levels", "Open work, queues and tickets past their time at each level.", "SupportTiers"),
+            ("fa-exchange-alt", "Escalate, hand back, reassign", "On the ticket page, with a reason. Only managers and admins hand back.", "AllTicketList"),
+            ("fa-comments", "Client feedback", "Low ratings to follow up, reply to the client, exclude unfair ratings.", "ServiceFeedback"),
+            ("fa-trophy", "Engineer scorecard", "Monthly ranking and the Best Support Engineer award.", "Scorecard"),
+        },
+        _ => new[]
+        {
+            ("fa-users", "Users", "Create staff and house users, change roles, disable accounts (signed out at once).", "UserList"),
+            ("fa-cogs", "Setup", "Products, brokerage houses, branches, support types, categories and sections.", "ProductList"),
+            ("fa-layer-group", "Support levels", "Rename L1-L5, set the time allowed and each engineer's level.", "SupportLevels"),
+            ("fa-stopwatch", "SLA targets", "Response and resolution targets per priority.", "SlaTargets"),
+            ("fa-bell", "Notifications", "Who is told about each step, on which channel (in-app, e-mail, WhatsApp, SMS).", "Notifications"),
+        }
+    };
+}
+
+<div class="xfl-help">
+    <div class="card xfl-help-hero">
+        <div class="card-body">
+            <span class="xfl-help-chip"><i class="fas fa-user-circle mr-1"></i>You are signed in as <b>@RoleName(role)</b></span>
+            <h2 class="xfl-help-lead">A ticket goes from the brokerage house to the right XFL engineer, is solved, and comes back to the client to rate.</h2>
+            <p class="text-muted mb-0">Every step is recorded (who, when, why), every person involved is notified, and the ratings feed a monthly engineer scorecard.</p>
+        </div>
+    </div>
+
+    <h3 class="xfl-help-h">The life of a ticket</h3>
+    <ol class="xfl-help-flow" aria-label="Ticket workflow">
+        <li class="@Me("Maker", "Admin", "SupportManager", "SupportEngineer")">
+            <span class="xfl-help-num">1</span>
+            <span class="xfl-help-icon"><i class="fas fa-ticket-alt"></i></span>
+            <b>Raise</b>
+            <span>A house user raises it, or XFL staff log a phone / e-mail request for the house and its user.</span>
+            <em>Status: Open · Level L1</em>
+        </li>
+        <li class="@Me("SupportManager", "Admin")">
+            <span class="xfl-help-num">2</span>
+            <span class="xfl-help-icon"><i class="fas fa-user-check"></i></span>
+            <b>Assign</b>
+            <span>The Support Manager picks an engineer at the ticket's level, or an engineer takes it from the level queue.</span>
+            <em>Status: In Queue</em>
+        </li>
+        <li class="@Me("SupportEngineer")">
+            <span class="xfl-help-num">3</span>
+            <span class="xfl-help-icon"><i class="fas fa-tools"></i></span>
+            <b>Solve &amp; escalate</b>
+            <span>The engineer works it, escalates L1 to L5 when needed, and tracks code changes through development stages.</span>
+            <em>Status: In Progress</em>
+        </li>
+        <li class="@Me("SupportEngineer", "SupportManager", "Admin")">
+            <span class="xfl-help-num">4</span>
+            <span class="xfl-help-icon"><i class="fas fa-check"></i></span>
+            <b>Close</b>
+            <span>Closed with the resolution written in Comments. The client is sent the rating link.</span>
+            <em>Status: Closed</em>
+        </li>
+        <li class="@Me("Maker")">
+            <span class="xfl-help-num">5</span>
+            <span class="xfl-help-icon"><i class="fas fa-star"></i></span>
+            <b>Rate or reopen</b>
+            <span>Within @FeedbackService.RatingWindowDays days the client rates it (1-5 stars, editable for @FeedbackService.EditHours h) or reopens it.</span>
+            <em>Reopened: back to Open</em>
+        </li>
+        <li class="@Me("SupportManager", "Admin")">
+            <span class="xfl-help-num">6</span>
+            <span class="xfl-help-icon"><i class="fas fa-trophy"></i></span>
+            <b>Review &amp; rank</b>
+            <span>Managers follow up low ratings and reply. The scorecard ranks engineers each month.</span>
+            <em>Frozen on the 3rd</em>
+        </li>
+    </ol>
+
+    <h3 class="xfl-help-h">What you do</h3>
+    <div class="row">
+        @foreach (var (icon, head, text, action) in tasks)
+        {
+            <div class="col-12 col-md-6 col-xl-4 mb-3">
+                <a class="xfl-help-task" asp-controller="@c" asp-action="@action">
+                    <span class="xfl-help-icon"><i class="fas @icon"></i></span>
+                    <span><b>@head</b><span>@text</span></span>
+                    <i class="fas fa-chevron-right xfl-help-go" aria-hidden="true"></i>
+                </a>
+            </div>
+        }
+    </div>
+
+    <h3 class="xfl-help-h">The four roles</h3>
+    <div class="row">
+        @foreach (var (key, icon, who, does) in new[]
+        {
+            ("Maker", "fa-building", "Staff of a brokerage house (a client of XFL).", "Raises tickets for the own house, follows them, rates or reopens closed tickets. Sees only the tickets they raised or that XFL logged for them."),
+            ("SupportEngineer", "fa-headset", "XFL support staff, each at a level L1-L5.", "Works assigned tickets and the level queue, escalates, tracks development, closes with a resolution. Cannot take a ticket above their level."),
+            ("SupportManager", "fa-user-tie", "Leads the support team.", "Assigns, escalates, hands back and reassigns, follows client feedback, decides the monthly award. Sees every ticket and report."),
+            ("Admin", "fa-user-shield", "Runs the system.", "Everything a manager does, plus users, houses, branches, products, categories, support levels, SLA targets and notification rules."),
+        })
+        {
+            <div class="col-12 col-md-6 col-xl-3 mb-3">
+                <div class="card xfl-help-role h-100 @(key == role ? "is-me" : "")">
+                    <div class="card-body">
+                        <span class="xfl-help-icon"><i class="fas @icon"></i></span>
+                        <h4>@RoleName(key) @if (key == role) { <span class="badge badge-primary ml-1">you</span> }</h4>
+                        <p class="text-muted small mb-2">@who</p>
+                        <p class="mb-0">@does</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-xl-7 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-layer-group mr-2"></i>Support levels</h3></div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead><tr><th>Level</th><th>Handles</th><th class="text-right">Time allowed</th></tr></thead>
+                        <tbody>
+                            @foreach (var l in Model.Levels)
+                            {
+                                <tr>
+                                    <td class="text-nowrap"><span class="xfl-lvl xfl-lvl-@l.Level">L@(l.Level)</span> <b>@l.Name</b></td>
+                                    <td class="small">@l.Description</td>
+                                    <td class="text-right text-nowrap">@(l.MaxHoursAtLevel > 0 ? l.MaxHoursAtLevel + " h" : "no limit")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-muted">New tickets start at L1. Engineers escalate up; managers and admins can also hand back. A ticket that stays longer than allowed is flagged <b>escalation due</b>.</div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-code-branch mr-2"></i>Development stages</h3></div>
+                <div class="card-body">
+                    <ol class="xfl-help-stages">
+                        <li>Analysis</li><li>Development</li><li>Code review</li><li>QA / UAT</li><li>Ready to deploy</li><li>Deployed</li>
+                    </ol>
+                    <p class="small text-muted mb-0">For tickets that need a code change: owner, ETA and reference (CR / branch / PR / build). Notes marked internal are never shown or sent to the client. A ticket can also be put on hold.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-star mr-2"></i>Ratings and the scorecard</h3></div>
+                <div class="card-body">
+                    <ul class="xfl-help-list">
+                        <li>The client rates the engineer who solved the ticket: stars, fully solved or not, a few detail scores and a comment.</li>
+                        <li>The scorecard turns eight measures into points (rating 25%, SLA met 20%, resolution time 15%, volume, reopens, first-contact resolution, first response, overdue backlog).</li>
+                        <li>An engineer is ranked from 5 closed tickets in the month; ratings count from 3. Managers can exclude an unfair rating, with a reason.</li>
+                        <li>Scores freeze on the 3rd of the next month; the Best Support Engineer is named from the frozen ranking.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-bell mr-2"></i>Notifications and tips</h3></div>
+                <div class="card-body">
+                    <ul class="xfl-help-list">
+                        <li>The bell shows what changed on your tickets: assigned, escalated, development updates, closed, rated, reopened.</li>
+                        <li>Choose what reaches you by e-mail and in the app under <a asp-controller="@c" asp-action="NotificationPreferences">Notification settings</a>.</li>
+                        <li>Press <kbd>/</kbd> to search the menu. The ticket form keeps an unsent draft in this browser if the page is closed.</li>
+                        <li>CSMS installs as an app (browser menu > Install) and switches between light and dark with the moon button.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

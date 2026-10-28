@@ -21,6 +21,7 @@
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
+    <a class="xfl-skip" href="#main">Skip to content</a>
     <div class="wrapper">
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
             <ul class="navbar-nav">
@@ -35,6 +36,9 @@
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="@controller" asp-action="Help" title="How CSMS works" aria-label="How CSMS works"><i class="far fa-question-circle"></i></a>
+                </li>
                 <partial name="~/Views/Shared/Notifications/_Bell.cshtml" />
                 <li class="nav-item d-none d-md-block">
                     <a class="nav-link" data-widget="fullscreen" href="#" role="button" title="Full screen" aria-label="Full screen"><i class="fas fa-expand-arrows-alt"></i></a>
@@ -47,7 +51,7 @@
 
         <partial name="_Sidebar" />
 
-        <div class="content-wrapper">
+        <main class="content-wrapper" id="main" tabindex="-1">
             @if (!string.IsNullOrEmpty(title))
             {
                 <div class="xfl-page-header">
@@ -79,11 +83,11 @@
                 }
                 @RenderBody()
             </section>
-        </div>
+        </main>
 
         <footer class="main-footer">
             <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.1.0</div>
-            <strong>Copyright &copy; 2024 <a href="https://xpertfintech.com">Xpert Fintech Limited</a>.</strong> All rights reserved.
+            <strong>Copyright &copy; @DateTime.Now.Year <a href="https://xpertfintech.com">Xpert Fintech Limited</a>.</strong> All rights reserved.
         </footer>
     </div>
 
