@@ -22,6 +22,8 @@ namespace XFLCSMS.Controllers
 
         protected override string SessionKey => "MakerData";
 
+        private const string ClosedTicketMessage = "This ticket is closed and can no longer be edited. If the problem is not solved, use Reopen Ticket (within the rating period) or raise a new ticket.";
+
         // A maker (brokerage house user) only works with the tickets he raised himself.
         protected override bool CanAccessIssue(IssueTable issue)
         {
@@ -325,6 +327,11 @@ namespace XFLCSMS.Controllers
                     return NotFound();
                 }
 
+                if (issueWithAttachments.IStatus == "Close")
+                {
+                    TempData["ErrorMessage"] = ClosedTicketMessage;
+                    return RedirectToAction("TicketView", new { id });
+                }
 
                 var EditView = new MakerView
                 {
@@ -371,6 +378,13 @@ namespace XFLCSMS.Controllers
                 if (issue == null || !CanAccessIssue(issue))
                 {
                     return NotFound("Edit is not done");
+                }
+
+                // a closed ticket is the record the rating refers to; the client reopens it instead of editing it
+                if (issue.IStatus == "Close")
+                {
+                    TempData["ErrorMessage"] = ClosedTicketMessage;
+                    return RedirectToAction("TicketView", new { id = issue.IssueId });
                 }
 
                 Tickets.ApplyOwnerEdit(issue, makerView, editor);

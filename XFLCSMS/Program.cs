@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.DataProtection;
 using XFLCSMS.Infrastructure;
 using XFLCSMS.Services;
 using XFLCSMS.Services.Notifications;
+using System.Net;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,16 @@ var builder = WebApplication.CreateBuilder(args);
 // or in environment variables. Nothing secret belongs in appsettings.json: that file is in the repository.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
+
+// Logging: console plus daily log files (Serilog section of appsettings.json; path, retention and levels are settings).
+// On IIS the files are the first place to look when the site shows the error page or does not start.
+builder.Host.UseSerilog((context, services, logger) => logger
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
+
+// no "Server: Kestrel" header (IIS removes its own through web.config)
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
@@ -54,8 +66,23 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     // behind IIS / a reverse proxy / a tunnel that ends HTTPS, so Request.Scheme (links in e-mails) is right
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
+
+    // Only proxies on this machine (IIS ARR, a local tunnel) are trusted by default. Trusting every sender let any
+    // client fake its IP address (and so get round the sign-in lock-out) with an X-Forwarded-For header.
+    // A proxy on another machine: list it under ReverseProxy:KnownProxies (IPs) or ReverseProxy:KnownNetworks (CIDR).
+    foreach (var proxy in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
+    {
+        if (IPAddress.TryParse(proxy, out var address)) { options.KnownProxies.Add(address); }
+    }
+
+    foreach (var network in builder.Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? Array.Empty<string>())
+    {
+        var parts = network.Split('/');
+        if (parts.Length == 2 && IPAddress.TryParse(parts[0], out var prefix) && int.TryParse(parts[1], out var length))
+        {
+            options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(prefix, length));
+        }
+    }
 });
 
 builder.Services.AddScoped<IEmailServices, EmailService>();
@@ -75,7 +102,19 @@ builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 // Notifications (in-app toasts, e-mail, WhatsApp, SMS): see Services/Notifications and NOTIFICATIONS.md.
 // Every SaveChanges of a web request is watched by NotificationSaveInterceptor; NotificationWorker sends.
-builder.Services.AddDataProtection().SetApplicationName("XFLCSMS");
+// The data protection keys encrypt the session and anti-forgery cookies and the notification secrets stored in the
+// database. Outside Development they are kept in a folder (DataProtection:KeysPath), so an IIS app pool recycle or
+// a new version does not sign everybody out or make the stored secrets unreadable. Back this folder up.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("XFLCSMS");
+var keysPath = DataProtectionKeys.Folder(builder.Configuration, builder.Environment);
+if (keysPath != null)
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+    if (OperatingSystem.IsWindows())
+    {
+        dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
+    }
+}
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("notifications", c => c.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSignalR();
@@ -92,6 +131,10 @@ builder.Services.AddDbContext<DataContext>((services, options) =>
 
 var app = builder.Build();
 
+app.Logger.LogInformation("XFL CSMS {Version} starting in {Environment}. Data protection keys: {Keys}. Attachments: {Uploads}.",
+    typeof(Program).Assembly.GetName().Version, app.Environment.EnvironmentName, keysPath ?? "default location",
+    TicketService.ConfiguredUploadFolder(app.Configuration, app.Environment));
+
 // Apply migrations and, on an empty database, create the first administrator (see Data/DbInitializer.cs).
 DbInitializer.Initialize(app.Services, app.Configuration, app.Logger);
 
@@ -101,6 +144,15 @@ if (string.IsNullOrWhiteSpace(app.Configuration["EmailPassword"]))
 }
 
 app.UseForwardedHeaders();
+
+// one line per request (method, path, status, time) instead of the framework's several
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (context, _, exception) =>
+        exception != null || context.Response.StatusCode >= 500 ? Serilog.Events.LogEventLevel.Error
+        : context.Request.Path.StartsWithSegments("/healthz") || context.Request.Path.StartsWithSegments("/lib") ? Serilog.Events.LogEventLevel.Verbose
+        : Serilog.Events.LogEventLevel.Information;
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -156,16 +208,32 @@ app.UseAuthorization();
 
 app.MapHub<NotificationHub>(NotificationHub.Path);
 
-// Liveness for IIS / monitoring: 200 when the app runs and the database answers, 503 otherwise.
-app.MapGet("/healthz", async (DataContext db) =>
+// Readiness for IIS / monitoring: 200 when the app runs and the database answers, 503 otherwise.
+app.MapGet("/healthz", async (DataContext db, ILogger<Program> logger) =>
 {
     var ok = false;
-    try { ok = await db.Database.CanConnectAsync(); } catch { ok = false; }
+    try { ok = await db.Database.CanConnectAsync(); }
+    catch (Exception ex) { logger.LogWarning(ex, "Health check: database unreachable"); }
     return ok ? Results.Text("Healthy") : Results.Problem("Database unreachable", statusCode: StatusCodes.Status503ServiceUnavailable);
 });
+
+// Liveness: the process answers (no database call), for load balancers that should not drop the site during a database restart.
+app.MapGet("/healthz/live", () => Results.Text("Alive"));
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=RegisterLogin}/{action=Login}/{id?}");
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "XFL CSMS stopped unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

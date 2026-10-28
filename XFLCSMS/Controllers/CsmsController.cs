@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using XFLCSMS.Infrastructure;
 using XFLCSMS.Models.Admin;
@@ -51,8 +52,13 @@ namespace XFLCSMS.Controllers
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             var user = CurrentUser;
-            if (user == null)
+            if (user == null || !AccountStillAllowed(user))
             {
+                if (user != null)
+                {
+                    HttpContext.Session.Clear();
+                }
+
                 context.Result = SessionAuthorizeAttribute.Challenge(Request);
                 return;
             }
@@ -60,6 +66,28 @@ namespace XFLCSMS.Controllers
             // Every layout prints ViewBag.Profile.FullName, so it must be set for every view.
             ViewBag.Profile = user;
             base.OnActionExecuting(context);
+        }
+
+        /// <summary>
+        /// The session holds a copy of the user taken at sign-in. An administrator who disables an account or changes
+        /// its role must not have to wait for that session to expire: the account is re-read (cached for 30 seconds)
+        /// and a disabled, deleted or re-roled account is signed out.
+        /// </summary>
+        private bool AccountStillAllowed(User user)
+        {
+            var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+            var key = cache.GetOrCreate("account-check:" + user.Id, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+                var account = Db.Users.AsNoTracking().Where(u => u.Id == user.Id)
+                    .Select(u => new { u.UStatus, u.UCatagory, u.UType, u.Department })
+                    .FirstOrDefault();
+                return account == null || !account.UStatus
+                    ? string.Empty
+                    : SessionAuthorizeAttribute.KeyFor(account.UCatagory, account.UType, account.Department);
+            });
+
+            return key == SessionKey;
         }
 
         /// <summary>Tickets this role may open. Makers are limited to their own tickets.</summary>

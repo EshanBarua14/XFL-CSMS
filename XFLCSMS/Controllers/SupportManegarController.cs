@@ -262,6 +262,13 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
+                var invalid = TicketService.ValidateStaffEdit(issue, makerView);
+                if (invalid != null)
+                {
+                    TempData["ErrorMessage"] = invalid + " Nothing was saved.";
+                    return RedirectToAction("EditTicket", new { id = issue.IssueId });
+                }
+
                 // closing the ticket notifies the client (rating link) through the notification system
                 Tickets.ApplyStaffEdit(issue, makerView, editor, canApprove: editor.UType);
                 await _context.SaveChangesAsync();

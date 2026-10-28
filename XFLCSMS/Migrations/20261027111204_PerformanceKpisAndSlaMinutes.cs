@@ -148,7 +148,8 @@ namespace XFLCSMS.Migrations
                 nullable: true);
 
             // SLA targets: keep each priority's current target, converted from hours to minutes
-            migrationBuilder.Sql("UPDATE SlaTargets SET FirstResponseMinutes = CAST(ROUND(FirstResponseHours * 60, 0) AS int), ResolutionMinutes = CAST(ROUND(ResolutionHours * 60, 0) AS int)");
+            // EXEC: the idempotent deployment script compiles every batch, and these columns are gone once the migration has run
+            migrationBuilder.Sql("EXEC(N'UPDATE SlaTargets SET FirstResponseMinutes = CAST(ROUND(FirstResponseHours * 60, 0) AS int), ResolutionMinutes = CAST(ROUND(ResolutionHours * 60, 0) AS int)')");
 
             migrationBuilder.DropColumn(
                 name: "FirstResponseHours",
@@ -254,7 +255,7 @@ namespace XFLCSMS.Migrations
                 nullable: false,
                 defaultValue: 0.0);
 
-            migrationBuilder.Sql("UPDATE SlaTargets SET FirstResponseHours = FirstResponseMinutes / 60.0, ResolutionHours = ResolutionMinutes / 60.0");
+            migrationBuilder.Sql("EXEC(N'UPDATE SlaTargets SET FirstResponseHours = FirstResponseMinutes / 60.0, ResolutionHours = ResolutionMinutes / 60.0')");
 
             migrationBuilder.DropColumn(
                 name: "FirstResponseMinutes",

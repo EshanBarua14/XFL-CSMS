@@ -235,6 +235,17 @@
 @section Scripts{
 
     <script>
+        // a ticket is closed with its resolution: the client reads Comments with the rating request (also checked on the server)
+        document.getElementById("uploadForm").addEventListener("submit", function (e) {
+            var status = this.querySelector("select[name='IStatus']");
+            var comments = this.querySelector("textarea[name='Command']");
+            if (status && comments && status.value === "Close" && "@Model.IStatus" !== "Close" && !comments.value.trim()) {
+                e.preventDefault();
+                alert("Write the resolution in Comments before closing the ticket.");
+                comments.focus();
+            }
+        });
+
         function addFileInput() {
             var fileInputsContainer = document.getElementById("fileInputsContainer");
             var fileInputContainer = document.createElement("div");

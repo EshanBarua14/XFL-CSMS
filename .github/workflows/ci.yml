@@ -33,10 +33,17 @@ jobs:
       - name: Publish
         run: dotnet publish XFLCSMS/XFLCSMS.csproj -c Release --no-build -o publish
 
+      - name: Database migration script (idempotent)
+        run: |
+          dotnet tool restore
+          dotnet ef migrations script --idempotent --project XFLCSMS/XFLCSMS.csproj --configuration Release --no-build --output publish-sql/migrations.sql
+
       - uses: actions/upload-artifact@v4
         with:
           name: xflcsms-${{ github.sha }}
-          path: publish
+          path: |
+            publish
+            publish-sql
           retention-days: 30
 
   original:

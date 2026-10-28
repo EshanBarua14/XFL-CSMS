@@ -55,15 +55,36 @@ namespace XFLCSMS.Services
 
         private readonly DataContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly IConfiguration _configuration;
 
-        public TicketService(DataContext context, IWebHostEnvironment environment)
+        public TicketService(DataContext context, IWebHostEnvironment environment, IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
+            _configuration = configuration;
         }
 
-        public string UploadFolder =>
+        /// <summary>
+        /// Where new attachments are stored: "Storage:UploadPath" (absolute, or relative to the application folder).
+        /// In production it should be outside the application folder, so publishing a new version cannot delete the
+        /// files, and it should be backed up with the database. Without the setting: wwwroot/Uplods as before.
+        /// </summary>
+        public string UploadFolder => ConfiguredUploadFolder(_configuration, _environment);
+
+        /// <summary>The folder attachments were stored in before "Storage:UploadPath" existed.</summary>
+        public string LegacyUploadFolder =>
             Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), UploadFolderName);
+
+        public static string ConfiguredUploadFolder(IConfiguration configuration, IWebHostEnvironment environment)
+        {
+            var configured = configuration["Storage:UploadPath"];
+            if (string.IsNullOrWhiteSpace(configured))
+            {
+                return Path.Combine(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"), UploadFolderName);
+            }
+
+            return Path.GetFullPath(Path.IsPathRooted(configured) ? configured : Path.Combine(environment.ContentRootPath, configured));
+        }
 
         /// <summary>Next free ticket number for a brokerage house, e.g. ABC_0000042. Null when the house does not exist.</summary>
         public string? NextTicketNumber(int brokerageId)
@@ -268,10 +289,13 @@ namespace XFLCSMS.Services
                     continue;
                 }
 
-                var candidate = Path.Combine(UploadFolder, name);
-                if (File.Exists(candidate))
+                foreach (var folder in new[] { UploadFolder, LegacyUploadFolder })
                 {
-                    return candidate;
+                    var candidate = Path.Combine(folder, name);
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
                 }
             }
 
@@ -298,7 +322,9 @@ namespace XFLCSMS.Services
             }
 
             var stillUsed = _context.Attachments.Any(a => a.AttachmentLoc == location);
-            var insideUploadFolder = Path.GetFullPath(path).StartsWith(Path.GetFullPath(UploadFolder), StringComparison.OrdinalIgnoreCase);
+            var fullPath = Path.GetFullPath(path);
+            var insideUploadFolder = new[] { UploadFolder, LegacyUploadFolder }
+                .Any(folder => fullPath.StartsWith(Path.GetFullPath(folder) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
             if (!stillUsed && insideUploadFolder)
             {
                 try
@@ -346,6 +372,28 @@ namespace XFLCSMS.Services
         public void ApplyOwnerEdit(IssueTable issue, MakerView form, User editor)
         {
             ApplyCommonFields(issue, form, editor);
+        }
+
+        /// <summary>
+        /// Checks a staff edit before it is applied. Returns the message to show, or null when the edit may be saved:
+        /// the status must be one the application knows (or the ticket's current one), and a ticket can only be
+        /// closed with a resolution note in Comments, because the client reads it with the rating request.
+        /// </summary>
+        public static string? ValidateStaffEdit(IssueTable issue, MakerView form)
+        {
+            var newStatus = string.IsNullOrWhiteSpace(form.IStatus) ? issue.IStatus : form.IStatus.Trim();
+            var known = Statuses.Any(s => s.Value == newStatus) || string.Equals(newStatus, issue.IStatus, StringComparison.Ordinal);
+            if (!known)
+            {
+                return "Choose a status from the list (Open, In Queue, In Progress or Closed).";
+            }
+
+            if (newStatus == "Close" && issue.IStatus != "Close" && string.IsNullOrWhiteSpace(HtmlSanitizer.ToPlainText(form.Command)))
+            {
+                return "Write the resolution in Comments before closing the ticket: the client reads it with the rating request.";
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -411,7 +459,7 @@ namespace XFLCSMS.Services
             }
 
             // A missing status (field not posted) keeps the current one instead of blanking it.
-            var newStatus = string.IsNullOrWhiteSpace(form.IStatus) ? issue.IStatus : form.IStatus;
+            var newStatus = string.IsNullOrWhiteSpace(form.IStatus) ? issue.IStatus : form.IStatus.Trim();
             var wasClosed = issue.IStatus == "Close";
             issue.IStatus = newStatus;
 
@@ -421,6 +469,15 @@ namespace XFLCSMS.Services
                 {
                     issue.ClosedOn = now;
                     issue.ClosedBy = editor.FullName;
+                }
+
+                // A Support Engineer closing an unassigned ticket solved it: assign it to them so the rating,
+                // the scorecard and the "closed by me" lists count it for the right person.
+                if (issue.AssignedToUserId == null && string.IsNullOrWhiteSpace(issue.AssignBy) && editor.Department == "Support Engineer")
+                {
+                    issue.AssignBy = editor.FullName;
+                    issue.AssignOn ??= now;
+                    issue.AssignedToUserId = editor.Id;
                 }
             }
             else

@@ -19,6 +19,15 @@ namespace XFLCSMS.Infrastructure
 
         public static readonly string[] AllKeys = { Admin, SupportManager, SupportEngineer, Maker };
 
+        /// <summary>The session key (role) a user signs in with. Used by sign-in and by the per-request account check.</summary>
+        public static string KeyFor(bool isAdmin, bool isXflStaff, string? department)
+        {
+            if (isAdmin) { return Admin; }
+            if (isXflStaff && department == "Support Maneger") { return SupportManager; }
+            if (isXflStaff && department == "Support Engineer") { return SupportEngineer; }
+            return Maker;
+        }
+
         private readonly string[] _sessionKeys;
 
         /// <param name="sessionKeys">Accepted session keys; none means "any signed-in user".</param>

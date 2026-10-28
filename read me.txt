@@ -1,6 +1,8 @@
 ﻿XFL CSMS - how to run
 =====================
 
+Deploying to a server (IIS): see docs/DEPLOYMENT.md. Release build: ./scripts/publish.sh
+
 Requirements
 ------------
 - Visual Studio 2022 with the "ASP.NET and web development" workload and the .NET 6 SDK/runtime

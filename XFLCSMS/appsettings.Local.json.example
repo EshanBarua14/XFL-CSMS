@@ -1,0 +1,23 @@
+{
+  "//": "Copy to appsettings.Local.json next to XFLCSMS.dll (git ignores it) and fill in. Never commit the real file.",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=.;Database=CSMS_Old;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
+  },
+  "EmailPassword": "<new Gmail app password>",
+  "Storage": {
+    "UploadPath": "D:\\XFLCSMS-Data\\Uploads"
+  },
+  "DataProtection": {
+    "KeysPath": "D:\\XFLCSMS-Data\\Keys"
+  },
+  "Serilog": {
+    "WriteTo": {
+      "1": { "Name": "File", "Args": { "path": "D:\\XFLCSMS-Data\\Logs\\xflcsms-.log" } }
+    }
+  },
+  "SeedAdmin": {
+    "//": "Only for the very first start on an EMPTY database; remove after signing in and changing the password.",
+    "UserName": "",
+    "Password": ""
+  }
+}

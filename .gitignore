@@ -366,3 +366,8 @@ appsettings.Local.json
 
 # Frozen earlier versions exported by scripts/run-original.sh
 .original/
+
+# runtime folders (logs, data protection keys) created next to the app
+XFLCSMS/logs/
+XFLCSMS/App_Data/
+artifacts/

@@ -294,26 +294,15 @@ namespace XFLCSMS.Controllers
             signedIn.RelatedUserIds.Add(user.Id);
             HttpContext.RequestServices.GetRequiredService<NotificationQueue>().Publish(signedIn);
 
-            if (user.UCatagory)
+            var sessionKey = SessionAuthorizeAttribute.KeyFor(user.UCatagory, user.UType, user.Department);
+            HttpContext.Session.SetString(sessionKey, jsonString);
+            return sessionKey switch
             {
-                HttpContext.Session.SetString(SessionAuthorizeAttribute.Admin, jsonString);
-                return RedirectToAction("Dashbord", "Admin");
-            }
-
-            if (user.UType && user.Department == "Support Maneger")
-            {
-                HttpContext.Session.SetString(SessionAuthorizeAttribute.SupportManager, jsonString);
-                return RedirectToAction("Dashbord", "SupportManegar");
-            }
-
-            if (user.UType && user.Department == "Support Engineer")
-            {
-                HttpContext.Session.SetString(SessionAuthorizeAttribute.SupportEngineer, jsonString);
-                return RedirectToAction("Dashbord", "SupportEngineer");
-            }
-
-            HttpContext.Session.SetString(SessionAuthorizeAttribute.Maker, jsonString);
-            return RedirectToAction("Dashbord", "Maker");
+                SessionAuthorizeAttribute.Admin => RedirectToAction("Dashbord", "Admin"),
+                SessionAuthorizeAttribute.SupportManager => RedirectToAction("Dashbord", "SupportManegar"),
+                SessionAuthorizeAttribute.SupportEngineer => RedirectToAction("Dashbord", "SupportEngineer"),
+                _ => RedirectToAction("Dashbord", "Maker")
+            };
         }
 
         private IActionResult LoginFailed(UserLoginRequest request, string message)
