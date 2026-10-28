@@ -371,3 +371,7 @@ appsettings.Local.json
 XFLCSMS/logs/
 XFLCSMS/App_Data/
 artifacts/
+
+# attachments uploaded while running locally (the files already in the repository stay tracked)
+XFLCSMS/wwwroot/Uplods/*
+!XFLCSMS/wwwroot/Uplods/index.html

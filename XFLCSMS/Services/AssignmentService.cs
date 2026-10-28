@@ -633,6 +633,22 @@ namespace XFLCSMS.Services
 
             var oldName = string.IsNullOrWhiteSpace(issue.AssignBy) ? null : issue.AssignBy;
             var newName = string.IsNullOrWhiteSpace(form.AssgnBy) ? null : form.AssgnBy.Trim();
+
+            // without "assign others" an engineer changes only his own tickets, or open ones at his level or below:
+            // someone else's ticket moves by a transfer request, a ticket above his level by a support manager
+            if (!authority.CanAssignOthers)
+            {
+                var othersTicket = issue.AssignedToUserId != null ? issue.AssignedToUserId != user.Id : oldName != null && oldName != user.FullName;
+                if (othersTicket)
+                {
+                    return "This ticket is assigned to " + (oldName ?? "another engineer") + ". Request a transfer on the ticket page, or ask a support manager.";
+                }
+                var level = SupportLevel.Clamp(issue.SupportLevel);
+                if (level > authority.Level)
+                {
+                    return "This ticket is at " + SupportLevel.Code(level) + ", above your level (" + SupportLevel.Code(authority.Level) + "). Ask a support manager.";
+                }
+            }
             if (!string.Equals(oldName, newName, StringComparison.Ordinal) && !authority.CanAssignOthers)
             {
                 var mine = issue.AssignedToUserId == user.Id || (issue.AssignedToUserId == null && oldName == user.FullName);

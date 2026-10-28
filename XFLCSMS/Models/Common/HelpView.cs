@@ -7,7 +7,7 @@ namespace XFLCSMS.Models.Common
     {
         public string Layout { get; set; } = "_MakerLayout";
         public string Controller { get; set; } = "Maker";
-        /// <summary>Admin, SupportManager, SupportEngineer or Maker.</summary>
+        /// <summary>Admin, SupportManager, SupportEngineer, Maker or Viewer.</summary>
         public string Role { get; set; } = "Maker";
         public List<SupportLevel> Levels { get; set; } = new();
     }
