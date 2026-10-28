@@ -55,6 +55,8 @@ fi
 echo "Running $TAG on http://localhost:$PORT  (database $DB on $SERVER). Ctrl+C to stop."
 cd "$DEST/XFLCSMS"
 # The old appsettings.json holds a live Gmail password: point SMTP at nowhere so the old copy cannot send e-mail.
+# The old versions target .NET 6 without RollForward: run them on a newer installed runtime when .NET 6 is missing.
+DOTNET_ROLL_FORWARD="${DOTNET_ROLL_FORWARD:-Major}" \
 ASPNETCORE_ENVIRONMENT=Development \
 ASPNETCORE_URLS="http://localhost:$PORT" \
 ConnectionStrings__DefaultConnection="$CONN" \
