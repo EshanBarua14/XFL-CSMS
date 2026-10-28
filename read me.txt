@@ -160,6 +160,10 @@ CSMS_DB=..., CSMS_SERVER=..., CSMS_PORT=... change the database, SQL Server or p
   them is saved there. Accounts that have signed in to the current version use the newer password hashing
   and cannot sign in to the old versions.
 - The old versions cannot send e-mail when started by these scripts.
+- Demo data for v1-original (start it once first so the tables exist): scripts/seed-original.sh
+  (needs sqlcmd; or run scripts/seed-original.sql in SSMS). Adds admin2, manager, manager2, engineer1-5,
+  maker.alpha, maker.alpha2 (ASL), maker.beta, maker.beta2 (BCL), maker.inactive, all with password
+  Demo@12345, and 17 tickets in every status plus to-dos. Safe to run again. CSMS_DB=... for another database.
 
 10. CI
 ------
