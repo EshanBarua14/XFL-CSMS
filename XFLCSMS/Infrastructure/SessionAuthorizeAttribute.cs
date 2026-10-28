@@ -6,7 +6,7 @@ namespace XFLCSMS.Infrastructure
 {
     /// <summary>
     /// The application signs users in by storing their record in the session under a role specific key
-    /// (AdminData, SMData, SEData, MakerData). This filter refuses the request when none of the accepted
+    /// (AdminData, SMData, SEData, MakerData, ViewerData). This filter refuses the request when none of the accepted
     /// keys is present, so an action can no longer be reached just by typing its URL.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
@@ -16,8 +16,9 @@ namespace XFLCSMS.Infrastructure
         public const string SupportManager = "SMData";
         public const string SupportEngineer = "SEData";
         public const string Maker = "MakerData";
+        public const string Viewer = "ViewerData";
 
-        public static readonly string[] AllKeys = { Admin, SupportManager, SupportEngineer, Maker };
+        public static readonly string[] AllKeys = { Admin, SupportManager, SupportEngineer, Maker, Viewer };
 
         /// <summary>The session key (role) a user signs in with. Used by sign-in and by the per-request account check.</summary>
         public static string KeyFor(bool isAdmin, bool isXflStaff, string? department)
@@ -25,8 +26,12 @@ namespace XFLCSMS.Infrastructure
             if (isAdmin) { return Admin; }
             if (isXflStaff && department == "Support Maneger") { return SupportManager; }
             if (isXflStaff && department == "Support Engineer") { return SupportEngineer; }
+            if (department == ViewerDepartment) { return Viewer; }
             return Maker;
         }
+
+        /// <summary>Department of the read-only executive accounts (CEO / MD of a house, or the XFL MD).</summary>
+        public const string ViewerDepartment = "Viewer";
 
         private readonly string[] _sessionKeys;
 

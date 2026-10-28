@@ -29,12 +29,14 @@ namespace XFLCSMS.Services
 
         /// <summary>
         /// Which tickets a role may see at all. Makers: only the tickets they raised (same rule as their ticket pages).
-        /// XFL staff: every ticket.
+        /// Viewers: every ticket of their house (the XFL viewer, an XFL user, every ticket). XFL staff: every ticket.
         /// </summary>
         public IQueryable<IssueTable> Scope(User user, string role)
         {
             var issues = _context.Issues.AsNoTracking();
-            return role == "Maker" ? issues.Where(i => i.UserId == user.Id) : issues;
+            if (role == "Maker") { return issues.Where(i => i.UserId == user.Id); }
+            if (role == "Viewer" && !user.UType) { return issues.Where(i => i.BrokerageId == user.BrokerageHouseName); }
+            return issues;
         }
 
         /// <summary>Fixed filters of the menu lists (All / Unassigned / Closed / Assigned to me / Open).</summary>
@@ -475,9 +477,9 @@ namespace XFLCSMS.Services
                 RowLimit = RowLimit,
                 Rows = rows.Count > RowLimit ? rows.Take(RowLimit).ToList() : rows,
                 Summary = Summarize(rows, from, to),
-                ShowHouseFilter = role != "Maker",
+                ShowHouseFilter = role != "Maker" && !(role == "Viewer" && !user.UType),
                 ShowEngineerFilter = true,
-                CanEdit = true,
+                CanEdit = role != "Viewer",
                 CanDelete = role == "Admin"
             };
 
@@ -510,7 +512,7 @@ namespace XFLCSMS.Services
                 .Select(b => new Option(b.BrokerageId.ToString(), b.BrokerageHouseName + " (" + b.BrokerageHouseAcronym + ")")).ToListAsync();
 
             var branches = _context.Branchhs.AsNoTracking();
-            if (role == "Maker") { branches = branches.Where(b => b.BrokerageId == user.BrokerageHouseName); }
+            if (role == "Maker" || (role == "Viewer" && !user.UType)) { branches = branches.Where(b => b.BrokerageId == user.BrokerageHouseName); }
             view.Branches = await branches.OrderBy(b => b.Brokerage!.BrokerageHouseAcronym).ThenBy(b => b.BranchName)
                 .Select(b => new Option(b.BranchId.ToString(), (b.Brokerage != null ? b.Brokerage.BrokerageHouseAcronym + " / " : "") + b.BranchName)).ToListAsync();
 

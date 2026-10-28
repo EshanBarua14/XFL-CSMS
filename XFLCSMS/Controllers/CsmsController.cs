@@ -120,12 +120,13 @@ namespace XFLCSMS.Controllers
             return View("Error", new ErrorViewModel { RequestId = HttpContext.TraceIdentifier });
         }
 
-        /// <summary>Admin, SupportManager, SupportEngineer or Maker (from the session key of this controller).</summary>
+        /// <summary>Admin, SupportManager, SupportEngineer, Viewer or Maker (from the session key of this controller).</summary>
         protected string RoleName => SessionKey switch
         {
             SessionAuthorizeAttribute.Admin => "Admin",
             SessionAuthorizeAttribute.SupportManager => "SupportManager",
             SessionAuthorizeAttribute.SupportEngineer => "SupportEngineer",
+            SessionAuthorizeAttribute.Viewer => "Viewer",
             _ => "Maker"
         };
 

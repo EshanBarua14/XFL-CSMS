@@ -14,6 +14,7 @@ using XFLCSMS.Models.Issue;
 using XFLCSMS.Models.Register;
 using XFLCSMS.Models.Support;
 using XFLCSMS.Models.Todos;
+using XFLCSMS.Infrastructure;
 using XFLCSMS.Services;
 
 namespace XFLCSMS.Controllers
@@ -564,7 +565,8 @@ namespace XFLCSMS.Controllers
                     // Sign-in picks the role from UCatagory, UType and Department together. Keep UType in line with the
                     // chosen department (as Create User does): otherwise "Support Engineer" with "Outside User" signs in
                     // as a Maker but is still offered as an engineer to assign tickets to.
-                    user.UType = userView.UCatagory || IsStaffDepartment(userView.Department);
+                    user.UType = userView.UCatagory || IsStaffDepartment(userView.Department)
+                        || (userView.Department == SessionAuthorizeAttribute.ViewerDepartment && user.BrokerageHouseName == LogSesson.BrokerageHouseName);
                     _context.Update(user);
                     await _context.SaveChangesAsync();
                     ForgetAccountCheck(user.Id);
@@ -2425,7 +2427,7 @@ namespace XFLCSMS.Controllers
 
         // ---- The administrator creates users and raises tickets ------------------------------------------------
 
-        private static readonly string[] NewUserRoles = { "Admin", "Support Maneger", "Support Engineer", "Maker" };
+        private static readonly string[] NewUserRoles = { "Admin", "Support Maneger", "Support Engineer", "Maker", SessionAuthorizeAttribute.ViewerDepartment };
 
         private NewUserView FillNewUser(NewUserView form)
         {
@@ -2492,7 +2494,9 @@ namespace XFLCSMS.Controllers
                 PasswordHasher.Create(form.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
                 var isAdmin = form.Role == "Admin";
-                var isStaff = isAdmin || form.Role == "Support Maneger" || form.Role == "Support Engineer";
+                // a viewer of the administrator's own house (XFL) sees every house; any other viewer only their house
+                var isStaff = isAdmin || form.Role == "Support Maneger" || form.Role == "Support Engineer"
+                    || (form.Role == SessionAuthorizeAttribute.ViewerDepartment && branch.BrokerageId == CurrentUser!.BrokerageHouseName);
                 var user = new User
                 {
                     FullName = form.FullName.Trim(),

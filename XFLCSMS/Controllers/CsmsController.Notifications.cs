@@ -14,6 +14,7 @@ namespace XFLCSMS.Controllers
             SessionAuthorizeAttribute.Admin => "_Layout",
             SessionAuthorizeAttribute.SupportManager => "_SupportManegerLayout",
             SessionAuthorizeAttribute.SupportEngineer => "_SupportEngineerLayout",
+            SessionAuthorizeAttribute.Viewer => "_ViewerLayout",
             _ => "_MakerLayout"
         };
 

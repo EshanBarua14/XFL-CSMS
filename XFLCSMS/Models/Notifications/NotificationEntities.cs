@@ -40,6 +40,9 @@ namespace XFLCSMS.Models.Notifications
         public const string SupportEngineer = "SupportEngineer";
         public const string Maker = "Maker";
 
+        /// <summary>Read-only executive (house CEO / MD, XFL MD). Not in <see cref="All"/>: viewers get no notifications.</summary>
+        public const string Viewer = "Viewer";
+
         public static readonly string[] All = { Admin, SupportManager, SupportEngineer, Maker };
 
         public static string Label(string role) => role switch
@@ -48,6 +51,7 @@ namespace XFLCSMS.Models.Notifications
             SupportManager => "Support Manager",
             SupportEngineer => "Support Engineer",
             Maker => "Brokerage House User",
+            Viewer => "Viewer (read-only)",
             _ => role
         };
 
@@ -57,6 +61,7 @@ namespace XFLCSMS.Models.Notifications
             if (user.UCatagory) return Admin;
             if (user.UType && user.Department == "Support Maneger") return SupportManager;
             if (user.UType && user.Department == "Support Engineer") return SupportEngineer;
+            if (user.Department == XFLCSMS.Infrastructure.SessionAuthorizeAttribute.ViewerDepartment) return Viewer;
             return Maker;
         }
 
@@ -66,6 +71,7 @@ namespace XFLCSMS.Models.Notifications
             Admin => "Admin",
             SupportManager => "SupportManegar",
             SupportEngineer => "SupportEngineer",
+            Viewer => "Viewer",
             _ => "Maker"
         };
     }
