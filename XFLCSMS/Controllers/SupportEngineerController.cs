@@ -190,6 +190,8 @@ namespace XFLCSMS.Controllers
                     Attachments = issueWithAttachments.attachment,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
                     IssueTitle = issueWithAttachments.ITitle
 
 
@@ -245,6 +247,8 @@ namespace XFLCSMS.Controllers
                     SupportEngineers = SupportEng,
                     ApproveOn = issueWithAttachments.ApproveOn,
                     ApproveBy = issueWithAttachments.ApproveBy,
+                    CloseOn = issueWithAttachments.ClosedOn,
+                    ClosedbyName = issueWithAttachments.ClosedBy,
 
                 };
                 return View(EditView);
@@ -268,7 +272,7 @@ namespace XFLCSMS.Controllers
                     return NotFound("Edit is not done");
                 }
 
-                var invalid = TicketService.ValidateStaffEdit(issue, makerView);
+                var invalid = Tickets.ValidateStaffEdit(issue, makerView);
                 if (invalid != null)
                 {
                     TempData["ErrorMessage"] = invalid + " Nothing was saved.";

@@ -158,6 +158,26 @@ namespace XFLCSMS.Services
                 houseId = form.ForBrokerageId.Value;
             }
 
+            // Staff logging a ticket for a house user (phone, e-mail): that user becomes the owner, so the house sees,
+            // follows and rates it. The status history keeps who logged it. Only an active user of the ticket's house.
+            var ownerId = user.Id;
+            if ((user.UCatagory || user.UType) && form.OnBehalfOfUserId.HasValue)
+            {
+                var requester = _context.Users.AsNoTracking().FirstOrDefault(u => u.Id == form.OnBehalfOfUserId.Value);
+                if (requester == null || requester.UCatagory || requester.UType || !requester.UStatus || requester.VerifiedAt == null)
+                {
+                    return (null, "The selected requester is not an active brokerage house user.", rejected);
+                }
+
+                if (form.ForBrokerageId.HasValue && requester.BrokerageHouseName != houseId)
+                {
+                    return (null, "The selected requester does not belong to the chosen brokerage house.", rejected);
+                }
+
+                houseId = requester.BrokerageHouseName;
+                ownerId = requester.Id;
+            }
+
             await NumberLock.WaitAsync();
             IssueTable issue;
             try
@@ -177,7 +197,7 @@ namespace XFLCSMS.Services
                     ITitle = form.ITitle.Trim(),
                     Details = form.IssueDetails,
                     Comments = form.Commands,
-                    UserId = user.Id,
+                    UserId = ownerId,
                     BrokerageId = houseId,
                     SupportTypeId = Existing(form.SupportTypeId, id => _context.SupportTypes.Any(x => x.SupportTypeId == id)),
                     SupportCatagoryId = Existing(form.SupportCatagoryId, id => _context.SupportCatagories.Any(x => x.SupportCatagoryId == id)),
@@ -342,6 +362,16 @@ namespace XFLCSMS.Services
         }
 
         /// <summary>Products offered on the Create Ticket form: the active ones, in the admin's order.</summary>
+        /// <summary>Active, verified brokerage house users (for "Requested by" when staff log a ticket for a house).</summary>
+        public List<User> HouseUsers()
+        {
+            return _context.Users.AsNoTracking()
+                .Where(u => !u.UCatagory && !u.UType && u.UStatus && u.VerifiedAt != null)
+                .OrderBy(u => u.FullName)
+                .Select(u => new User { Id = u.Id, FullName = u.FullName, UserName = u.UserName, BrokerageHouseName = u.BrokerageHouseName })
+                .ToList();
+        }
+
         public List<XFLCSMS.Models.Product.Product> ActiveProducts()
         {
             return _context.Products.AsNoTracking().Where(p => p.IsActive).OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToList();
@@ -379,7 +409,7 @@ namespace XFLCSMS.Services
         /// the status must be one the application knows (or the ticket's current one), and a ticket can only be
         /// closed with a resolution note in Comments, because the client reads it with the rating request.
         /// </summary>
-        public static string? ValidateStaffEdit(IssueTable issue, MakerView form)
+        public string? ValidateStaffEdit(IssueTable issue, MakerView form)
         {
             var newStatus = string.IsNullOrWhiteSpace(form.IStatus) ? issue.IStatus : form.IStatus.Trim();
             var known = Statuses.Any(s => s.Value == newStatus) || string.Equals(newStatus, issue.IStatus, StringComparison.Ordinal);
@@ -391,6 +421,19 @@ namespace XFLCSMS.Services
             if (newStatus == "Close" && issue.IStatus != "Close" && string.IsNullOrWhiteSpace(HtmlSanitizer.ToPlainText(form.Command)))
             {
                 return "Write the resolution in Comments before closing the ticket: the client reads it with the rating request.";
+            }
+
+            // An engineer below the ticket's support level cannot take it: say so instead of quietly keeping the old assignee.
+            var newAssignee = string.IsNullOrWhiteSpace(form.AssgnBy) ? null : form.AssgnBy.Trim();
+            if (newAssignee != null && !string.Equals(newAssignee, issue.AssignBy, StringComparison.Ordinal))
+            {
+                var id = FindStaffId(newAssignee);
+                var engineerLevel = _context.Users.Where(u => u.Id == id && u.Department == "Support Engineer").Select(u => (int?)(u.SupportLevel ?? 1)).FirstOrDefault();
+                if (engineerLevel != null && engineerLevel < issue.SupportLevel)
+                {
+                    return newAssignee + " works at L" + engineerLevel + " and this ticket is at L" + issue.SupportLevel
+                        + ". Choose an engineer at that level or higher, or hand the ticket back first (Support level panel on the ticket).";
+                }
             }
 
             return null;

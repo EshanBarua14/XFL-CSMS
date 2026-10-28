@@ -90,6 +90,12 @@ namespace XFLCSMS.Controllers
             return key == SessionKey;
         }
 
+        /// <summary>After an administrator changes or deletes an account: check it again on its next request, not up to 30 s later.</summary>
+        protected void ForgetAccountCheck(int userId)
+        {
+            HttpContext.RequestServices.GetRequiredService<IMemoryCache>().Remove("account-check:" + userId);
+        }
+
         /// <summary>Tickets this role may open. Makers are limited to their own tickets.</summary>
         protected virtual bool CanAccessIssue(IssueTable issue)
         {

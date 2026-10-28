@@ -1,0 +1,103 @@
+/* XFL CSMS - interaction polish on top of the glass design (loaded last by Views/Shared/_XflHead.cshtml):
+   keyboard focus, read-only fields, busy buttons, the unsent-draft bar, one pager style, and the "How CSMS works" page.
+   Colours come from the xfl-polish / xfl-glass variables, so light and dark follow the theme. */
+
+/* ---- keyboard users: a visible ring on whatever has focus, and a skip link to the page ---- */
+.xfl-skip { position: fixed; top: 8px; left: 8px; z-index: 2000; padding: 8px 14px; border-radius: 10px;
+    background: var(--xfl-blue); color: #fff; font-weight: 600; transform: translateY(-160%); transition: transform .2s var(--xfl-ease, ease); }
+.xfl-skip:focus { transform: none; color: #fff; outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .8), 0 0 0 6px var(--xfl-blue); }
+#main:focus { outline: none; }
+a:focus-visible, button:focus-visible, .btn:focus-visible, .nav-link:focus-visible, [tabindex]:focus-visible,
+.custom-control-input:focus-visible ~ .custom-control-label::before {
+    outline: 2px solid var(--xfl-blue); outline-offset: 2px; box-shadow: none; }
+.form-control:focus, .custom-select:focus { border-color: var(--xfl-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--xfl-blue) 22%, transparent); }
+
+::selection { background: color-mix(in srgb, var(--xfl-blue) 28%, transparent); }
+
+/* ---- read-only fields look read-only (they used to look like inputs waiting to be filled) ---- */
+.form-control[readonly]:not(.flatpickr-input):not([type="date"]):not(.xfl-editable) {
+    background-color: var(--xfl-surface-2); border-style: dashed; color: var(--xfl-muted); cursor: default; box-shadow: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512' fill='%238896a6'%3E%3Cpath d='M144 144v48h160v-48a80 80 0 0 0-160 0zm-48 48v-48a128 128 0 0 1 256 0v48h16a64 64 0 0 1 64 64v192a64 64 0 0 1-64 64H80a64 64 0 0 1-64-64V256a64 64 0 0 1 64-64z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 11px; padding-right: 32px; }
+.form-control[readonly]:focus { border-color: var(--xfl-field-line); box-shadow: none; }
+
+/* ---- a button that is sending its form ---- */
+.btn.is-busy { position: relative; pointer-events: none; opacity: .85; }
+.btn.is-busy > * { visibility: hidden; }
+.btn.is-busy { color: transparent !important; }
+.btn.is-busy::after { content: ""; position: absolute; inset: 0; margin: auto; width: 1.1em; height: 1.1em; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .55); border-top-color: #fff; animation: xfl-spin .7s linear infinite; }
+.btn-outline-secondary.is-busy::after, .btn-light.is-busy::after, .btn-default.is-busy::after { border-color: rgba(0, 0, 0, .2); border-top-color: var(--xfl-blue); }
+@keyframes xfl-spin { to { transform: rotate(360deg); } }
+
+/* ---- unsent draft of a form, kept in this browser ---- */
+.xfl-draft-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px;
+    background: var(--glass-bg-strong, var(--xfl-surface)); border: 1px solid var(--xfl-line); border-left: 4px solid var(--xfl-blue);
+    box-shadow: var(--glass-shadow, 0 2px 10px var(--xfl-shadow)); color: var(--xfl-ink); }
+.xfl-draft-bar .btn { padding: 2px 10px; font-size: .85rem; }
+.xfl-draft-saved { font-size: .78rem; color: var(--xfl-muted); margin-left: 8px; }
+
+/* ---- one pager style: the to-do pages marked the current page with a yellow button ---- */
+.pagination .page-item > .btn-warning, .pagination .page-item > .btn-warning:hover {
+    background: var(--xfl-blue); border-color: var(--xfl-blue); color: #fff; border-radius: 0; font-weight: 600; box-shadow: none; }
+.pagination .page-item:first-child > .btn, .pagination .page-item:first-child > .page-link { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+.pagination .page-item:last-child > .btn, .pagination .page-item:last-child > .page-link { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
+/* ---- tables: the row under the pointer, and numbers that line up ---- */
+.table td, .table th { font-variant-numeric: tabular-nums; }
+.table-hover tbody tr, .dataTable tbody tr { transition: background-color .15s ease; }
+
+/* ---- keyboard hint ---- */
+kbd { padding: 1px 6px; border-radius: 6px; font-size: .78em; background: var(--xfl-surface-2); color: var(--xfl-ink);
+    border: 1px solid var(--xfl-line); box-shadow: inset 0 -1px 0 var(--xfl-line); }
+
+/* ---- thin scrollbars inside cards and the side menu ---- */
+.sidebar, .card-body, .table-responsive, .dataTables_wrapper { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--xfl-muted) 45%, transparent) transparent; }
+
+/* ---- "How CSMS works" (Views/Shared/Help.cshtml) ---- */
+.xfl-help-hero .card-body { padding: 24px 26px; background: var(--glass-shine, none); }
+.xfl-help-chip { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: .82rem;
+    background: color-mix(in srgb, var(--xfl-blue) 12%, transparent); color: var(--xfl-blue); }
+html[data-theme="dark"] .xfl-help-chip { color: #9cc4ff; }
+.xfl-help-lead { font-size: 1.35rem; font-weight: 700; margin: 12px 0 6px; line-height: 1.35; color: var(--xfl-ink); max-width: 60ch; }
+.xfl-help-h { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--xfl-muted); margin: 26px 0 12px; }
+.xfl-help-icon { display: inline-grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px; color: #fff;
+    background: linear-gradient(135deg, var(--xfl-blue), #7a5af5); box-shadow: 0 6px 16px color-mix(in srgb, var(--xfl-blue) 35%, transparent); }
+
+.xfl-help-flow { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); counter-reset: step; }
+.xfl-help-flow li { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 14px 14px; border-radius: 14px;
+    background: var(--glass-bg, var(--xfl-surface)); border: 1px solid var(--xfl-line); box-shadow: var(--glass-shadow, none); }
+.xfl-help-flow li > span:not(.xfl-help-icon):not(.xfl-help-num) { font-size: .86rem; color: var(--xfl-muted); line-height: 1.4; }
+.xfl-help-flow li > b { font-size: 1rem; color: var(--xfl-ink); }
+.xfl-help-flow li > em { margin-top: auto; font-style: normal; font-size: .74rem; font-weight: 600; color: var(--xfl-muted); }
+.xfl-help-num { position: absolute; top: 12px; right: 14px; font-size: .72rem; font-weight: 700; color: var(--xfl-muted); }
+.xfl-help-flow li:not(:last-child)::after { content: ""; position: absolute; top: 34px; right: -12px; width: 12px; height: 2px;
+    background: linear-gradient(90deg, var(--xfl-line), var(--xfl-blue)); }
+.xfl-help-flow li.is-me { border-color: color-mix(in srgb, var(--xfl-blue) 55%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--xfl-blue) 14%, transparent), var(--glass-shadow, none); }
+.xfl-help-flow li.is-me > em { color: var(--xfl-blue); }
+@media (max-width: 1199.98px) { .xfl-help-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } .xfl-help-flow li:nth-child(3n)::after { display: none; } }
+@media (max-width: 767.98px) { .xfl-help-flow { grid-template-columns: 1fr; } .xfl-help-flow li::after { display: none; } }
+
+.xfl-help-task { display: flex; align-items: center; gap: 14px; height: 100%; padding: 14px 16px; border-radius: 14px; color: var(--xfl-ink);
+    background: var(--glass-bg, var(--xfl-surface)); border: 1px solid var(--xfl-line); box-shadow: var(--glass-shadow, none);
+    transition: transform .2s var(--xfl-ease, ease), box-shadow .2s var(--xfl-ease, ease); }
+.xfl-help-task:hover { color: var(--xfl-ink); text-decoration: none; transform: translateY(-2px); box-shadow: var(--glass-shadow-lift, none); }
+.xfl-help-task > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.xfl-help-task > span:nth-child(2) > span { font-size: .85rem; color: var(--xfl-muted); }
+.xfl-help-go { color: var(--xfl-muted); transition: transform .2s ease; }
+.xfl-help-task:hover .xfl-help-go { transform: translateX(3px); color: var(--xfl-blue); }
+
+.xfl-help-role h4 { font-size: 1.05rem; font-weight: 700; margin: 12px 0 4px; }
+.xfl-help-role.is-me { border-color: color-mix(in srgb, var(--xfl-blue) 55%, transparent); }
+.xfl-help-list { padding-left: 18px; margin: 0; } .xfl-help-list li { margin-bottom: 8px; } .xfl-help-list li:last-child { margin-bottom: 0; }
+.xfl-help-stages { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 6px; counter-reset: st; }
+.xfl-help-stages li { counter-increment: st; padding: 4px 12px 4px 8px; border-radius: 999px; font-size: .85rem; font-weight: 600;
+    background: var(--xfl-surface-2); border: 1px solid var(--xfl-line); }
+.xfl-help-stages li::before { content: counter(st); display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px;
+    border-radius: 50%; font-size: .7rem; color: #fff; background: var(--xfl-blue); }
+
+@media (prefers-reduced-motion: reduce) {
+    .xfl-skip, .xfl-help-task, .xfl-help-go { transition: none; }
+    .btn.is-busy::after { animation-duration: 2s; }
+}

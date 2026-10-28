@@ -1,0 +1,47 @@
+@model XFLCSMS.Models.Issue.IssueViewModel
+@inject XFLCSMS.Services.TicketService Tickets
+@{
+    // Staff Raise Ticket: the house a phoned / e-mailed ticket is for, and the house user who asked for it.
+    var houseUsers = Tickets.HouseUsers();
+}
+<div class="form-group">
+    <label for="forBrokerageId">Raise For (Brokerage House)</label>
+    <select name="issueFrom.ForBrokerageId" id="forBrokerageId" class="form-control">
+        <option value="">Own house (@Model.LoginInfo?.BrocarageHouseName)</option>
+        @foreach (var house in Model.Brokerages)
+        {
+            <option value="@house.BrokerageId">@house.BrokerageHouseName (@house.BrokerageHouseAcronym)</option>
+        }
+    </select>
+    <small class="form-text text-muted">For a ticket taken by phone or e-mail: it gets that house's number and is counted for that house.</small>
+</div>
+<div class="form-group" id="onBehalfGroup" hidden>
+    <label for="onBehalfOfUserId">Requested by (house user)</label>
+    <select name="issueFrom.OnBehalfOfUserId" id="onBehalfOfUserId" class="form-control">
+        <option value="">Nobody: XFL follows it</option>
+        @foreach (var u in houseUsers)
+        {
+            <option value="@u.Id" data-house="@u.BrokerageHouseName">@u.FullName (@u.UserName)</option>
+        }
+    </select>
+    <small class="form-text text-muted">That user owns the ticket: sees it in their list, gets the updates and rates it when it is closed.</small>
+</div>
+<script>
+    (function () {
+        var house = document.getElementById('forBrokerageId');
+        var group = document.getElementById('onBehalfGroup');
+        var who = document.getElementById('onBehalfOfUserId');
+        function sync() {
+            var id = house.value, any = false;
+            Array.prototype.forEach.call(who.options, function (o) {
+                if (!o.value) { return; }
+                var show = id !== '' && o.getAttribute('data-house') === id;
+                o.hidden = !show; o.disabled = !show; any = any || show;
+                if (!show && o.selected) { who.value = ''; }
+            });
+            group.hidden = !any;
+        }
+        house.addEventListener('change', sync);
+        sync();
+    })();
+</script>
