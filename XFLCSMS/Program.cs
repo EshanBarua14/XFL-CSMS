@@ -129,6 +129,10 @@ builder.Services.AddScoped<NotificationSender>();
 builder.Services.AddScoped<SlaMonitor>();
 builder.Services.AddHostedService<NotificationWorker>();
 
+// Messages (one-to-one and group chats with files): see Services/Chat and CHAT.md. Pushed over the same hub.
+builder.Services.AddSingleton<XFLCSMS.Services.Chat.ChatSettingsStore>();
+builder.Services.AddScoped<XFLCSMS.Services.Chat.ChatService>();
+
 builder.Services.AddDbContext<DataContext>((services, options) =>
     options.UseSqlServer(connectionString).AddInterceptors(services.GetRequiredService<NotificationSaveInterceptor>()));
 

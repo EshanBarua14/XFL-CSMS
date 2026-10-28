@@ -12,6 +12,7 @@ using XFLCSMS.Models.Todos;
 using XFLCSMS.Models.Feedback;
 using XFLCSMS.Models.Notifications;
 using XFLCSMS.Models.Tiers;
+using XFLCSMS.Models.Chat;
 
 namespace XFLCSMS.Data
 {
@@ -54,6 +55,12 @@ namespace XFLCSMS.Data
         public DbSet<TicketDevUpdate> TicketDevUpdates => Set<TicketDevUpdate>();
         public DbSet<AssignmentSettings> AssignmentSettings => Set<AssignmentSettings>();
         public DbSet<TicketTransferRequest> TicketTransferRequests => Set<TicketTransferRequest>();
+
+        public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+        public DbSet<ChatParticipant> ChatParticipants => Set<ChatParticipant>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<ChatAttachment> ChatAttachments => Set<ChatAttachment>();
+        public DbSet<ChatSetting> ChatSettings => Set<ChatSetting>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -137,6 +144,28 @@ namespace XFLCSMS.Data
                 e.HasIndex(x => new { x.ToUserId, x.Status });
                 e.HasIndex(x => new { x.FromUserId, x.Status });
             });
+
+            // chat: a deleted user leaves their chats; their messages stay without a sender
+            modelBuilder.Entity<ChatConversation>(e =>
+            {
+                e.HasIndex(c => c.DirectKey).IsUnique().HasFilter("[DirectKey] IS NOT NULL");
+                e.HasIndex(c => c.LastMessageOn);
+            });
+            modelBuilder.Entity<ChatParticipant>(e =>
+            {
+                e.HasOne(p => p.Conversation).WithMany(c => c.Participants).HasForeignKey(p => p.ConversationId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne<User>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(p => new { p.ConversationId, p.UserId }).IsUnique();
+                e.HasIndex(p => new { p.UserId, p.LeftOn });
+            });
+            modelBuilder.Entity<ChatMessage>(e =>
+            {
+                e.HasOne(m => m.Conversation).WithMany().HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne<User>().WithMany().HasForeignKey(m => m.SenderUserId).OnDelete(DeleteBehavior.SetNull);
+                e.HasIndex(m => new { m.ConversationId, m.Id });
+            });
+            modelBuilder.Entity<ChatAttachment>()
+                .HasOne(a => a.Message).WithMany(m => m.Attachments).HasForeignKey(a => a.MessageId).OnDelete(DeleteBehavior.Cascade);
         }
 
 
