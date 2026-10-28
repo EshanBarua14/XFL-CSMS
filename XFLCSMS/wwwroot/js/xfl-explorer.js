@@ -14,6 +14,7 @@
     var ctl = root.getAttribute('data-controller');
     var role = root.getAttribute('data-role');
     var canDelete = root.getAttribute('data-can-delete') === '1';
+    var canEdit = root.getAttribute('data-can-edit') !== '0';
     var pageTitle = root.getAttribute('data-title') || 'Tickets';
     var generated = root.getAttribute('data-generated') || '';
 
@@ -153,7 +154,7 @@
             render: function (v, type, r) {
                 if (type !== 'display') { return ''; }
                 var h = '<a class="btn btn-xs btn-outline-primary mr-1" href="' + link('TicketView', r.id) + '" title="View"><i class="fas fa-eye"></i></a>';
-                h += '<a class="btn btn-xs btn-outline-info mr-1" href="' + link('EditTicket', r.id) + '" title="Edit"><i class="fas fa-pencil-alt"></i></a>';
+                if (canEdit) { h += '<a class="btn btn-xs btn-outline-info mr-1" href="' + link('EditTicket', r.id) + '" title="Edit"><i class="fas fa-pencil-alt"></i></a>'; }
                 if (maker && r.isClosed && !r.rating) { h += '<a class="btn btn-xs btn-outline-warning mr-1" href="/Maker/RateTicket/' + r.id + '" title="Rate the support"><i class="fas fa-star"></i></a>'; }
                 if (canDelete) { h += '<button type="button" class="btn btn-xs btn-outline-danger" data-delete-url="/Admin/DeleteTicket/' + r.id + '" data-delete-name="' + esc(r.number) + '" title="Delete"><i class="fas fa-trash"></i></button>'; }
                 return h;

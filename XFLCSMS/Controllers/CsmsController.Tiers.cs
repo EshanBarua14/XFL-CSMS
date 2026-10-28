@@ -11,7 +11,7 @@ namespace XFLCSMS.Controllers
     /// </summary>
     public abstract partial class CsmsController
     {
-        private bool IsStaffRole => RoleName != "Maker";
+        private bool IsStaffRole => RoleName is "Admin" or "SupportManager" or "SupportEngineer";
 
         private TierService Tiers => HttpContext.RequestServices.GetRequiredService<TierService>();
 

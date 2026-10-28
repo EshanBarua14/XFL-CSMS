@@ -1,4 +1,4 @@
-﻿XFL CSMS - how to run
+XFL CSMS - how to run
 =====================
 
 Deploying to a server (IIS): see docs/DEPLOYMENT.md. Release build: ./scripts/publish.sh
@@ -23,16 +23,22 @@ Option B - start with an empty database (also the way to go on SQL Server 2019)
    (values come from "SeedAdmin" in appsettings.Development.json; change the password after signing in).
    That administrator can then create brokerage houses and branches, which registration needs.
 
-   Sample data (Development only): with "SeedDemoData": true in appsettings.Development.json, a database
-   that has no tickets yet also gets 3 brokerage houses with branches, support types/categories/
-   sub-categories/affected sections, 10 tickets in every status, to-dos and one account per role
-   (password Demo@12345, from "SeedDemoPassword"):
-        manager                         Support Manager
-        engineer1, engineer2            Support Engineer
-        maker.alpha, maker.alpha2       Maker, Alpha Securities Limited
-        maker.beta                      Maker, Beta Capital Limited
+   Sample data (Development only): with "SeedDemoData": true in appsettings.Development.json the
+   start-up adds demo accounts (password Demo@12345, from "SeedDemoPassword"). Missing accounts are
+   added on every start, also to an existing database; existing accounts are left as they are.
+        admin, admin2                   Administrator (admin uses the SeedAdmin password Admin@12345)
+        manager, manager2               Support Manager
+        engineer1 ... engineer5         Support Engineer, one per level L1 ... L5
+        md.xfl                          Viewer (read-only), XFL MD: every house
+        maker.alpha, maker.alpha2       Maker, Alpha Securities Limited (ASL)
+        md.alpha                        Viewer (read-only), CEO of ASL
+        maker.beta, maker.beta2         Maker, Beta Capital Limited (BCL)
+        md.beta                         Viewer (read-only), MD of BCL
+        maker.<acr>, maker.<acr>2, md.<acr>   the same for every other house (<acr> = acronym, lower case)
         maker.inactive                  disabled account (sign-in is refused)
-   A database that already has tickets (e.g. the restored CSMS.bak) is never touched.
+   Once per database it also adds a demo ticket flow next to any real tickets: every status and level,
+   escalations, hand-backs, transfers, every development stage, ratings (1-5 stars, reviewed, excluded),
+   a reopened ticket, in-app notifications and an e-mail delivery log (marker setting DemoData:FlowSeeded).
    Set "SeedDemoData": false to switch it off.
 
 2. Connection string

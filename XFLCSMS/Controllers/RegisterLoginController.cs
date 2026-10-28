@@ -301,6 +301,7 @@ namespace XFLCSMS.Controllers
                 SessionAuthorizeAttribute.Admin => RedirectToAction("Dashbord", "Admin"),
                 SessionAuthorizeAttribute.SupportManager => RedirectToAction("Dashbord", "SupportManegar"),
                 SessionAuthorizeAttribute.SupportEngineer => RedirectToAction("Dashbord", "SupportEngineer"),
+                SessionAuthorizeAttribute.Viewer => RedirectToAction("Dashbord", "Viewer"),
                 _ => RedirectToAction("Dashbord", "Maker")
             };
         }

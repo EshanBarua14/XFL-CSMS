@@ -98,6 +98,16 @@
                 ("Development Tracker", "fas fa-code-branch", "DevTracker") }));
             menu.Add(todo);
             break;
+        case "Viewer":
+            roleName = profile?.UType == true ? "XFL Viewer (read-only)" : "House Viewer (read-only)";
+            allTickets = "AllTicketList";
+            menu.Add(("Dashboard", "fas fa-tachometer-alt", "Dashbord", null));
+            menu.Add(("Tickets", "fas fa-ticket-alt", null, new[] {
+                ("All Tickets", "fas fa-list", "AllTicketList"),
+                ("Open", "fas fa-folder-open", "OpenTicketList"),
+                ("Closed", "fas fa-check-circle", "ClosedTicketList") }));
+            menu.Add(("Reports", "fas fa-file-alt", "Reports", null));
+            break;
         default:
             roleName = "Brokerage House User";
             allTickets = "MackerTicketList";

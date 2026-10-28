@@ -74,7 +74,7 @@
 }
 
 <div class="xfl-explorer" data-mode="@Model.Mode" data-role="@Model.Role" data-controller="@ctl" data-action="@Model.Action" data-preset="@(Model.Preset ?? "")"
-     data-can-delete="@(Model.CanDelete ? "1" : "0")" data-title="@Model.Title" data-generated="@Model.GeneratedOn.ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture)">
+     data-can-delete="@(Model.CanDelete ? "1" : "0")" data-can-edit="@(Model.CanEdit ? "1" : "0")" data-title="@Model.Title" data-generated="@Model.GeneratedOn.ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture)">
 
     @* ---------- Filters ---------- *@
     <div class="card xfl-filter-card">

@@ -1,0 +1,8 @@
+@* Role layout: everything is in _AppLayout (top bar, menu for this role, page header, footer). *@
+@{
+    Layout = "_AppLayout";
+}
+@RenderBody()
+@section Head { @await RenderSectionAsync("Head", required: false) }
+@section PageActions { @await RenderSectionAsync("PageActions", required: false) }
+@section Scripts { @await RenderSectionAsync("Scripts", required: false) }
