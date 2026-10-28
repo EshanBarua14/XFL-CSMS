@@ -1,4 +1,4 @@
-/* XFL CSMS - interaction helpers for every page (styles in css/xfl-ux.css):
+/* Xpert CSMS - interaction helpers for every page (styles in css/xfl-ux.css):
    - a POST form shows a spinner on its button while it is sent, and cannot be sent twice by a double click
    - <form data-xfl-draft> keeps what was typed in this browser until it is sent (ticket forms): closing the tab,
      a lost connection or an expired session no longer loses a long description; a form the server sent back with an

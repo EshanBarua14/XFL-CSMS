@@ -1,4 +1,4 @@
-/* XFL CSMS - chart helpers (Chart.js 4, wwwroot/lib/chart.js) shared by the reports and the dashboards.
+/* Xpert CSMS - chart helpers (Chart.js 4, wwwroot/lib/chart.js) shared by the reports and the dashboards.
    One palette that reads on light and dark backgrounds; status and priority always use the same colours.
    Text and grid colours follow the light / dark switch (xfl-ui.js recolours charts when it changes). */
 (function () {

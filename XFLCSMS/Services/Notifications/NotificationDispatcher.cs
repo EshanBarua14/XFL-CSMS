@@ -121,7 +121,7 @@ namespace XFLCSMS.Services.Notifications
                     ["RecipientName"] = user.FullName,
                     ["Link"] = path == null ? baseUrl : baseUrl + path,
                     ["EventName"] = definition.Name,
-                    ["AppName"] = _settings.Get(SettingKeys.AppName) ?? "XFL CSMS",
+                    ["AppName"] = _settings.Get(SettingKeys.AppName) ?? "Xpert CSMS",
                     ["Time"] = data.OccurredOn.ToString("dd MMM yyyy HH:mm")
                 };
 

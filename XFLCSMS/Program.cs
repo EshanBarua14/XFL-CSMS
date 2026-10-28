@@ -131,7 +131,7 @@ builder.Services.AddDbContext<DataContext>((services, options) =>
 
 var app = builder.Build();
 
-app.Logger.LogInformation("XFL CSMS {Version} starting in {Environment}. Data protection keys: {Keys}. Attachments: {Uploads}.",
+app.Logger.LogInformation("Xpert CSMS {Version} starting in {Environment}. Data protection keys: {Keys}. Attachments: {Uploads}.",
     typeof(Program).Assembly.GetName().Version, app.Environment.EnvironmentName, keysPath ?? "default location",
     TicketService.ConfiguredUploadFolder(app.Configuration, app.Environment));
 
@@ -230,7 +230,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "XFL CSMS stopped unexpectedly");
+    Log.Fatal(ex, "Xpert CSMS stopped unexpectedly");
     throw;
 }
 finally

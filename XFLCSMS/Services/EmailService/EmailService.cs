@@ -33,7 +33,7 @@ namespace XFLCSMS.EmailService
             var from = _settings.Get(SettingKeys.SmtpFrom) is { Length: > 0 } f ? f : user;
 
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_settings.Get(SettingKeys.SmtpFromName) ?? "XFL CSMS", from));
+            email.From.Add(new MailboxAddress(_settings.Get(SettingKeys.SmtpFromName) ?? "Xpert CSMS", from));
             email.To.Add(MailboxAddress.Parse(request.To));
             email.Subject = request.Subject;
             email.Body = new TextPart(TextFormat.Html) { Text = request.Body };

@@ -192,7 +192,7 @@ namespace XFLCSMS.Services
             var text = new StringBuilder();
             void Line(params object?[] cells) => text.AppendLine(string.Join(",", cells.Select(Cell)));
 
-            Line("XFL CSMS - Ticket counts");
+            Line("Xpert CSMS - Ticket counts");
             Line("Period", view.PeriodText);
             Line("Made on", DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
             Line();

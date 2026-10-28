@@ -1,4 +1,4 @@
-/* XFL CSMS - the ticket lists and the ticket report (Views/Shared/TicketExplorer.cshtml).
+/* Xpert CSMS - the ticket lists and the ticket report (Views/Shared/TicketExplorer.cshtml).
    - detailed table from the JSON the server wrote into the page (DataTables, deferred rendering)
    - "Columns" button to show / hide fields (remembered per page in this browser), per-column search row,
      click a row's + for every field of the ticket
@@ -90,7 +90,7 @@
                 customize: function (doc) {
                     doc.defaultStyle.fontSize = 7; doc.styles.tableHeader.fontSize = 7.5; doc.styles.tableHeader.fillColor = '#1f3b73';
                     doc.pageMargins = [20, 30, 20, 30];
-                    doc.footer = function (page, pages) { return { text: 'XFL CSMS · ' + title + ' · page ' + page + ' of ' + pages, alignment: 'center', fontSize: 7, margin: [0, 10, 0, 0] }; };
+                    doc.footer = function (page, pages) { return { text: 'Xpert CSMS · ' + title + ' · page ' + page + ' of ' + pages, alignment: 'center', fontSize: 7, margin: [0, 10, 0, 0] }; };
                 }
             },
             { extend: 'print', text: '<i class="fas fa-print mr-1"></i>Print', exportOptions: opts, title: title, messageTop: '<p style="font-size:12px">' + esc(top) + '</p>' }

@@ -1,4 +1,4 @@
-/* XFL CSMS - glass design system (frosted, translucent surfaces over a soft colour field).
+/* Xpert CSMS - glass design system (frosted, translucent surfaces over a soft colour field).
    Loaded after xfl-polish.css by every page (Views/Shared/_XflHead.cshtml). Colours and surfaces only:
    the sidebar layout, the page gutter and the 20 px grid of xfl-polish.css are not changed.
    Light and dark: every colour comes from the variables below, which html[data-theme="dark"] redefines.

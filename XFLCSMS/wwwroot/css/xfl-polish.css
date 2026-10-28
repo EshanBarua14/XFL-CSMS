@@ -1,4 +1,4 @@
-﻿/* XFL CSMS - a polish on top of AdminLTE. Colours and spacing only; no layout is changed.
+﻿/* Xpert CSMS - a polish on top of AdminLTE. Colours and spacing only; no layout is changed.
    Loaded after adminlte.min.css by every page (Views/Shared/_XflHead.cshtml).
    Light and dark: every colour below comes from the variables, which the dark theme
    (html[data-theme="dark"], set by xfl-theme.js; AdminLTE's own body.dark-mode) redefines. */
@@ -428,3 +428,9 @@ div.dt-buttons .btn { margin: 0 !important; border-radius: .2rem !important; }
 .dt-buttons .btn-light { background: var(--xfl-surface); color: var(--xfl-ink); border-color: var(--xfl-line) !important; }
 .dt-buttons .btn-light:hover { background: var(--xfl-hover); }
 .dt-buttons .buttons-excel i { color: #2e9e57; } .dt-buttons .buttons-pdf i { color: #d64545; } .dt-buttons .buttons-csv i { color: #139e9e; }
+
+/* ---- the credit line (Views/Shared/_XflFooter.cshtml): in the footer bar, and under the pages without one ---- */
+.xfl-credit { color: var(--xfl-muted); }
+.xfl-credit a { font-weight: 600; }
+.xfl-page-footer { width: 100%; padding: 14px 16px 18px; text-align: center; font-size: 13px; line-height: 1.4; }
+@media print { .xfl-page-footer { display: none !important; } }

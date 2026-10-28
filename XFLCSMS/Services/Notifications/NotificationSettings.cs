@@ -73,7 +73,7 @@ namespace XFLCSMS.Services.Notifications
             new(General, WhatsAppEnabled, "WhatsApp on", "Master switch; also needs a provider below.", "bool", "false"),
             new(General, SmsEnabled, "SMS on", "Master switch; also needs a provider below.", "bool", "false"),
             new(General, PublicBaseUrl, "Public address of CSMS", "Used for links in e-mail / SMS / WhatsApp, e.g. https://csms.xpertfintech.com. Empty: the address the user had open.", "text"),
-            new(General, AppName, "Application name", "Printed as {{AppName}} in the texts.", "text", "XFL CSMS"),
+            new(General, AppName, "Application name", "Printed as {{AppName}} in the texts.", "text", "Xpert CSMS"),
             new(General, ExcludeActor, "Do not notify the person who did it", "Somebody who closes a ticket does not get their own 'ticket closed' message (security alerts always go).", "bool", "true"),
             new(General, MaxAttempts, "Delivery attempts", "Failed messages are retried after 1, 5, 15, 60 and 240 minutes up to this many attempts.", "number", "5"),
             new(General, CountryCode, "Default country code", "Local phone numbers (01XXXXXXXXX) get this code, e.g. 880 for Bangladesh.", "text", "880"),
@@ -88,7 +88,7 @@ namespace XFLCSMS.Services.Notifications
             new(Email, SmtpUser, "User name", "Empty: EmailUsername from appsettings.json.", "text"),
             new(Email, SmtpPassword, "Password / app password", "Stored encrypted. Empty: EmailPassword from appsettings.json.", "password", Secret: true),
             new(Email, SmtpFrom, "From address", "Empty: the user name.", "text"),
-            new(Email, SmtpFromName, "From name", "", "text", "XFL CSMS"),
+            new(Email, SmtpFromName, "From name", "", "text", "Xpert CSMS"),
 
             new(WhatsApp, WaProvider, "Provider", "Meta WhatsApp Cloud API or Twilio.", "select", "None", Options: new[] { "None", "Meta", "Twilio" }),
             new(WhatsApp, WaMetaPhoneId, "Meta: phone number ID", "WhatsApp Manager > API setup > Phone number ID (not the phone number).", "text"),

@@ -1,11 +1,11 @@
-/* XFL CSMS service worker (makes the app installable and keeps working when the network drops).
+/* Xpert CSMS service worker (makes the app installable and keeps working when the network drops).
    - Static files (css, js, fonts, images, icons) are cached and served from the cache, refreshed in the background.
    - Pages are always fetched from the server (tickets must never be stale); when the server cannot be
      reached, the "You are offline" page is shown instead.
    - Only GET requests are touched: form posts, deletes and downloads always go to the server. */
 'use strict';
 
-var VERSION = 'xfl-csms-v2';
+var VERSION = 'xfl-csms-v3';
 var STATIC_CACHE = VERSION + '-static';
 var OFFLINE_URL = '/Home/Offline';
 

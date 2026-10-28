@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "XFL Customer Support Management System",
-  "short_name": "XFL CSMS",
+  "name": "Xpert Customer Support Management System",
+  "short_name": "Xpert CSMS",
   "description": "Raise, track and resolve XFL support tickets.",
   "start_url": "/?source=pwa",
   "scope": "/",

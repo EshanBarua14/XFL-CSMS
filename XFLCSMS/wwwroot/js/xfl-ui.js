@@ -1,4 +1,4 @@
-/* XFL CSMS - small helpers for every page:
+/* Xpert CSMS - small helpers for every page:
    - marks the menu entry of the page that is open (also for view / edit / create pages of a list)
    - adds the light / dark switch (the theme itself is set by xfl-theme.js)
    - turns <textarea id="editor"> into the rich-text editor (Summernote, MIT licence, served from wwwroot/lib)

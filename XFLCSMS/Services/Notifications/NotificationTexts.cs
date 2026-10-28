@@ -41,7 +41,7 @@ namespace XFLCSMS.Services.Notifications
         public static Dictionary<string, string?> SampleValues(string recipient) => new(StringComparer.OrdinalIgnoreCase)
         {
             ["RecipientName"] = recipient, ["ActorName"] = "Rahim Uddin", ["EventName"] = "Ticket closed", ["Time"] = DateTime.Now.ToString("dd MMM yyyy HH:mm"),
-            ["Link"] = "https://csms.example.com/Maker/TicketView/42", ["AppName"] = "XFL CSMS",
+            ["Link"] = "https://csms.example.com/Maker/TicketView/42", ["AppName"] = "Xpert CSMS",
             ["TicketNumber"] = "ABC_0000042", ["TicketTitle"] = "Cannot print the portfolio statement", ["Priority"] = "High", ["Status"] = "Close",
             ["OldStatus"] = "In Progress", ["HouseName"] = "ABC Securities Ltd.", ["ProductName"] = "Back Office", ["EngineerName"] = "Karim Ahmed",
             ["OwnerName"] = "Nusrat Jahan", ["Comment"] = "Please update to version 4.2 and try again.", ["Changes"] = "priority Medium -> High",

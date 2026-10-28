@@ -1,4 +1,4 @@
-/* XFL CSMS - light / dark theme.
+/* Xpert CSMS - light / dark theme.
    Loaded in <head> before anything is drawn, so a page never flashes white in dark mode.
    The choice is kept in this browser (localStorage "xfl-theme"); with no choice yet the
    operating system's setting is used. The toggle button itself is added by xfl-ui.js. */
