@@ -17,5 +17,8 @@ command -v sqlcmd >/dev/null || { echo "sqlcmd not found. Open scripts/seed-orig
 
 echo "Seeding $DB on $SERVER ..."
 # -C: trust the server certificate (newer sqlcmd encrypts by default); -b: stop with an error code on the first error
-sqlcmd -S "$SERVER" -E -C -b -d "$DB" -i "$ROOT/scripts/seed-original.sql"
+# Pass the file name relative to scripts/ with Git Bash path conversion off: a converted /e/... path
+# reaches sqlcmd as "E:" ("Error occurred while opening or operating on file E:").
+cd "$ROOT/scripts"
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' sqlcmd -S "$SERVER" -E -C -b -d "$DB" -i seed-original.sql
 echo "Done. Sign in on http://localhost:5201 with e.g. manager / Demo@12345."
